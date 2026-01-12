@@ -126,6 +126,7 @@ Before proceed, check:
   - **Other Format**: Add `[DONE]` to the appropriate section or line as needed.
   **Take care to don't delete the content of the file, or change its original content, except for the addition of the `[DONE]` mark**
 - IMPORTANT: Commit all changes to the current branch with a meaningful message.
+- **DO NOT "Mark all items in TODO file as [DONE]"**. This is WRONG. Mark an item when you completed that item.
 
 ## 5. TODO File Completion
 
