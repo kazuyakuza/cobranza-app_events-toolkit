@@ -64,7 +64,7 @@ The plan must include next steps:
 - Before starting a new item, commit any pending changes to the current branch with a meaningful message. This must be included in the steps and plans.
 - Ask the user for clarifications or to confirm implementation plans when necessary.
 - Adhere to all other defined rules and workflows (e.g., creating unit tests for new features).
-- **ATTENTION**: for each item in the TODO file, create an individual sub-task where handle the below steps, from 4.1 to 4.6.
+- **ATTENTION**: **for each item/task in the TODO file**, create an individual sub-task where handle the below steps (from 4.1 to 4.6) individually for each item/task.
 
 ### 4.1. Analysis and Planning
 
