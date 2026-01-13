@@ -85,7 +85,7 @@ The plan must include next steps:
 - IMPORTANT: After the high-level approach, redefines the plan in very tiny and very detailed steps, including clear files names/paths, structure, code snippets, where/how run terminal cmds, and any other relevant details.
 - Always check the details of the original task before proceeding with the next steps, and review the plan for any necessary changes.
 - CRITICAL **File Storage**: the plan must be saved to a file in `.kilocode/_generated/plans/` with a unique name (e.g., `<datetime>-<plan-name>.md`) in almost all cases. So, the Coder Agent (or any other) can receive this file to work on.
-- **The plan MUST be presented to the user for approval before proceeding with the next steps**.
+- **The plan MUST be presented to the user for approval before proceeding with the next steps**. Except when the user explicit asked: "Don't request me to approval the plans".
 - Although the Architect Agent is responsible for creating the plan, the Orchestrator Agent is responsible for ensuring that the plan is followed and that the appropriate agents are assigned to the appropriate tasks.
 - General process must be: the Orchestrator creates a step to generate the plan in a sub-task for an specific TODO file item, that must respond with the plan file path. Then, the Orchestrator Agent can assign the Coder Agent to implement the plan in another sub-task.
 

@@ -80,6 +80,16 @@ do: [Your specific task or request here]
 - **Memory Bank**: Utilizes the Memory Bank feature of Kilo Code for persistent context. Read the Kilo Code documentation at its official page.
 - **Git**: Ensure your environment is configured for the workflow. See [`how-to-set-up-git.md`](docs/how-to-set-up-git.md:1).
 
+## AI Agent Plans
+
+The critical workflow forces the AI to generate plan files to solve the requested tasks. This plan files will be later used in the process as a guide for the same or another agent types.
+The AI agent should ask for your approval to the plans before continue.
+If you want to prevent this, then include in the TODO file or in the chat's request next phrase:
+
+```text
+"Don't request me to approval the plans"
+```
+
 ---
 
 *Note: This workflow is actively maintained and updated to improve stability and introduce new features.*
