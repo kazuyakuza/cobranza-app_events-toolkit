@@ -1,7 +1,9 @@
 # Prevent Empty Responses
 
+This is a CRITICAL RULE.
+
 ## Guidelines
 
-- This rule is to prevent responses with no visible response.
-- After your thinking section, you MUST ALWAYS provide a visible response or tool call. NEVER end a response with only thoughts.
-- The minimal response MUST be Task status: [Insert Status].
+- This rule is INDISPENSABLE to prevent AI Agent empty responses.
+- AI Agent MUST ALWAYS provide, after the thinking section in the response, a visible response or tool call. NEVER end a response with only thoughts.
+- The minimal visual response MUST be: `Task status: [Insert Short Status]`.
