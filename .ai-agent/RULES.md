@@ -4,7 +4,7 @@ This file contains the rules that all AI agents must follow. Each rule is define
 
 ## Available Rules
 
-- [Prevent Empty Responses](../.kilocode/rules/prevent-empty-responses.md)
+- INDISPENSABLE: [Prevent Empty Responses](../.kilocode/rules/prevent-empty-responses.md)
 - [Workflow Adherence](../.kilocode/rules/workflow-adherence.md)
 - [Single-Section Boolean Conditions](../.kilocode/rules/single-section-boolean-conditions.md)
 - [Military Mode Communication](../.kilocode/rules/military-mode-communication.md)

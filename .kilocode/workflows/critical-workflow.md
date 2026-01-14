@@ -19,7 +19,7 @@ This workflow's steps organize the task/work receiving, the understanding and an
   - **Other Formats**: If the format is unclear, ask the user for clarification.
 - **Orchestrator Agent**:
   - Receives the initial chat's request/s or file/s from the user, and proceeds to: TODO file creation if not exists, or find & read the next TODO file to work on.
-  - ABSOLUTE CRITICAL: Generates an overall plan of action to handle the work, following the steps from 2 to 6 detailed in this file. For EACH TASK in the TODO file, MUST REPEAT sub-steps of step 4. Full read the Example section at the end of the file.
+  - ABSOLUTE CRITICAL: Generates an overall plan of action to handle the work, following the steps from 2 to 6 detailed in this file. **For EACH TASK in the TODO file, MUST REPEAT sub-steps of step 4**. Full read the Example section at the end of the file.
   - The plan of action must be a list of clear steps, and the tasks must be handled one by one in separated steps.
   - Orchestrator Agent must assign sub-tasks to the appropriate agents, to handle each separated step.
   - The sub-tasks must have a clear description of the expected outcome and the sub-task's steps to achieve it. It must be specially clear to the assigned agent if it should implement code or not, read/modify/create/move/rename files or not, signal completion with a clear response, generate a plan on how to implement/resolve some task/sub-task/step, etc.
@@ -67,12 +67,12 @@ Include next steps in the plan:
 
 ### 4.1. Analysis and Planning
 
-- This steps must be included in the overall plan for each TODO file task.
+- This step must be included in the overall plan for each TODO file task.
 - Assign this step to the Architect Agent.
 - Identifies ambiguities and areas needing user clarification.
 - Analyzes the current project status.
 - Researches required technologies, frameworks, libraries, dependencies, and/or APIs.
-- IMPORTANT: defines a high-level approach for the implementation of an individual TODO file task, creating a step-by-step plan including steps for:
+- IMPORTANT: defines a temporally high-level approach for the implementation of an individual TODO file task, including steps for:
   - git handling (check steps below)
   - code writing (check steps below)
   - running console cmds (when required)
@@ -82,8 +82,8 @@ Include next steps in the plan:
   - documentation updates (check steps below)
   - mark the task inside the TODO file as DONE (check steps below)
   - any other relevant details
-- IMPORTANT: After the high-level approach, redefines the plan in very tiny and detailed steps, including clear files names/paths, structure, code snippets, where/how run terminal cmds, and any other relevant details.
-- Always check the details of the original task to identify possible changes to the generated plan.
+- IMPORTANT: based on the high-level approach, defines an extensive plan composed by very tiny and very detailed steps, including clear files names/paths, structure, code snippets, where/how run terminal cmds, and any other relevant details.
+- Check the details of the original task to identify possible changes to the generated plan that went outside the requirements.
 - CRITICAL: the plan must be saved to a file in `.kilocode/_generated/plans/` with a unique name (e.g., `<datetime>-<plan-name>.md`) in almost all cases. The Coder Agent (or any other) must receive this file, and follow it.
 - **The plan MUST be presented to the user for approval before proceeding with the next steps**. Except the user included in the request or TODO file: "Don't request me to approval the plans".
 - The Architect Agent is responsible for creating the plan, and the Orchestrator Agent is responsible to ensure the plan is followed and assigned to the appropriate agents.
