@@ -2,28 +2,28 @@
 
 ## Initial Note
 
-It is EXTREMELY IMPORTANT that all ai agents follow this workflow's steps in detail.
-The workflow steps organize the task/work receiving, the understanding and analysis, generation of a global plan to work on them, handle correct agent for the exact work and steps, generation of more detailed plans for implementations to work on, and some other things, all that along with a correct git version handle.
+It is EXTREMELY IMPORTANT that all AI agents follow this workflow's step by step in detail.
+This workflow's steps organize the task/work receiving, the understanding and analysis, generation of a global plan to work on them, handle correct agent for the exact work and steps, generation of other detailed plans for each task with implementations details, and some other things, all that along with a correct git version control.
 
 ## 1. Task Origin
 
 - **Chat**: If a task (ie. almost any work to do) is asked/given in the chat (except the user is indicating an existing TODO file), create a new TODO file in `.ai-agent/todos/<YYYYMMDD>/<YYYYMMDD>-todo-<number>.md`. The content of the file should be the user's request.
 - **TODO File**:
-  - The primary source of tasks is the `.ai-agent/todos` directory, which contains TODO files that need to be processed, organized by date and numbered sequentially.
-  - The user may indicate the TODO file to work on, or just ask to look for the next one undone.
+  - The primary source of tasks is the `.ai-agent/todos` directory, which contains TODO files that need to be processed, organized by date and numbered sequentially in their names.
   - Process TODO files in chronological and numerical order from the `.ai-agent/todos` directory.
-  - Files ending in `-DONE` are considered finished and should be skipped.
-- **TODO File Format**
+  - The user may indicate the TODO file to work on, or just ask to look for the next one undone.
+  - Files with suffix name `-DONE` are completed and must be skipped.
+- **TODO File Format**: files must have one of the next formats.
   - **Line Items**: Each line is a separate task.
-  - **Section Items**: Each markdown section is a separate task, potentially with additional details.
+  - **Section Items**: Each markdown section is a separate task, potentially with additional details and/or sub-tasks.
   - **Other Formats**: If the format is unclear, ask the user for clarification.
 - **Orchestrator Agent**:
-  - Receives the initial task/s or file/s from the user, and resolves the above points: TODO file creation if not exists, or find & read the next TODO file to work on.
-  - CRITICAL: Generates an overall plan of action to handle the work, following the steps below in this file for EACH TASK/ITEM in the TODO file.
+  - Receives the initial chat's request/s or file/s from the user, and proceeds to: TODO file creation if not exists, or find & read the next TODO file to work on.
+  - CRITICAL: Generates an overall plan of action to handle the work, following the steps from 2 to 6 detailed in this file for EACH TASK in the TODO file. Full read the Example section.
   - The plan of action must be a list of clear steps, and the tasks must be handled one by one in separated steps.
-  - Orchestrates the workflow by assigning sub-tasks to the appropriate agents, to handle each step.
-  - The sub-tasks must have a clear description of the expected outcome and the steps to achieve it. It must be specially clear to the agent if it should implement code or not, read/modify/create/move/rename files or not, signal completion with a clear response, generate a plan on how to implement/resolve some task/step, etc.
-  - Its IMPORTANT to prevent that an agent in a sub-task don't follow the work that must handle. For example, prevent that the architect agent type switch to code mode when the sub task is asking for a plan, but not implementation.
+  - Orchestrator Agent must assign sub-tasks to the appropriate agents, to handle each separated step.
+  - The sub-tasks must have a clear description of the expected outcome and the sub-task's steps to achieve it. It must be specially clear to the assigned agent if it should implement code or not, read/modify/create/move/rename files or not, signal completion with a clear response, generate a plan on how to implement/resolve some task/sub-task/step, etc.
+  - Its IMPORTANT to prevent that an agent in a sub-task doesn't follows the work that must handle. For example, prevent that the architect agent type switch to code mode when the sub-task is asking for a plan, but not implementation.
   - Important: the Orchestrator drives the overall process. The analysis and implementation details should be handled by the appropriate agents.
 - **Asker Agent**: Manages communication with the user, when asking for clarifications and providing updates is required.
 
@@ -31,8 +31,8 @@ The workflow steps organize the task/work receiving, the understanding and analy
 
 Orchestrator Agent must include in the global plan this section.
 It must clear for the designated ai agent to where and how to run the commands of this section.
-Its important to understand that `main` branch is the master branch of the repo.
-The plan must include next steps:
+IMPORTANT: `main` branch is the master branch.
+Include next steps in the plan:
 
 - 1º Run `git status`:
   - If there are unstaged files then commit all of them with a meaningfully comment.
@@ -58,55 +58,55 @@ The plan must include next steps:
 
 ### 4.0 Overall Process Management
 
-- Step 4 must be handled by the Orchestrator Agent.
-- IMPORTANT: this step indicates that the Orchestrator Agent must drive the overall process. The analysis and implementation details should be handled by the appropriate agents. This is detailed in the steps below.
-- Process items within the TODO file in the order they are defined.
-- Before starting a new item, commit any pending changes to the current branch with a meaningful message. This must be included in the steps and plans.
-- Ask the user for clarifications or to confirm implementation plans when necessary.
-- Adhere to all other defined rules and workflows (e.g., creating unit tests for new features).
-- **ATTENTION**: **for each item/task in the TODO file**, create an individual sub-task where handle the below steps (from 4.1 to 4.6) individually for each item/task.
+- IMPORTANT: the Orchestrator Agent must drive the overall process. The analysis and implementation details must be assigned to the appropriate agents. Details in the steps 4.1 to 4.6 below.
+- Process tasks in the TODO file in the order they are written. Make this clear in the steps and plans.
+- Before starting a new task, commit any pending changes to the current branch with a meaningful message. This must be included in the steps and plans.
+- Ask user for clarifications or to confirm implementation plans when required.
+- Adhere to all other defined rules and workflows; check RULES.md and WORKFLOWS.md files.
+- **ATTENTION, for each task in the TODO file**: create individuals sub-tasks to handle below steps (from 4.1 to 4.6) for it.
 
 ### 4.1. Analysis and Planning
 
-- This step must be handled by the Architect Agent.
+- Assign this step to the Architect Agent.
 - Identifies ambiguities and areas needing user clarification.
-- Researches required technologies, frameworks, or APIs.
 - Analyzes the current project status.
-- IMPORTANT: defines a high-level approach for the solution/implementation of an individual TODO file item, creating a step-by-step plan including one or more steps for:
+- Researches required technologies, frameworks, libraries, dependencies, and/or APIs.
+- IMPORTANT: defines a high-level approach for the implementation of an individual TODO file task, creating a step-by-step plan including steps for:
   - git handling (check steps below)
   - code writing (check steps below)
   - running console cmds (when required)
   - test build (if exists)
   - code review
-  - testing implementation (if set-up in the project)
+  - testing implementation (if testing suit exists in the project)
   - documentation updates (check steps below)
-  - mark the item inside the TODO file as DONE (check steps below)
+  - mark the task inside the TODO file as DONE (check steps below)
   - any other relevant details
-- IMPORTANT: After the high-level approach, redefines the plan in very tiny and very detailed steps, including clear files names/paths, structure, code snippets, where/how run terminal cmds, and any other relevant details.
-- Always check the details of the original task before proceeding with the next steps, and review the plan for any necessary changes.
-- CRITICAL **File Storage**: the plan must be saved to a file in `.kilocode/_generated/plans/` with a unique name (e.g., `<datetime>-<plan-name>.md`) in almost all cases. So, the Coder Agent (or any other) can receive this file to work on.
-- **The plan MUST be presented to the user for approval before proceeding with the next steps**. Except when the user explicit asked: "Don't request me to approval the plans".
-- Although the Architect Agent is responsible for creating the plan, the Orchestrator Agent is responsible for ensuring that the plan is followed and that the appropriate agents are assigned to the appropriate tasks.
-- General process must be: the Orchestrator creates a step to generate the plan in a sub-task for an specific TODO file item, that must respond with the plan file path. Then, the Orchestrator Agent can assign the Coder Agent to implement the plan in another sub-task.
+- IMPORTANT: After the high-level approach, redefines the plan in very tiny and detailed steps, including clear files names/paths, structure, code snippets, where/how run terminal cmds, and any other relevant details.
+- Always check the details of the original task to identify possible changes to the generated plan.
+- CRITICAL: the plan must be saved to a file in `.kilocode/_generated/plans/` with a unique name (e.g., `<datetime>-<plan-name>.md`) in almost all cases. The Coder Agent (or any other) must receive this file, and follow it.
+- **The plan MUST be presented to the user for approval before proceeding with the next steps**. Except the user included in the request or TODO file: "Don't request me to approval the plans".
+- The Architect Agent is responsible for creating the plan, and the Orchestrator Agent is responsible to ensure the plan is followed and assigned to the appropriate agents.
+- General process example: Orchestrator creates a step to generate the plan in a sub-task for a specific TODO file task; Architect analyzes and generates a plan file, then completes the sub-task with a respond that includes the plan file's path. Then, the Orchestrator Agent assigns to the Coder Agent to implement the plan in another sub-task.
 
 ### 4.2. Implementation
 
-- This step must be handled by the Coder Agent.
-- In a sub-task, receives and implements individual extremely tiny and very detailed steps from the plan.
-- Always check the details of the original task before proceeding with the next steps.
-- IMPORTANT: Make commits with meaningful messages when resolves each one of the TODO file items.
+- Assign this step to the Coder Agent.
+- In a sub-task, Coder receives and implements individual extremely tiny and very detailed steps from the plan.
+- Always check the details of the plan before proceeding with a step.
+- IMPORTANT: Make commits with meaningful messages when a TODO file task or "big step" is completed.
 
 ### 4.3. Code Review
 
-- This step may be handled by Architect or Code Reviewer or Code Simplifier Agent.
+- Assign this step to the Architect or Code Reviewer or Code Simplifier Agent.
 - Reviews the implemented code for errors or deviations from the plan.
-- Requests necessary changes to the Coder Agent.
+- Generates a plan to requests necessary changes to the Coder Agent.
+- Orchestrator assigns the Coder agent the new plan to execute it.
 
 ### 4.4. Documentation
 
-- This step must be handled by the Documentator Agent.
+- Assign this step to the Documentator Agent.
 - Adds comments to the code where necessary.
-- Updates the project's documentation (e.g., README, `/docs` files).
+- Updates/Creates project's documentation (e.g., README, `/docs` files).
 - Suggests and implements automated documentation tools.
 
 ### 4.5. Verification
@@ -114,26 +114,26 @@ The plan must include next steps:
 Before proceed, check:
 
 - if the generated plan was followed
-- if there are unstaged files, and what they mean. If they need to be merged or not
+- if there are unstaged files, decide if they need to be committed or not
 
-### 4.6. Item Completion
+### 4.6. Task Completion
 
-- This step must be included in the plan that resolves a TODO file item.
-- When the Implementation of a plan's item is completed, the item in the TODO file MUST be clearly marked as done, as described below.
-- Mark the item as done in the TODO file:
+- Orchestrator must be include this step in the overall plan for each TODO file task.
+- When the Implementation of a plan's task is completed, the task in the TODO file MUST be clearly marked as done, as described below.
+- Mark the task as done in the TODO file:
   - **Line Item Format**: Add `[DONE]` at the beginning of the line.
   - **Section Item Format**: Add `[DONE]` to the section title.
   - **Other Format**: Add `[DONE]` to the appropriate section or line as needed.
   **Take care to don't delete the content of the file, or change its original content, except for the addition of the `[DONE]` mark**
 - IMPORTANT: Commit all changes to the current branch with a meaningful message.
-- **DO NOT "Mark all items in TODO file as [DONE]"**. This is WRONG. Mark an item when you completed that item.
+- Orchestrator must not define a step to "Mark all subtasks in TODO file as [DONE]". This is WRONG. Mark a task just after it is completed.
 
 ## 5. TODO File Completion
 
-- When all items in a TODO file are resolved (ie. marked as done as indicates the step 6), rename the file with a `-DONE` suffix (e.g., `<YYYYMMDD>-todo-<number>-DONE.md`), and commit it.
+- When all tasks of the TODO file are resolved (ie. marked as done as indicates the step 4.6), rename the file with a `-DONE` suffix (e.g., `<YYYYMMDD>-todo-<number>-DONE.md`), and commit it.
   **Take care to don't delete the file, or changes its content. Only rename it**
 - Merge the current feature branch into the master branch:
-  - IMPORTANT: Ensure all files are committed in feature branch. If not, stage them and commit them before continue.
+  - IMPORTANT: Ensure all files are committed in feature branch. If not, commit them before continue.
   - Switch to the `main` branch, which is the master branch.
   - Merge the feature branch into the `main` branch.
   - Recheck the feature branch was correctly merged into `main` branch.
@@ -156,30 +156,30 @@ This section has a minimal example of the process to prevent commons errors prod
 In this example the TODO File is like:
 
 ```markdown
-- item 1
-- item 2
+- Task 1
+- Task 2
 ```
 
 ### Orchestrator Plan
 
-The plan that is generated by the orchestrator must includes next steps:
+The overall plan that is generated by the orchestrator must includes next steps:
 
 ```text
 (some other steps...)
-- Item 1: 4.1. Analysis and Planning
-- Item 1: 4.2. Implementation
-- Item 1: 4.3. Code Review
-- Item 1: 4.4. Documentation
-- Item 1: 4.5. Verification
-- Item 1: 4.6. Item Completion
+- Task 1: 4.1. Analysis and Planning
+- Task 1: 4.2. Implementation
+- Task 1: 4.3. Code Review
+- Task 1: 4.4. Documentation
+- Task 1: 4.5. Verification
+- Task 1: 4.6. Task Completion
 (some other steps...)
-- Item 2: 4.1. Analysis and Planning
-- Item 2: 4.2. Implementation
-- Item 2: 4.3. Code Review
-- Item 2: 4.4. Documentation
-- Item 2: 4.5. Verification
-- Item 2: 4.6. Item Completion
+- Task 2: 4.1. Analysis and Planning
+- Task 2: 4.2. Implementation
+- Task 2: 4.3. Code Review
+- Task 2: 4.4. Documentation
+- Task 2: 4.5. Verification
+- Task 2: 4.6. Task Completion
 (some other steps...)
 ```
 
-Note: the previous plan ONLY includes a clarification about how the items must be handled in the resolution. So, the plan itself is incomplete. It must include all details specified in the workflow.
+Note: the plan in this example ONLY includes a clarification about how the tasks must be handled in the resolution. So, the plan itself is incomplete. It must include all details specified in the workflow.
