@@ -19,7 +19,7 @@ This workflow's steps organize the task/work receiving, the understanding and an
   - **Other Formats**: If the format is unclear, ask the user for clarification.
 - **Orchestrator Agent**:
   - Receives the initial chat's request/s or file/s from the user, and proceeds to: TODO file creation if not exists, or find & read the next TODO file to work on.
-  - CRITICAL: Generates an overall plan of action to handle the work, following the steps from 2 to 6 detailed in this file for EACH TASK in the TODO file. Full read the Example section.
+  - ABSOLUTE CRITICAL: Generates an overall plan of action to handle the work, following the steps from 2 to 6 detailed in this file. For EACH TASK in the TODO file, MUST REPEAT sub-steps of step 4. Full read the Example section at the end of the file.
   - The plan of action must be a list of clear steps, and the tasks must be handled one by one in separated steps.
   - Orchestrator Agent must assign sub-tasks to the appropriate agents, to handle each separated step.
   - The sub-tasks must have a clear description of the expected outcome and the sub-task's steps to achieve it. It must be specially clear to the assigned agent if it should implement code or not, read/modify/create/move/rename files or not, signal completion with a clear response, generate a plan on how to implement/resolve some task/sub-task/step, etc.
@@ -67,6 +67,7 @@ Include next steps in the plan:
 
 ### 4.1. Analysis and Planning
 
+- This steps must be included in the overall plan for each TODO file task.
 - Assign this step to the Architect Agent.
 - Identifies ambiguities and areas needing user clarification.
 - Analyzes the current project status.
@@ -90,6 +91,7 @@ Include next steps in the plan:
 
 ### 4.2. Implementation
 
+- This steps must be included in the overall plan for each TODO file task.
 - Assign this step to the Coder Agent.
 - In a sub-task, Coder receives and implements individual extremely tiny and very detailed steps from the plan.
 - Always check the details of the plan before proceeding with a step.
@@ -97,6 +99,7 @@ Include next steps in the plan:
 
 ### 4.3. Code Review
 
+- This steps must be included in the overall plan for each TODO file task.
 - Assign this step to the Architect or Code Reviewer or Code Simplifier Agent.
 - Reviews the implemented code for errors or deviations from the plan.
 - Generates a plan to requests necessary changes to the Coder Agent.
@@ -104,6 +107,7 @@ Include next steps in the plan:
 
 ### 4.4. Documentation
 
+- This steps must be included in the overall plan for each TODO file task.
 - Assign this step to the Documentator Agent.
 - Adds comments to the code where necessary.
 - Updates/Creates project's documentation (e.g., README, `/docs` files).
@@ -111,14 +115,14 @@ Include next steps in the plan:
 
 ### 4.5. Verification
 
-Before proceed, check:
-
-- if the generated plan was followed
-- if there are unstaged files, decide if they need to be committed or not
+- This steps must be included in the overall plan for each TODO file task.
+- Before proceed, check:
+  - if the generated plan was followed
+  - if there are unstaged files, decide if they need to be committed or not
 
 ### 4.6. Task Completion
 
-- Orchestrator must be include this step in the overall plan for each TODO file task.
+- This steps must be included in the overall plan for each TODO file task.
 - When the Implementation of a plan's task is completed, the task in the TODO file MUST be clearly marked as done, as described below.
 - Mark the task as done in the TODO file:
   - **Line Item Format**: Add `[DONE]` at the beginning of the line.
