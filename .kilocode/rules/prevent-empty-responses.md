@@ -4,7 +4,9 @@ This is a CRITICAL RULE.
 
 ## Guidelines
 
-- This rule is INDISPENSABLE to prevent AI Agent empty responses.
-- AI Agent NEVER send a response with only thoughts.
+- This rule is INDISPENSABLE to try fix AI Agent empty responses.
 - AI Agent MUST ALWAYS provide, after the thinking section, a visible response or tool call in the response.
-- The minimal visual response MUST be: `Task status: [Insert Short Status]`.
+- However, if this error arises 3 or more times:
+  - switch to another AI Agent, like Orchestrator or Architect
+  - check current status, and write it in a short message
+  - continue with the process
