@@ -87,7 +87,7 @@ The AI agent should ask for your approval to the plans before continue.
 If you want to prevent this, then include in the TODO file or in the chat's request next phrase:
 
 ```text
-"Don't request me to approval the plans"
+"Don't request me to approve the plans"
 ```
 
 ---
