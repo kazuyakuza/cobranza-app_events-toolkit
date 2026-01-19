@@ -7,6 +7,7 @@ This workflow's steps organize the task/work receiving, the understanding and an
 
 - Check the example section before proceeding.
 - Plans are saved to `.kilocode/_generated/plans/` for separation from TODO files.
+- Global Plan Structure: The Orchestrator generates a single global plan that sequences all workflow steps (2-6), **explicitly including the repetition of sub-steps 4.1-4.6 as distinct entries for each TODO task**. This ensures all sub-steps are executed in order. Implementation plans (generated in 4.1) are separate, detailed guides for agents within those sub-steps.
 
 ## Steps
 
@@ -26,11 +27,12 @@ This workflow's steps organize the task/work receiving, the understanding and an
   - Receives the initial request/s or file/s from the user, and proceeds to: create TODO file if not exists, or find & read the file shared by the user.
   - **CRITICAL**:
     Generates a global plan of action to handle the work, following the defined steps from 2 to 6.
-    For **EACH** TASK in the TODO file, Orchestrator **MUST** REPEAT sub-steps of step 4.
+    **For EACH TASK in the TODO file, Orchestrator MUST REPEAT sub-steps of step 4 as explicit, sequential entries in the global plan (e.g., "Task X - 4.1: [description]", "Task X - 4.2: [description]", etc.).** These sub-steps are assigned as sub-tasks to agents for execution.
     Check example section for clarification.
   - The global plan must be a list of clear steps, and the tasks must be handled one by one in separated steps.
   - Orchestrator Agent must assign sub-tasks to the appropriate agents, to handle each separated step.
-  - The sub-tasks must have a clear description of the expected outcome and the sub-task's steps to achieve it. It must be specially clear to the assigned agent if it should implement code or not, read/modify/create/move/rename files or not, signal completion with a clear response, generate a plan on how to implement/resolve some task/sub-task/step, etc.
+  - The sub-tasks must have a clear description of the expected outcome and the sub-task's steps to achieve it. It must be specially clear to the assigned agent if it should implement code or not, read/modify/create/move/rename files or not, **signal completion with a clear response (e.g., 'SUBTASK_COMPLETE: [brief outcome or file path]' or 'CLARIFICATION_NEEDED: [details]')**, generate a plan on how to implement/resolve some task/sub-task/step, etc.
+  **To assert execution, Orchestrator verifies each agent's completion signal and compliance before advancing to the next global plan step.**
   - Prevention of Role Overstep: Ensure sub-task prompts include explicit boundaries, e.g., "Generate plan only; do not implement code or modify files. If unclear, return 'CLARIFICATION_NEEDED'." The Orchestrator should verify responses for compliance before proceeding to the next step (e.g., check if code was unexpectedly generated).
   - Important: the Orchestrator drives the overall process, ie. the global plan. While the steps must be handled by the appropriate agents.
 - **Asker Agent**: Manages communication with the user, when some clarification, update or definition is required.
@@ -74,10 +76,11 @@ Include next steps in the plan:
 - Define the steps to process tasks in the TODO file in the order they are in the TODO file.
 - Before starting a new task, commit any pending changes to the current branch with a meaningful message. This must be included in the steps and plans.
 - **ATTENTION**:
-  For **EACH** task in the TODO file, create individuals sub-tasks for steps 4.1 to 4.6.
+  **For EACH task in the TODO file, the global plan must include individual entries for sub-steps 4.1 to 4.6 (e.g., as "Task X - 4.1: Assign Architect to generate implementation plan").** These are executed via sub-tasks assigned by the Orchestrator.
   Check example section for clarification.
 - Ask user for clarifications or to confirm plans when required.
 - Adhere to all other defined rules (RULES.md) and workflows (WORKFLOWS.md).
+- **To assert correct execution of all steps and sub-steps, Orchestrator pauses on failures (e.g., missing completion signals) and invokes Asker for user intervention.**
 
 #### 4.1. Analysis and Planning
 
@@ -101,10 +104,12 @@ Include next steps in the plan:
   - [CRITICAL] the implementation plan MUST be saved in `.kilocode/_generated/plans/` with a unique name (e.g., `<datetime>-<plan-name>.md`).
 - **Architect must present the implementation plan to the user for approval before proceeding with the next steps**.
   If the request or TODO file includes the string "Don't request me to approve the plans", then auto-approve the plans.
+  **If user provides feedback or rejects, Architect revises the plan based on input and re-presents it.**
 - Architect Agent is responsible for creating the implementation plan, while the Orchestrator Agent is responsible to assign it to the appropriate agents.
 - General process example:
   - in the global plan, Orchestrator creates a step to generate the implementation plan in a sub-task for a **specific TODO file task**
-  - in sub-task: Architect analyzes and generates an implementation plan, then returns the implementation plan file's path.
+  - in sub-task: Architect analyzes and generates an implementation plan, then returns the implementation plan file's path **with completion signal**.
+  - **Orchestrator verifies and, if approved, proceeds to assign sub-task for 4.2.**
   - in another sub-task: the Coder Agent receives file's path, and follows the implementation plan.
 
 #### 4.2. Implementation
@@ -193,40 +198,28 @@ In this example the TODO File is like:
 The global plan that is generated by the orchestrator must includes next steps:
 
 ```markdown
+- Step 1: Task Origin => Creates new TODO file (when required), reads the indicated TODO file.
+- Step 2: Git Feature Branch Setup => Assign to appropriate agent (e.g., Coder) to run git commands as specified.
+- Step 3: Version Update => Assign to appropriate agent to check and increment version if needed, then commit.
 (some other steps...)
-- Task 1: 4.1. Analysis and Planning => Architect generates Implementation plan for task 1
-- Task 1: 4.2. Implementation => Coder work on the Implementation plan for task 1
-- Task 1: 4.3. Code Review
-- Task 1: 4.4. Documentation
-- Task 1: 4.5. Verification
-- Task 1: 4.6. Task Completion => Modifies TODO file to mark task 1 as DONE
+- Task 1: 4.1. Analysis and Planning => Assign Architect: Generate and save implementation plan for Task 1; present for approval; return path with 'SUBTASK_COMPLETE'.
+- Task 1: 4.2. Implementation => Assign Coder: Follow implementation plan for Task 1; commit changes.
+- Task 1: 4.3. Code Review => Assign Code Reviewer: Review code; generate fix plan if needed.
+- Task 1: 4.4. Documentation => Assign Documentator: Update docs and comments.
+- Task 1: 4.5. Verification => Assign Architect: Check plan adherence and commit unstaged files.
+- Task 1: 4.6. Task Completion => Assign appropriate agent: Mark Task 1 as [DONE] in TODO file; commit.
 (some other steps...)
-- Task 2: 4.1. Analysis and Planning => Architect generates Implementation plan for task 2
-- Task 2: 4.2. Implementation => Coder work on the Implementation plan for task 2
-- Task 2: 4.3. Code Review
-- Task 2: 4.4. Documentation
-- Task 2: 4.5. Verification
-- Task 2: 4.6. Task Completion => Modifies TODO file to mark task 2 as DONE
+- Task 2: 4.1. Analysis and Planning => Assign Architect: Generate and save implementation plan for Task 2; present for approval; return path with 'SUBTASK_COMPLETE'.
+- ... (repeat for 4.2-4.6 for Task 2, 3, 4)
 (some other steps...)
-- Task 3: 4.1. Analysis and Planning => Architect generates Implementation plan for task 3
-- Task 3: 4.2. Implementation => Coder work on the Implementation plan for task 3
-- Task 3: 4.3. Code Review
-- Task 3: 4.4. Documentation
-- Task 3: 4.5. Verification
-- Task 3: 4.6. Task Completion => Modifies TODO file to mark task 3 as DONE
-(some other steps...)
-- Task 4: 4.1. Analysis and Planning => Architect generates Implementation plan for task 4
-- Task 4: 4.2. Implementation => Coder work on the Implementation plan for task 4
-- Task 4: 4.3. Code Review
-- Task 4: 4.4. Documentation
-- Task 4: 4.5. Verification
-- Task 4: 4.6. Task Completion => Modifies TODO file to mark task 4 as DONE
-(some other steps...)
+- Step 5: TODO File Completion => Assign appropriate agent: Rename TODO file to -DONE; commit; merge branch; push if configured.
+- Step 6: Continuation => Check for next TODO; ask user if proceed.
 ```
 
-Note: This example shows only the per-task 4.1–4.6 structure for clarity. The actual global plan MUST also include steps 2 (Git Setup), 3 (Version Update), 5 (TODO Completion), and 6 (Continuation), plus any initial setup.
+Note: This example shows only the per-task 4.1–4.6 structure for clarity. **These are explicit entries in the global plan, assigned as sub-tasks.** The actual global plan MUST also include steps 2 (Git Setup), 3 (Version Update), 5 (TODO Completion), and 6 (Continuation), plus any initial setup.
 
 ### Error Handling
 
 - On git errors, command failures, or unexpected agent outputs: Log details, commit safe changes if possible, invoke Asker Agent to notify user, and pause.
 - If endless loops or repeated failures occur, escalate to user immediately.
+- **If a sub-step (4.1-4.6) fails verification (e.g., no completion signal or non-compliance), Orchestrator reassigns the sub-task or escalates to user.**
