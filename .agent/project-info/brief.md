@@ -1,12 +1,5 @@
 # Project Brief
 
-<!--
-THIS MARK THE FILE IS DEFAULT VERSION
------------------------------------------
-This file must be filled with project-specific content, intended to provide a high-level overview of the project, including purpose, goals, and scope. Must be updated as the project evolves.
-Remove this comment when you have completed this file.
--->
-
 ## Overview
 
 This is a base project designed to serve as a foundational template for future AI-agent driven development. It is pre-configured with essential rules, workflows, and structures optimized for collaboration between human developers and AI agents (specifically Kilo Code).

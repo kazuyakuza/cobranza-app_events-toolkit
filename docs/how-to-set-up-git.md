@@ -49,3 +49,5 @@ git remote set-url origin https://<user-name>@github.com/<repo-path>.git
 ```
 
 This setup allows Git to automatically use your stored credentials for authentication with GitHub.
+
+> **Note**: More secure alternatives include SSH keys or GitHub CLI (`gh auth login`), which avoid storing tokens in plaintext files.

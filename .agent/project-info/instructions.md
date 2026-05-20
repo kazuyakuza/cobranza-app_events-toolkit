@@ -4,7 +4,7 @@ AI Agents must follow defined behaviour in this file.
 
 ## Initial Instruction
 
-AI agents MUST evaluate project info files at the start of EVERY task. The project info files are located in `.kilo/project-info` folder.
+AI agents MUST evaluate project info files at the start of EVERY task. The project info files are located in `.agent/project-info` folder.
 
 When starting a task, include `[Project Info: Active]` at the beginning of response if successfully read the project info files, or `[Project Info: Missing]` if the folder doesn't exist or is empty. If project info is missing, warn the user about potential issues and suggest initialization.
 

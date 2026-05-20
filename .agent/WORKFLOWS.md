@@ -8,6 +8,6 @@ Before AI agent proceed with a task, it must formulate the correct very tiny & v
 
 ## Available Workflows
 
-- [Critical Workflow](../.kilo/workflows/critical-workflow.md)
-- [Project Info Initialization Workflow](../.kilo/workflows/project-info-initialization-workflow.md)
-- [Project Structure Maintenance Workflow](../.kilo/workflows/project-structure-maintenance.md)
+- [Critical Workflow](../.kilo/commands/critical-workflow.md)
+- [Project Info Initialization Workflow](../.kilo/commands/project-info-init.md)
+- [Project Structure Maintenance Workflow](../.kilo/commands/project-structure.md)

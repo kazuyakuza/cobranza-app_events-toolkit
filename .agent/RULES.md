@@ -4,7 +4,6 @@ List of rules all AI agents must follow.
 
 ## Rules
 
-- [Prevent Empty Responses](../.kilo/rules/prevent-empty-responses.md)
 - [Workflow Adherence](../.kilo/rules/workflow-adherence.md)
 - [Single-Section Boolean Conditions](../.kilo/rules/single-section-boolean-conditions.md)
 - [Military Mode Communication](../.kilo/rules/military-mode-communication.md)
@@ -21,4 +20,3 @@ List of rules all AI agents must follow.
 - [Important Paths Rule](../.kilo/rules/important-paths.md)
 - [Newline Prevention Rule](../.kilo/rules/newline-prevention.md)
 - [Code Guidelines](../.kilo/rules/code-guidelines.md)
-- [Git Commit Messages](../.kilo/rules/git-commit-msg.md)

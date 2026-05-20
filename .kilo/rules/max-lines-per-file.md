@@ -1,6 +1,6 @@
 # Max Lines per File Rule
 
-- Files must be as short as possible to improve readability and maintainability.
-- Files mustn't exceed 200 lines.
-- Excluding blank lines, comments, and import statements, files should ideally be under 125 lines.
-- This rule may not apply to certain types of files where longer length is unavoidable.
+- Applies to source code files in `src/` only.
+- Code files mustn't exceed 200 lines.
+- Excluding blank lines, comments, and imports: ideally under 125 lines.
+- Does NOT apply to config, docs, rules, or workflow files.

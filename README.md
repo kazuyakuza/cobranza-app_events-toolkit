@@ -20,7 +20,7 @@ The primary goal of this repository is to provide a clean, structured starting p
 Understanding the purpose of the configuration directories is key to effective development:
 
 - [`.agent/`](.agent/): Stores project-specific agent context. Includes the [`.agent/todos/`](.agent/todos/) directory for task tracking, local rules, and the [`project-structure.md`](.agent/project-structure.md) map.
-- [`.kilo/`](.kilo/): The operational core of the AI integration. Contains global [`.kilo/rules/`](.kilo/rules/), standardized [`.kilo/workflows/`](.kilo/workflows/), and the [`.kilo/_generated/plans/`](.kilo/_generated/plans/) directory where agents store detailed implementation plans.
+- [`.kilo/`](.kilo/): The operational core of the AI integration. Contains global [`.kilo/rules/`](.kilo/rules/), standardized [`.kilo/commands/`](.kilo/commands/) (workflows), and the [`.kilo/plans/`](.kilo/plans/) directory where agents store detailed implementation plans.
 
 ## The Critical Workflow
 
@@ -49,7 +49,7 @@ graph TD
     Continuation -- Finished --> End((End))
 ```
 
-For full details, see [`critical-workflow.md`](.kilo/workflows/critical-workflow.md).
+For full details, see [`critical-workflow.md`](.kilo/commands/critical-workflow.md).
 
 ## How to Start a Task
 
@@ -61,8 +61,8 @@ To initiate work with an AI agent, use one of the following copy-paste friendly 
 2. Paste the following into the chat:
 
 ```text
-follow @/.kilo/workflows/critical-workflow.md and full read @/AGENTS.md
-do: @/.agent/todos/<YYYYMMDD>/<YYYYMMDD>-todo-<number>.md
+follow /critical-workflow and full read @/AGENTS.md
+do: @/.agent/todos/<YYYYMMDD>/<YYYYMMDD}-todo-<number>.md
 ```
 
 ### Option 2: Direct Chat Request
@@ -70,7 +70,7 @@ do: @/.agent/todos/<YYYYMMDD>/<YYYYMMDD>-todo-<number>.md
 If you have a quick request, use this template:
 
 ```text
-follow @/.kilo/workflows/critical-workflow.md and full read @/AGENTS.md
+follow /critical-workflow and full read @/AGENTS.md
 do: [Your specific task or request here]
 ```
 
