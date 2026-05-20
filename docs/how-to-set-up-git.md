@@ -12,7 +12,7 @@ Ensure that `.git-credentials` is added to your `.gitignore` file to prevent it 
 
 The `.git-credentials` file should contain your GitHub credentials in the following format:
 
-```
+```text
 https://<user-name>:<token>@github.com
 ```
 
@@ -22,7 +22,7 @@ Replace `<user-name>` with your GitHub username and `<token>` with your personal
 
 Run the following command in your terminal to configure Git to use the credential helper that reads from the `.git-credentials` file:
 
-```
+```bash
 git config --local credential.helper "store --file .git-credentials"
 ```
 
@@ -30,7 +30,7 @@ git config --local credential.helper "store --file .git-credentials"
 
 Set or modify your Git remote URL to include your username. Use the following format:
 
-```
+```text
 https://<user-name>@github.com/<repo-path>.git
 ```
 
@@ -38,14 +38,16 @@ Replace `<user-name>` with your GitHub username and `<repo-path>` with the path 
 
 To add the origin remote:
 
-```
+```bash
 git remote add origin https://<user-name>@github.com/<repo-path>.git
 ```
 
 To edit the origin remote:
 
-```
+```bash
 git remote set-url origin https://<user-name>@github.com/<repo-path>.git
 ```
 
 This setup allows Git to automatically use your stored credentials for authentication with GitHub.
+
+> **Note**: More secure alternatives include SSH keys or GitHub CLI (`gh auth login`), which avoid storing tokens in plaintext files.

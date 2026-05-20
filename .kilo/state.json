@@ -1,0 +1,13 @@
+{
+  "current_todo_file": null,
+  "git_branch": "main",
+  "global_step": "1",
+  "current_task": {
+    "index": 0,
+    "description": "Waiting for initialization",
+    "sub_step": "1.0",
+    "sub_step_status": "PENDING",
+    "attempts": 0
+  },
+  "history": []
+}
