@@ -2,6 +2,12 @@
 
 All notable changes to the AI Agent Driven Development base project will be documented in this file.
 
+## 2026-05-20
+
+- Fixes mermaid diagram in README file
+- Removes workflows files under deprecated workflows folder (already moved to commands)
+- Removes this project's plan files
+
 ## 2026-05-19
 
 ### Changes

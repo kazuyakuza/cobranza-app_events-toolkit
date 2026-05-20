@@ -28,25 +28,27 @@ The project follows a standardized process for task execution, ensuring systemat
 
 ```mermaid
 graph TD
-    Start((Start)) --> Origin{Task Origin}
+    Start((Start)) --> Origin{1. Task Origin}
     Origin -- Chat --> CreateTodo[Create TODO file]
-    Origin -- TODO File --> ReadTodo[Read next TODO item]
-    CreateTodo --> GitSetup[Git Feature Branch Setup]
-    ReadTodo --> GitSetup
-    GitSetup --> VersionUpdate[Version Update]
+    Origin -- TODO File --> GitSetup[2. Git Feature Branch Setup]
+    CreateTodo --> GitSetup[2. Git Feature Branch Setup]
+    GitSetup --> VersionUpdate[3. Version Update]
     VersionUpdate --> Execution[Task Execution Loop]
     subgraph ExecutionProcess [4. Task Execution]
         Execution --> Analysis[4.1 Analysis & Planning]
         Analysis --> Implementation[4.2 Implementation]
         Implementation --> CodeReview[4.3 Code Review]
         CodeReview --> Documentation[4.4 Documentation]
-        Documentation --> ItemCompletion[4.5 Item Completion]
+        Documentation --> Check[4.5. Verification]
+        Check --> TaskCompletion[4.6 Task Completion]
     end
-    ItemCompletion -- More Items --> Execution
-    ItemCompletion -- All Items Done --> TodoCompletion[5. TODO File Completion]
-    TodoCompletion --> Continuation{Continuation}
-    Continuation -- More Files --> ReadTodo
-    Continuation -- Finished --> End((End))
+    TaskCompletion -- More Items --> Execution
+    TaskCompletion -- All Items Done --> TodoCompletion[5. TODO File Completion]
+    TodoCompletion --> Continuation{6. Continuation: more TODO files?}
+    Continuation -- Yes --> Ask{Ask User to Proceed}
+    Continuation -- No --> End((End))
+    Ask -- Yes --> GitSetup[2. Git Feature Branch Setup]
+    Ask -- No --> End((End))
 ```
 
 For full details, see [`critical-workflow.md`](.kilo/commands/critical-workflow.md).
