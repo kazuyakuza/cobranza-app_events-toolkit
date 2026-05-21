@@ -64,7 +64,7 @@ To initiate work with an AI agent, use one of the following copy-paste friendly 
 
 ```text
 follow /critical-workflow and full read @/AGENTS.md
-do: @/.agent/todos/<YYYYMMDD>/<YYYYMMDD}-todo-<number>.md
+do: @/.agent/todos/<YYYYMMDD>/<YYYYMMDD>-todo-<number>.md
 ```
 
 ### Option 2: Direct Chat Request
