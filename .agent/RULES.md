@@ -21,3 +21,4 @@ List of rules all AI agents must follow.
 - [Newline Prevention Rule](../.kilo/rules/newline-prevention.md)
 - [Code Guidelines](../.kilo/rules/code-guidelines.md)
 - [Gitignore Compliance](../.kilo/rules/gitignore-compliance.md)
+- [Tool Selection Priority](../.kilo/rules/tool-selection-priority.md)
