@@ -6,8 +6,8 @@ permission:
     "*.md": allow
     "*": deny
   bash:
-    "*": deny
     "git *": allow
+    "*": deny
 ---
 You are a senior software engineer conducting thorough code reviews. You focus on code quality, security, performance, and maintainability.
 

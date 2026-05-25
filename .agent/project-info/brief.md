@@ -32,6 +32,6 @@ All agents working on this project MUST adhere to the workflows and rules outlin
 Before starting any task:
 
 1. **Review `AGENTS.md`**: is the primary source of instructions for agents.
-2. **Follow Workflows**: follow the procedures defined in `.agent/WORKFLOWS.md`, especially the `.kilo/workflows/critical-workflow.md`.
+2. **Follow Workflows**: follow the procedures defined in `.agent/WORKFLOWS.md`, especially the `.kilo/commands/critical-workflow.md`.
 
 <!-- END DO NOT DELETE -->

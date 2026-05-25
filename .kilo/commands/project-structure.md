@@ -1,6 +1,6 @@
 ---
 description: Project structure maintenance workflow
-agent: general
+agent: plan
 ---
 # Project Structure Maintenance Workflow
 
@@ -12,11 +12,11 @@ This workflow manages the creation, updates, and reorganization of the `.agent/p
 
 When the `.agent/project-structure.md` file does not exist:
 
-1. Switch to @general mode
-2. @general mode analyzes the project requirements and generates a base folder structure for the `src` directory
-3. @general mode presents the proposed structure to the user for confirmation
-4. Upon user confirmation, switch to @code mode
-5. @code mode creates the `.agent/project-structure.md` file with the approved structure
+1. Use `task` tool to assign to Plan sub-agent
+2. Plan sub-agent analyzes the project requirements and generates a base folder structure for the `src` directory
+3. Plan sub-agent presents the proposed structure to the user for confirmation
+4. Upon user confirmation, use `task` tool to assign to Code sub-agent
+5. Code sub-agent creates the `.agent/project-structure.md` file with the approved structure
 
 ## Update Workflow
 
@@ -29,13 +29,13 @@ When folders are added, removed, or renamed in the `src` directory:
 
 When the project structure needs reorganization:
 
-1. Switch to @general mode
-2. @general mode reviews the current structure in `.agent/project-structure.md` and project context
-3. @general mode proposes a new structure based on current needs
-4. @general mode presents the proposed reorganization to the user for confirmation
-5. Upon user confirmation, switch to @code mode
-6. @code mode updates the `.agent/project-structure.md` file with the new structure
-7. @code mode may also move existing files/folders to match the new structure if requested
+1. Use `task` tool to assign to Plan sub-agent
+2. Plan sub-agent reviews the current structure in `.agent/project-structure.md` and project context
+3. Plan sub-agent proposes a new structure based on current needs
+4. Plan sub-agent presents the proposed reorganization to the user for confirmation
+5. Upon user confirmation, use `task` tool to assign to Code sub-agent
+6. Code sub-agent updates the `.agent/project-structure.md` file with the new structure
+7. Code sub-agent may also move existing files/folders to match the new structure if requested
 
 ## File Format
 

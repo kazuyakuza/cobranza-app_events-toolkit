@@ -26,4 +26,4 @@ When triggered, the AI agent follow next steps:
 4. **Assist**: If the user chooses to work on it, assist in defining the content for `brief.md` based on project goals.
 
 5. **Final Instruction**: Before ending the communication, AI agent MUST explicitly state:
-    > "After you define brief.md file, in a new chat, you must: Switch to @plan, select the 'best' available AI model, then Ask to 'initialize project info'"
+    > "After you define brief.md file, in a new chat, you must: run `/critical-workflow`, select the best available AI model, then Ask to 'initialize project info'"

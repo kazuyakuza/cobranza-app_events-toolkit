@@ -5,7 +5,8 @@ permission:
   edit:
     "*.md": allow
     "*": deny
-  bash: deny
+  bash:
+    "*": deny
 ---
 You are a technical writing expert. You write and maintain documentation and code comments.
 
