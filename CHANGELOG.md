@@ -2,6 +2,48 @@
 
 All notable changes to the AI Agent Driven Development base project will be documented in this file.
 
+## 2026-05-25
+
+### Changes
+
+#### Critical Workflow Enforcement
+
+- **Force Task Delegation**: All agent assignments in the critical workflow now use explicit `task` tool invocations instead of `@mentions`
+  - Added CRITICAL rule: Plan Agent MUST NOT assign the entire global plan or all 4.x steps to a single sub-agent
+  - Each sub-step (4.1-4.6) now requires a separate `task` tool invocation
+  - Updated all workflow examples and error handling to reference `task` tool
+  - Fixed typo in path templates: `<YYYYMMDD}` → `<YYYYMMDD>`
+
+#### Configuration Changes
+
+- **Plan Agent Prompt Externalized**: Moved Plan Agent behavior prompt from `kilo.jsonc` to dedicated `.kilo/modes/plan.md` file
+  - Simplified `kilo.jsonc` to only enable plan agent; no inline prompt
+  - Added `.kilo/commands/**/*.md` to instruction paths in config
+
+#### New Rules
+
+- **Tool Selection Priority Rule** (`.kilo/rules/tool-selection-priority.md`): Agents must prefer semantic/code-aware tools over raw file commands for code operations
+- **Gitignore Compliance Rule** (`.kilo/rules/gitignore-compliance.md`): Agents must verify `.gitignore` before every commit and ensure no ignored files are staged
+
+#### Agent Availability
+
+- **Custom Agents Always Available**: Changed all 4 custom agents (`code-reviewer`, `code-simplifier`, `docs-specialist`, `frontend-specialist`) from `mode: subagent` to `mode: all`
+- Normalized bash permission format across agent definitions
+
+#### New File: `.kilocodeignore`
+
+- Added `.kilocodeignore` to control codebase indexing exclusions: lock files, dependency directories, build outputs, binary/media assets, and IDE configs
+
+#### Minor Fixes and Updates
+
+- Updated `.agent/RULES.md`: Added links to the two new rules
+- Updated `.agent/project-structure.md`: Added `.kilo/modes/` directory reference
+- Updated `.agent/project-info/brief.md`: Added `.kilocodeignore` mention, fixed workflow path reference
+- Updated `.kilo/commands/project-structure.md`: Replaced `@general`/`@code` mentions with `Plan sub-agent`/`Code sub-agent` and `task` tool
+- Updated `.kilo/commands/project-info-init.md`: Replaced `@plan` with `/critical-workflow` command reference
+- Updated `.kilo/rules/important-paths.md`: Fixed typo in plan file path template
+- Updated `.kilo/rules/markdown-generation-rule.md`: Replaced `@agent` mentions with explicit agent names
+
 ## 2026-05-20
 
 - Fixes mermaid diagram in README file

@@ -11,7 +11,7 @@ The primary goal of this repository is to provide a clean, structured starting p
 ### Core Requirements
 
 - **Foundation**: A structured baseline for new repositories.
-- **AI-Readiness**: Integrated configurations to enable immediate and effective AI agent participation.
+- **AI-Readiness**: Integrated configurations (like `.kilo`, `.agent`, and `.kilocodeignore`) to enable immediate and effective AI agent participation.
 - **Standardization**: Established coding standards, workflows, and documentation practices.
 - **Project Info**: A persistent context and knowledge management system for agents.
 
@@ -20,7 +20,8 @@ The primary goal of this repository is to provide a clean, structured starting p
 Understanding the purpose of the configuration directories is key to effective development:
 
 - [`.agent/`](.agent/): Stores project-specific agent context. Includes the [`.agent/todos/`](.agent/todos/) directory for task tracking, local rules, and the [`project-structure.md`](.agent/project-structure.md) map.
-- [`.kilo/`](.kilo/): The operational core of the AI integration. Contains global [`.kilo/rules/`](.kilo/rules/), standardized [`.kilo/commands/`](.kilo/commands/) (workflows), and the [`.kilo/plans/`](.kilo/plans/) directory where agents store detailed implementation plans.
+- [`.kilo/`](.kilo/): The operational core of the AI integration. Contains global [`.kilo/rules/`](.kilo/rules/), standardized [`.kilo/commands/`](.kilo/commands/) (workflows), [`.kilo/modes/`](.kilo/modes/) for agent mode overrides, and the [`.kilo/plans/`](.kilo/plans/) directory where agents store detailed implementation plans.
+- [`.kilocodeignore`](.kilocodeignore): Controls which files are excluded from codebase indexing, skipping lock files, dependency directories, build outputs, and binary assets.
 
 ## The Critical Workflow
 
