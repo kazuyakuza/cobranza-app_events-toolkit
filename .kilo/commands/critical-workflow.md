@@ -82,11 +82,29 @@ IMPORTANT: `main` is master branch.
 - Process TODO tasks in file order.
 - Before new task, include step: Commit pending changes with meaningful message.
 - **CRITICAL**: Plan Agent MUST NOT assign the entire global plan or all 4.x steps for a task to a single sub-agent. Each step (4.1, 4.2, 4.3, 4.4, 4.5, 4.6) MUST be created as a separate `task` tool invocation.
+- **CRITICAL**: Do NOT call `plan_exit` at any point during this workflow. The Plan Agent remains in Plan mode as orchestrator for the entire TODO file lifecycle (Steps 1–6). All delegation to sub-agents happens exclusively via the `task` tool. `plan_exit` is only safe to call after Step 6 is fully complete.
+- **Compliance Self-Check**: Before executing any 4.x sub-step, the agent MUST verify: (a) Am I still the Plan Agent orchestrating via `task` tool? (b) Is this a single discrete sub-step assigned to the correct sub-agent type? If either answer is "no", stop and re-read this workflow from the beginning.
 - **For each task**: Global plan includes entries for 4.1 to 4.6, executed via sub-tasks using `task` tool.
 - Ask user for clarifications/plan confirmations as needed using `task` tool; assigns to Ask Agent.
 - Adhere to RULES.md and WORKFLOWS.md.
 - On failures: Pause and invoke Ask Agent for user intervention.
 - State Sync: when committed, update `.kilo/state.json` reflecting current and next sub-step status.
+
+#### Sub-Task Prompt Requirements
+
+Every `task` tool invocation from the Plan Agent MUST include the following preamble in the prompt, before the task-specific instructions:
+
+```
+SUB-AGENT TASK — SINGLE DISCRETE STEP
+- You are executing exactly ONE step of a larger Critical Workflow plan.
+- Do ONLY what is described below. Do NOT execute subsequent steps.
+- Do NOT read or expand scope to the global plan for other tasks.
+- Follow the Tool Selection Priority rule: prefer vscode-mcp-server_* and Bifrost_*
+  tools over bash for code operations. Reserve bash for git, npm, builds, tests.
+- Signal completion with a clear summary: what was done, what was NOT done.
+- If anything is ambiguous or outside your assigned scope, return the question
+  to the caller. Do NOT make assumptions.
+```
 
 #### 4.1. Analysis and Planning
 
@@ -169,6 +187,12 @@ IMPORTANT: `main` is master branch.
 - Check for any remaining TODO files.
 - If any: ask user to proceed. If yes, start with the next file in new chat.
 - If none: work finished.
+- **New Session Re-entry**: When a new session starts for Step 6 continuation:
+  1. Re-read this workflow document in full.
+  2. Read the saved global plan from `.kilo/plans/`.
+  3. Read `.kilo/state.json` to find the last completed sub-step.
+  4. Resume from the next incomplete sub-step via `task` tool delegations.
+  5. Do NOT execute tasks directly.
 
 ## Example (MUST READ)
 
