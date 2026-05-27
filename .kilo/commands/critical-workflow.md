@@ -25,6 +25,17 @@ Plan Agent MUST maintain the process state in `.kilo/state.json`.
 
 ## Steps
 
+### Sub-Agent Type Mapping
+
+The Plan Agent delegates sub-tasks using the `task` tool. The `subagent_type` parameter MUST match the mapping below. Do NOT use `general` for steps that have a specific type.
+
+| Step | `subagent_type` | Role |
+|------|----------------|------|
+| 2, 3, 4.2, 4.3-fix, 4.5, 4.6, 5 | `code` | Code sub-agent (implementation, git, builds) |
+| 4.1 | `plan` | Plan sub-agent (analysis, implementation plans) |
+| 4.3 | `code-reviewer` | Code Reviewer sub-agent (quality, plan deviations) |
+| 4.4 | `docs-specialist` | Docs Specialist sub-agent (comments, docs) |
+
 ### 1. Task Origin
 
 - **Chat**: If a task is shared in chat (unless user indicates a TODO file), create new TODO file in `.agent/todos/<YYYYMMDD>/<YYYYMMDD>-todo-<number>.md` with the request.
@@ -54,7 +65,7 @@ Plan Agent MUST maintain the process state in `.kilo/state.json`.
 
 ### 2. Git Feature Branch Setup
 
-Plan Agent includes this step in global plan; assigns Code sub-agent using `task` tool.
+Plan Agent includes this step in global plan; assigns code sub-agent using `task` tool with `subagent_type: "code"`.
 IMPORTANT: `main` is master branch.
 
 - Run `git status`: Commit unstaged files with meaningful message. **Before committing, follow [Gitignore Compliance Rule](../.kilo/rules/gitignore-compliance.md).**
@@ -71,7 +82,7 @@ IMPORTANT: `main` is master branch.
 
 ### 3. Version Update
 
-- Plan Agent includes this step in global plan; assigns Code sub-agent using `task` tool.
+- Plan Agent includes this step in global plan; assigns code sub-agent using `task` tool with `subagent_type: "code"`.
 - If version exists (e.g., `package.json`), increment per semver (patch for fixes, minor for features, major for breaking); commit as 'chore: bump version to x.y.z'.
 
 ### 4. Task Execution
@@ -83,7 +94,7 @@ IMPORTANT: `main` is master branch.
 - Before new task, include step: Commit pending changes with meaningful message.
 - **CRITICAL**: Plan Agent MUST NOT assign the entire global plan or all 4.x steps for a task to a single sub-agent. Each step (4.1, 4.2, 4.3, 4.4, 4.5, 4.6) MUST be created as a separate `task` tool invocation.
 - **CRITICAL**: Do NOT call `plan_exit` at any point during this workflow. The Plan Agent remains in Plan mode as orchestrator for the entire TODO file lifecycle (Steps 1–6). All delegation to sub-agents happens exclusively via the `task` tool. `plan_exit` is only safe to call after Step 6 is fully complete.
-- **Compliance Self-Check**: Before executing any 4.x sub-step, the agent MUST verify: (a) Am I still the Plan Agent orchestrating via `task` tool? (b) Is this a single discrete sub-step assigned to the correct sub-agent type? If either answer is "no", stop and re-read this workflow from the beginning.
+- **Compliance Self-Check**: Before executing any 4.x sub-step, the agent MUST verify: (a) Am I still the Plan Agent orchestrating via `task` tool? (b) Is this a single discrete sub-step assigned to the correct sub-agent type? (c) Am I using the correct `subagent_type` value as defined in the Sub-Agent Type Mapping table? If any answer is "no", stop and re-read this workflow from the beginning.
 - **For each task**: Global plan includes entries for 4.1 to 4.6, executed via sub-tasks using `task` tool.
 - Ask user for clarifications/plan confirmations as needed using `task` tool; assigns to Ask Agent.
 - Adhere to RULES.md and WORKFLOWS.md.
@@ -101,6 +112,8 @@ SUB-AGENT TASK — SINGLE DISCRETE STEP
 - Do NOT read or expand scope to the global plan for other tasks.
 - Follow the Tool Selection Priority rule: prefer vscode-mcp-server_* and Bifrost_*
   tools over bash for code operations. Reserve bash for git, npm, builds, tests.
+- The `subagent_type` parameter MUST match the type specified in the
+  Sub-Agent Type Mapping table for this step.
 - Signal completion with a clear summary: what was done, what was NOT done.
 - If anything is ambiguous or outside your assigned scope, return the question
   to the caller. Do NOT make assumptions.
@@ -108,8 +121,8 @@ SUB-AGENT TASK — SINGLE DISCRETE STEP
 
 #### 4.1. Analysis and Planning
 
-- **CRITICAL**: The Plan Agent (itself, via `task` tool to Plan sub-agent) executes 4.1. The code agent must NOT generate implementation plans.
-- **In global plan for each task**; assign it to Plan sub-agent using `task` tool.
+- **CRITICAL**: The Plan Agent (itself, via `task` tool to plan sub-agent with `subagent_type: "plan"`) executes 4.1. The code agent must NOT generate implementation plans.
+- **In global plan for each task**; assign it to plan sub-agent using `task` tool with `subagent_type: "plan"`.
 - Identify task ambiguities; analyze project status; research required techs, frameworks, libs, dependencies, and/or APIs.
 - Generate implementation plan following next process:
   1. Think high-level approach to implement 1 TODO file task, including steps for:
@@ -131,31 +144,31 @@ SUB-AGENT TASK — SINGLE DISCRETE STEP
   - global plan: Plan Agent sets a sub-task to generate a specific task's implementation plan.
   - sub-task: in new `task` tool invocation, Plan Agent analyzes->generates->returns the plan.
   - **Plan Agent verifies and, if approved, proceeds to assign sub-task for 4.2.**
-  - in new sub-task: Code sub-agent receives & follows implementation plan.
+  - in new sub-task: code sub-agent (`subagent_type: "code"`) receives & follows implementation plan.
 
 #### 4.2. Implementation
 
-- **In global plan for each task**; assign it to Code sub-agent using `task` tool.
+- **In global plan for each task**; assign it to code sub-agent using `task` tool with `subagent_type: "code"`.
 - In sub-task, Coder follows detailed steps from the implementation plan; checks plan between steps.
 - IMPORTANT: commit w/meaningful messages completed task. **Before committing, follow [Gitignore Compliance Rule](../.kilo/rules/gitignore-compliance.md).**
 
 #### 4.3. Code Review
 
-- **In global plan for each task**; assign it to Code Reviewer sub-agent using `task` tool.
+- **In global plan for each task**; assign it to code-reviewer sub-agent using `task` tool with `subagent_type: "code-reviewer"`.
 - Review for errors/deviations from the implementation plan.
 - Generates a new plan for fixes; [CRITICAL] save in `.kilo/plans/<YYYYMMDD>-<plan-name>.md`.
-- Plan Agent assigns new plan in a new sub-task to Code sub-agent using `task` tool.
+- Plan Agent assigns fix plan in a new sub-task to code sub-agent using `task` tool with `subagent_type: "code"`.
 - Max 3 review cycles; escalate to user.
 
 #### 4.4. Documentation
 
-- **In global plan for each task**; assign it to Docs Specialist sub-agent using `task` tool.
+- **In global plan for each task**; assign it to docs-specialist sub-agent using `task` tool with `subagent_type: "docs-specialist"`.
 - Adds code comments where needed.
 - Updates/Creates project's documentation (e.g., README, `/docs`).
 
 #### 4.5. Verification
 
-- **In global plan for each task**; assign it to Code sub-agent using `task` tool.
+- **In global plan for each task**; assign it to code sub-agent using `task` tool with `subagent_type: "code"`.
 - Check implementation plan adherence; commit unstaged files. **Before committing, follow [Gitignore Compliance Rule](../.kilo/rules/gitignore-compliance.md).**
 
 #### 4.6. Task Completion
@@ -166,13 +179,13 @@ SUB-AGENT TASK — SINGLE DISCRETE STEP
   - Section Item: to section's title.
   - Other: to somewhere; ask user if unclear.
   **Preserve the file original content**. Just add the `[DONE]` mark.
-- In sub-task assigned to Code sub-agent: commit changes with meaningful message; **before committing, follow [Gitignore Compliance Rule](../.kilo/rules/gitignore-compliance.md);** update `.kilo/state.json` setting `current_task.sub_step` to "4.6" and `sub_step_status` to "COMPLETED".
+- In sub-task assigned to code sub-agent (`subagent_type: "code"`): commit changes with meaningful message; **before committing, follow [Gitignore Compliance Rule](../.kilo/rules/gitignore-compliance.md);** update `.kilo/state.json` setting `current_task.sub_step` to "4.6" and `sub_step_status` to "COMPLETED".
 - Process each task in TODO file individually. Mark as done immediately after completion.
 
 ### 5. TODO File Completion
 
 - Include this step in global plan.
-- When all tasks marked as done (see step 4.6), rename TODO file with a `-DONE` suffix (e.g., `<YYYYMMDD>-todo-<number>-DONE.md`), and commit it in sub-task assigned to Code sub-agent.
+- When all tasks marked as done (see step 4.6), rename TODO file with a `-DONE` suffix (e.g., `<YYYYMMDD>-todo-<number>-DONE.md`), and commit it in sub-task assigned to code sub-agent (`subagent_type: "code"`).
   **Don't delete the file nor change its content.**
 - IMPORTANT: Ensure all files are committed in feature branch.
 - Merge feature branch:
@@ -214,17 +227,18 @@ Includes next steps:
 
 ```markdown
 - Step 1: Task Origin => Creates/reads TODO file.
-- Step 2: Git Feature Branch Setup => Assign to sub-agent (using `task` tool) for git cmds.
-- Step 3: Version Update => Assign to sub-agent (using `task` tool) to increment version if needed, then commit.
-- Task 1: 4.1. Analysis and Planning => Assign to sub-agent (using `task` tool): Generate & save Task 1 implementation plan; present for approval;
-- Task 1: 4.2. Implementation => Assign to sub-agent (using `task` tool): Follows plan for Task 1; commit.
-- Task 1: 4.3. Code Review => Assign to sub-agent (using `task` tool): Review code; fix Task 1 plan if needed.
-- Task 1: 4.4. Documentation => Assign to sub-agent (using `task` tool): Update docs & comments.
-- Task 1: 4.5. Verification => Assign to sub-agent (using `task` tool): Check plan adherence & commit unstaged files.
-- Task 1: 4.6. Task Completion => Assign to sub-agent (using `task` tool): Mark Task 1 as [DONE]; commit.
-- Task 2: 4.1. Analysis and Planning => Assign to sub-agent (using `task` tool): Generate & save Task 2 implementation plan; present for approval;
+- Step 2: Git Feature Branch Setup => Assign to code sub-agent (task tool, `subagent_type: "code"`) for git cmds.
+- Step 3: Version Update => Assign to code sub-agent (task tool, `subagent_type: "code"`) to increment version if needed, then commit.
+- Task 1: 4.1. Analysis and Planning => Assign to plan sub-agent (task tool, `subagent_type: "plan"`): Generate & save Task 1 implementation plan; present for approval;
+- Task 1: 4.2. Implementation => Assign to code sub-agent (task tool, `subagent_type: "code"`): Follows plan for Task 1; commit.
+- Task 1: 4.3. Code Review => Assign to code-reviewer (task tool, `subagent_type: "code-reviewer"`): Review code; generate fix plan if needed.
+- Task 1: 4.3-fix. Apply Fixes => Assign to code sub-agent (task tool, `subagent_type: "code"`): Apply fixes from review plan.
+- Task 1: 4.4. Documentation => Assign to docs-specialist (task tool, `subagent_type: "docs-specialist"`): Update docs & comments.
+- Task 1: 4.5. Verification => Assign to code sub-agent (task tool, `subagent_type: "code"`): Check plan adherence & commit unstaged files.
+- Task 1: 4.6. Task Completion => Assign to code sub-agent (task tool, `subagent_type: "code"`): Mark Task 1 as [DONE]; commit.
+- Task 2: 4.1. Analysis and Planning => Assign to plan sub-agent (task tool, `subagent_type: "plan"`): Generate & save Task 2 implementation plan; present for approval;
 - ... (repeat steps 4.2-4.6 for Task 2, then 3, then 4)
-- Step 5: TODO File Completion => Assign to sub-agent (using `task` tool): Add -DONE suffix; commit; merge branch; push.
+- Step 5: TODO File Completion => Assign to code sub-agent (task tool, `subagent_type: "code"`): Add -DONE suffix; commit; merge branch; push.
 - Step 6: Continuation => Check/ask for next.
 ```
 
