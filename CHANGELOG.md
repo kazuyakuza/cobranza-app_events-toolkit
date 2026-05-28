@@ -2,6 +2,22 @@
 
 All notable changes to the AI Agent Driven Development base project will be documented in this file.
 
+## 2026-05-28
+
+### Changes
+
+#### Custom Subagents: Architect and Implementer
+
+- **Created `architect` subagent** (`.kilo/agents/architect.md`): `mode: subagent`, `hidden: true`, read-only + `.md` edit, no bash, no task delegation. Used for Critical Workflow step 4.1 (task analysis and implementation planning). System prompt instructs agent to read project context files before generating plans.
+- **Created `implementer` subagent** (`.kilo/agents/implementer.md`): `mode: subagent`, `hidden: true`, full read/edit/bash/glob/grep access, no task delegation. Used for steps 2, 3, 4.2, 4.3-fix, 4.5, 4.6, 5. System prompt instructs agent to read `.kilo/rules/` for code standards instead of duplicating them inline.
+- **Converted custom agents to subagent-only**: Changed `code-reviewer`, `docs-specialist`, `code-simplifier`, `frontend-specialist` from `mode: all` to `mode: subagent` — they no longer appear as selectable primary agents.
+- **Updated Critical Workflow Sub-Agent Type Mapping**: Replaced `code` → `implementer` and `plan` → `architect` throughout `.kilo/commands/critical-workflow.md`. Added context-passing instructions requiring Plan Agent to include file paths and task context in task prompts.
+- **Updated project-structure command** (`.kilo/commands/project-structure.md`): Replaced `Plan sub-agent`/`Code sub-agent` with `Architect sub-agent`/`Implementer sub-agent` and explicit `subagent_type` values.
+
+#### Rationale
+
+Built-in `code` and `plan` agents are primary-only and cannot be delegated via the `task` tool, causing "Agent is a primary agent and cannot be used as a subagent" errors during Critical Workflow execution. Custom subagents with `mode: subagent` resolve this while keeping project-specific context instructions in their system prompts.
+
 ## 2026-05-27
 
 ### Changes
