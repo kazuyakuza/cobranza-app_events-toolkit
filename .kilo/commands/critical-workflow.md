@@ -140,7 +140,7 @@ Assign to implementer sub-agent (`subagent_type: "implementer"`).
   - Line Item: append to line.
   - Section Item: append to section title.
   - Other: ask user if unclear.
-  **Preserve the file original content** — just add the `[DONE]` mark.
+- Preserve the file original content, just add the `[DONE]` mark, and mark as done any task's sub-items (like `[]` to `[x]`).
 - Commit changes with meaningful message; **before committing, follow [Gitignore Compliance Rule](../.kilo/rules/gitignore-compliance.md).**
 - After implementer signals completion, Plan Agent updates `.kilo/state.json` setting `current_task.sub_step` to "4.6" and `sub_step_status` to `"COMPLETED"`.
 - Process each task individually; mark as done immediately after completion.
