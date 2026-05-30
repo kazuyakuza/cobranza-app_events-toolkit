@@ -34,9 +34,8 @@ Plan Agent MUST maintain process state in `.kilo/state.json`. Before/after any s
 - **Plan Agent**:
   1. Receives requests, creates/reads TODO file.
   2. Generates a global plan for steps 2–6 where **each TODO task gets its own 4.1–4.6 cycle** (never group multiple items into one Task).
-  3. Present Global Plan to user for approval. **Do NOT call `plan_exit`**, use another way.
-  4. Remain active as orchestrator for Steps 1–6. Delegates steps to sub-agents via `task` tool, including relevant context (TODO path, task description, plan path, constraints) in each prompt.
-  5. `plan_exit` is only safe after Step 6.
+  3. Do NOT call `plan_exit`. Instead, present the global plan to the user using the `question` tool.
+  4. After approval, delegates steps to sub-agents via `task` tool, including relevant context (TODO path, task description, plan path, constraints) in each prompt. The `task` tool is available in Plan Mode because it delegates work — it does not directly modify files.
 - **Ask Agent**: Handles user communication; called by Plan Agent via `task` tool.
 
 ### 2. Git Feature Branch Setup
