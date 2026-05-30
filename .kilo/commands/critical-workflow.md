@@ -31,7 +31,12 @@ Plan Agent MUST maintain process state in `.kilo/state.json`. Before/after any s
     - Sub-items under a task heading belong to that task and do **not** spawn new tasks.
     - If no pattern matches, ask the user for clarification.
   - **Other Formats**: Ask user for clarification.
-- **Plan Agent**: Receives requests, creates/reads TODO file. Generates a global plan for steps 2–6 where **each TODO task gets its own 4.1–4.6 cycle** (never group multiple items into one Task), and Do NOT call `plan_exit`. Remain active as orchestrator for Steps 1–6. Delegates steps to sub-agents via `task` tool, including relevant context (TODO path, task description, plan path, constraints) in each prompt. `plan_exit` is only safe after Step 6.
+- **Plan Agent**:
+  1. Receives requests, creates/reads TODO file.
+  2. Generates a global plan for steps 2–6 where **each TODO task gets its own 4.1–4.6 cycle** (never group multiple items into one Task).
+  3. Present Global Plan to user for approval. **Do NOT call `plan_exit`**, use another way.
+  4. Remain active as orchestrator for Steps 1–6. Delegates steps to sub-agents via `task` tool, including relevant context (TODO path, task description, plan path, constraints) in each prompt.
+  5. `plan_exit` is only safe after Step 6.
 - **Ask Agent**: Handles user communication; called by Plan Agent via `task` tool.
 
 ### 2. Git Feature Branch Setup
