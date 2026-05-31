@@ -8,11 +8,11 @@ It is **EXTREMELY IMPORTANT** that all AI agents follow this workflow step by st
 
 ## State Tracking
 
-Plan Agent MUST maintain process state in `.kilo/state.json`. Before/after any step or sub-step (1–6, including 4.1–4.6), delegate `state.json` updates to implementer sub-agent via `task` tool with `subagent_type: "implementer"` for all state mutations. Before each step, confirm `sub_step_status` is `"COMPLETED"`. The `git_branch` key must match the active local git branch.
+Plan Agent MUST maintain process state in `.kilo/state.json` via `task` tool. Before/after any step or sub-step (1–6, including 4.1–4.6), delegate `state.json` updates to implementer sub-agent via `task` tool with `subagent_type: "implementer"`. Before each step, confirm `sub_step_status` is `"COMPLETED"`. The `git_branch` key must match the active local git branch.
 
 ### State Ownership
 
-- **ONLY the Plan Agent** orchestrates `.kilo/state.json` lifecycle.
+- Plan Agent orchestrates `.kilo/state.json` lifecycle.
 - The Plan Agent **reads** `state.json` directly to track progress.
 - The Plan Agent delegates `state.json` **writes** to implementer sub-agent via `task` tool (`subagent_type: "implementer"`).
 - Sub-agents report completion in their return message; the Plan Agent then delegates the `state.json` update via `task` tool before dispatching the next sub-task.

@@ -3,7 +3,9 @@ description: Executes code implementation, git operations, builds, and tests fol
 mode: subagent
 permission:
   read: allow
-  edit: allow
+  edit:
+    ".kilo/state.json": allow
+    "*": allow
   bash: allow
   glob: allow
   grep: allow
@@ -34,9 +36,9 @@ Before executing any implementation step, read these project files:
 
 ## Tool Preference
 
-- Code reading/searching/navigation: vscode-mcp-server_* and Bifrost_* tools.
+- Code reading/searching/navigation: `vscode-mcp-server_*` and `Bifrost_*` tools.
 - Git, npm, builds, tests: bash tool.
-- NEVER use bash for file manipulation or code refactoring.
+- Try to NEVER use bash for file manipulation or code refactoring.
 
 ## Boundaries
 
