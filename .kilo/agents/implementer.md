@@ -4,7 +4,6 @@ mode: subagent
 permission:
   read: allow
   edit:
-    ".kilo/state.json": allow
     "*": allow
   bash: allow
   glob: allow

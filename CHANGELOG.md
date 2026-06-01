@@ -2,6 +2,24 @@
 
 All notable changes to the AI Agent Driven Development base project will be documented in this file.
 
+## 2026-06-01
+
+### Changes
+
+#### State Tracking: JSON → Markdown with Direct Plan Agent Editing
+
+- **Replaced `.kilo/state.json` with `.kilo/state.md`**: State file converted from JSON to human-readable markdown format. Same fields preserved (`Current TODO File`, `Git Branch`, `Global Step`, `Current Task`, `History`).
+- **Removed implementer delegation for state writes**: Plan Agent now reads and writes `.kilo/state.md` directly — no `task` tool round-trips to implementer sub-agent required. Eliminates Permission complexity and reduces workflow overhead.
+- **Updated `critical-workflow.md`**: Replaced `### State Ownership` delegation model with direct-edit model; updated all 5 `state.json`/delegation references to `state.md`/direct-edit.
+- **Updated `kilo.jsonc`**: Edit Permission `.kilo/state.json` → `.kilo/state.md`.
+- **Updated `implementer.md`**: Removed `.kilo/state.json` from edit permissions (implementer no longer writes state).
+- **Updated `military-mode-communication.md`**: Removed state tracking reference (`state.json`) — Plan Agent now manages state directly.
+- **Deleted `.kilo/state.json`**.
+
+::: details Rationale
+The `state.json` write-delegation pattern forced every state update through an implementer sub-agent `task` invocation, causing Permission failures in downstream projects and adding significant overhead. Markdown format is easier to debug and the Plan Agent can edit it directly without delegation.
+:::
+
 ## 2026-05-28
 
 ### Changes

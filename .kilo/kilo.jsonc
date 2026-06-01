@@ -11,7 +11,7 @@
   ],
   "permission": {
     "edit": {
-      ".kilo/state.json": "allow",
+      ".kilo/state.md": "allow",
       "src/**": "allow",
       ".agent/project-info/**": "allow",
       ".agent/todos/**": "allow",

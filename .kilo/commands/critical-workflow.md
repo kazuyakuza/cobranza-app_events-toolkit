@@ -8,20 +8,27 @@ It is **EXTREMELY IMPORTANT** that all AI agents follow this workflow step by st
 
 ## State Tracking
 
-Plan Agent MUST maintain process state in `.kilo/state.json` via `task` tool. Before/after any step or sub-step (1–6, including 4.1–4.6), delegate `state.json` updates to implementer sub-agent via `task` tool with `subagent_type: "implementer"`. Before each step, confirm `sub_step_status` is `"COMPLETED"`. The `git_branch` key must match the active local git branch.
+Plan Agent MUST maintain process state in `.kilo/state.md`:
 
-### State Ownership
-
-- Plan Agent orchestrates `.kilo/state.json` lifecycle.
-- The Plan Agent **reads** `state.json` directly to track progress.
-- The Plan Agent delegates `state.json` **writes** to implementer sub-agent via `task` tool (`subagent_type: "implementer"`).
-- Sub-agents report completion in their return message; the Plan Agent then delegates the `state.json` update via `task` tool before dispatching the next sub-task.
+- Plan Agent **reads** `.kilo/state.md` before each step to confirm `Sub Step Status` is `COMPLETED`.
+- Plan Agent **writes** `.kilo/state.md` after each step/sub-step (1–6, including 4.1–4.6) completes.
+- The `Git Branch` value must match the active local git branch.
+- State fields:
+  - `Current TODO File`: path to the TODO file being processed (or `null`)
+  - `Git Branch`: active local git branch name
+  - `Global Step`: current step number (1–6)
+  - `Current Task > Index`: task index within TODO file
+  - `Current Task > Description`: task description
+  - `Current Task > Sub Step`: current sub-step (e.g. "4.1")
+  - `Current Task > Sub Step Status`: PENDING, IN_PROGRESS, or COMPLETED
+  - `Current Task > Attempts`: retry counter
+  - `History`: chronological list of completed steps
 
 ## Steps
 
 ### 1. Task Origin
 
-- On start: if `current_todo_file` is `null` or differs from the TODO file being processed, reset `history` to `[]`, set `current_todo_file` to the new path, and reset `current_task` to `{ index: 0, description: "Starting", sub_step: "2.0", sub_step_status: "PENDING", attempts: 0 }`.
+- On start: if `Current TODO File` is `null` or differs from the TODO file being processed, reset `History` to `*(empty)*`, set `Current TODO File` to the new path, and reset `Current Task` to `Index: 0, Description: "Starting", Sub Step: "2.0", Sub Step Status: PENDING, Attempts: 0`.
 - **Chat**: If a task is shared in chat (unless user indicates a TODO file), create new TODO file in `.agent/todos/<YYYYMMDD>/<YYYYMMDD>-todo-<number>.md` with the request.
 - **TODO File**: Primary source is `.agent/todos` directory; process files in chronological/numerical order; skip files with `-DONE` suffix.
 - **TODO File Format**:
@@ -71,7 +78,7 @@ Plan Agent assigns implementer sub-agent (`subagent_type: "implementer"`).
 - Process TODO tasks in file order. Before a new task, commit pending changes.
 - For each task, global plan includes entries for 4.1–4.6 via sub-tasks.
 - On failures: pause and invoke Ask Agent for user intervention.
-- State Sync: Plan Agent delegates `.kilo/state.json` updates to implementer sub-agent via `task` tool after each sub-agent signals completion.
+- State Sync: Plan Agent updates `.kilo/state.md` directly after each sub-agent signals completion.
 - **Context Passing**: When delegating via `task` tool, include relevant context (TODO path, task description, plan path, constraints) in the prompt. Sub-agents read project context files independently.
 
 #### Sub-Task Prompt Requirements
@@ -146,7 +153,7 @@ Assign to implementer sub-agent (`subagent_type: "implementer"`).
   - Other: ask user if unclear.
 - Preserve the file original content, just add the `[DONE]` mark, and mark as done any task's sub-items (like `[]` to `[x]`).
 - Commit changes with meaningful message; **before committing, follow [Gitignore Compliance Rule](../.kilo/rules/gitignore-compliance.md).**
-- After implementer signals completion, Plan Agent delegates `.kilo/state.json` update via `task` tool to implementer sub-agent, setting `current_task.sub_step` to "4.6" and `sub_step_status` to `"COMPLETED"`.
+- After implementer signals completion, Plan Agent updates `.kilo/state.md` directly, setting `Current Task > Sub Step` to "4.6" and `Sub Step Status` to `COMPLETED`.
 - Process each task individually; mark as done immediately after completion.
 
 ### 5. TODO File Completion
@@ -154,7 +161,7 @@ Assign to implementer sub-agent (`subagent_type: "implementer"`).
 Plan Agent assigns implementer sub-agent (`subagent_type: "implementer"`).
 
 - When all tasks marked as done (see step 4.6), rename TODO file with `-DONE` suffix (e.g., `<YYYYMMDD>-todo-<number>-DONE.md`). **Don't delete the file or change its content.**
-- The Plan Agent delegates to implementer sub-agent via `task` tool: clear `state.json` history to `[]`; set `current_todo_file` to `null`; set `current_task.sub_step_status` to `"COMPLETED"`.
+- The Plan Agent updates `.kilo/state.md` directly: clear `History` to `*(empty)*`; set `Current TODO File` to `null`; set `Current Task > Sub Step Status` to `COMPLETED`.
 - Ensure all files are committed in feature branch.
 - Merge feature branch:
   1. Switch to `main` branch.
@@ -207,6 +214,4 @@ Each entry is a separate `task` tool invocation with the appropriate `subagent_t
 
 - On errors: log details, commit safe changes if possible, notify user, and pause.
 - If endless loops or repeated failures occur, escalate to user immediately.
-- If a sub-step (4.1–4.6) fails verification, Plan Agent reassigns the sub-task or escalates to user.s, commit safe changes if possible, notify user, and pause.
-- If endless loops or repeated failures occur, escalate to user immediately.
-- **If a sub-step (4.1-4.6) fails verification (e.g., no completion signal or non-compliance), Plan agent reassigns the sub-task or escalates to user.**
+- If a sub-step (4.1–4.6) fails verification (e.g., no completion signal or non-compliance), Plan Agent reassigns the sub-task or escalates to user.

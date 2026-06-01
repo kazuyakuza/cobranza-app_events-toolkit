@@ -39,10 +39,12 @@ When the project structure needs reorganization:
 
 ## File Format
 
-- One folder path per line
-- Format: `folder/path/ - brief comment for AI agent`
+- Section headers separate categories: `# Folders in src/` and `# Other folders`
+- Under `# Folders in src/`: one folder path per line using bullet-point format (`- folder/path/ - brief comment for AI agent`)
+- Under `# Other folders`: project-level directories that support development (e.g., `.kilo/modes/`, `docs/`)
 - Comments should be minimal and focused on the folder's purpose from an AI agent's perspective
-- Only folders inside `src` are documented (not files)
+- Only folders are documented (not files)
+- Empty sections use `# (no folders yet)` placeholder
 
 ## Enforcement
 
