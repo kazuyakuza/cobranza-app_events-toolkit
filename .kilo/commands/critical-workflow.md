@@ -24,7 +24,7 @@ It is **EXTREMELY IMPORTANT** that all AI agents follow this workflow step by st
 - **Plan Agent**:
   1. Receives requests, creates/reads TODO file.
   2. Generates a global plan file for steps 2–6 where **each TODO task gets its own 4.1–4.6 cycle** (never group multiple items into one Task).
-  3. Do NOT call `plan_exit`. Instead, present the global plan to the user using the `question` tool.
+  3. Do NOT call `plan_exit`. Instead, present the global plan to the user using the `question` tool (include "Approve this and all 4.1 Future Plans" option); or auto-approve if request or TODO file includes "Don't request me to approve plans".
   4. After approval, delegates steps to sub-agents via `task` tool, including relevant context (TODO path, task description, plan path, constraints) in each prompt.
 - **Ask Agent**: Handles user communication; called by Plan Agent via `task` tool.
 
@@ -57,31 +57,27 @@ Plan Agent assigns implementer sub-agent (`subagent_type: "implementer"`).
 - **CRITICAL**: Each step (4.1–4.6) MUST be a separate `task` tool invocation. Do NOT assign the entire global plan or all 4.x steps for a task to a single sub-agent.
 - **Compliance Self-Check**: Before any 4.x sub-step, verify you are the Plan Agent orchestrating via `task` tool, the sub-step uses the correct `subagent_type`, and the task maps 1:1 to a single TODO item. If not, stop and re-read this workflow.
 - Process TODO tasks in file order. Before a new task, commit pending changes.
-- For each task, global plan includes entries for 4.1–4.6 via sub-tasks.
 - On failures: pause and invoke Ask Agent for user intervention.
-- **Context Passing**: When delegating via `task` tool, include relevant context (TODO path, task description, plan path, constraints) in the prompt. Sub-agents read project context files independently.
+- **Context Passing**: when delegating via `task` tool, include relevant context (TODO path, task description, plan path, constraints, etc) in the prompt. Sub-agents read project context files independently.
 
 #### Sub-Task Prompt Requirements
 
 Every `task` tool invocation from the Plan Agent MUST include this preamble before task-specific instructions:
 
-```
+```text
 SUB-AGENT TASK — SINGLE DISCRETE STEP
 - You are executing exactly ONE step of a larger Critical Workflow plan.
 - Do ONLY what is described below. Do NOT execute subsequent steps.
 - Do NOT read or expand scope to the global plan for other tasks.
-- Follow the Tool Selection Priority rule: prefer vscode-mcp-server_* and Bifrost_*
-  tools over bash for code operations. Reserve bash for git, npm, builds, tests.
-- The `subagent_type` parameter MUST match the type specified in the
-  workflow step description for this step.
+- Prefer mcp tools, like vscode-mcp-server_* and Bifrost_*. Tools over bash for code operations. Reserve bash for git/npm/builds/tests.
+- The subagent_type parameter MUST match the type specified in the workflow step description for this step.
 - Signal completion with a clear summary: what was done, what was NOT done.
-- If anything is ambiguous or outside your assigned scope, return the question
-  to the caller. Do NOT make assumptions.
+- If anything is ambiguous or outside your assigned scope, return question to caller. Do NOT make assumptions.
 ```
 
 #### 4.1. Analysis and Planning
 
-Assign to architect sub-agent (`subagent_type: "architect"`). The implementer agent must NOT generate implementation plans.
+Assign to architect sub-agent (`subagent_type: "architect"`).
 
 - Identify task ambiguities; analyze project status; research required techs, frameworks, libs, dependencies, and/or APIs.
 - Generate implementation plan:
@@ -89,10 +85,11 @@ Assign to architect sub-agent (`subagent_type: "architect"`). The implementer ag
   2. Use approach to define extensive implementation plan with tiny, detailed steps; include clear file names/paths, structure, code snippets, terminal cmd details, etc.
   3. [CRITICAL] Save to `.kilo/plans/<YYYYMMDD>-<plan-name>.md`.
   4. Compare to original task; redo if incorrect.
-- **Plan Agent shows plan to user for approval**.
+- Returns plan so **Plan Agent presents it to user for approval**.
+  - Do NOT call `plan_exit`. Instead, use the `question` tool.
   - Auto-approve if request or TODO file includes "Don't request me to approve plans".
   - If feedback/rejection: re-do and re-present.
-- Plan Agent verifies and, if approved, proceeds to assign sub-task for 4.2.
+  - If approved, proceed.
 
 #### 4.2. Implementation
 

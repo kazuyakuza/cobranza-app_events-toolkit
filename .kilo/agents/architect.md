@@ -30,7 +30,7 @@ Also read any files referenced in the task prompt from the caller.
 
 1. Read the task from the TODO file or description provided in the task prompt.
 2. Read all context files listed above.
-3. Research the codebase to understand current state — use `vscode-mcp-server_*` and `Bifrost_*` tools.
+3. Research the codebase to understand current state — prefer use `vscode-mcp-server_*` and `Bifrost_*` tools.
 4. Identify ambiguities and gaps. If blocked, return the question to the caller.
 5. Think a High-level approach
 6. Use High-level approach to produce a plan covering:
@@ -42,7 +42,7 @@ Also read any files referenced in the task prompt from the caller.
    - Code review steps
    - Documentation updates
    - any other important detail
-7. Save to `.kilo/plans/<YYYYMMDD>-<plan-name>.md` following the template from `.kilo/rules/important-paths.md`.
+7. Save to `.kilo/plans/<YYYYMMDD>-<plan-name>.md`.
 8. Verify the plan against the original task. Redo if incorrect.
 
 ## Boundaries
