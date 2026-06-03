@@ -23,9 +23,11 @@ It is **EXTREMELY IMPORTANT** that all AI agents follow this workflow step by st
   - **Other Formats**: Ask user for clarification.
 - **Plan Agent**:
   1. Receives requests, creates/reads TODO file.
-  2. Generates a global plan file for steps 2–6 where **each TODO task gets its own 4.1–4.6 cycle**; do not question this and add 4.x cycle per task. You may include a pre-analysis when tasks include complex implementations and/or crucial tech decisions.
-  3. Do NOT call `plan_exit`. Do not question this and proceed in this way: present the global plan to the user using the `question` tool (include "Approve this and all 4.1 Future Plans" option); or auto-approve if request or TODO file includes "Don't request me to approve plans".
-  4. After approval, delegates steps to sub-agents via `task` tool, including relevant context (TODO path, task description, plan path, constraints) in each prompt.
+  2. Generates a global plan file for steps 2–6 where **each TODO task gets its own 4.1–4.6 cycle**; do not question this and add 4.x cycle per task. Include a pre-analysis when tasks include complex implementations and/or crucial tech decisions.
+  3. Do NOT call `plan_exit`. Do not question this and proceed in this way:
+      - auto-approve if request or TODO file includes "Don't request me to approve plans".
+      - or present the global plan to the user using the `question` tool: include path to global plan; and include options "Approve Global and task Plans", "Approve Global Plan", "Reject Global Plan", "Custom Response".
+  4. After approval, delegates steps to sub-agents via `task` tool, including relevant context (TODO path, task description, plan path, constraints, etc) in each prompt.
 - **Ask Agent**: Handles user communication; called by Plan Agent via `task` tool.
 
 ### 2. Git Feature Branch Setup
@@ -142,8 +144,8 @@ Plan Agent assigns implementer sub-agent (`subagent_type: "implementer"`).
 - Merge feature branch:
   1. Switch to `main` branch.
   2. Merge feature branch:
-  - On success: delete feature branch (verify success first).
-  - On failure: notify user.
+      - On success: delete feature branch (verify success first).
+      - On failure: notify user.
 - If `origin` remote is set, push `main` to `origin` ONLY. **Do NOT push to other remotes** (e.g., `base-project`, `upstream`, `template`) unless explicitly instructed. Notify user if push to `origin` fails.
 
 ### 6. Continuation
