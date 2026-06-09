@@ -23,10 +23,10 @@ It is **EXTREMELY IMPORTANT** that all AI agents follow this workflow step by st
   - **Other Formats**: Ask user for clarification.
 - **Plan Agent**:
   1. Receives requests, creates/reads TODO file.
-  2. Generates a global plan file for steps 2–6 where **each TODO task gets its own 4.1–4.6 cycle**; do not question this and add 4.x cycle per task. Include a pre-analysis when tasks include complex implementations and/or crucial tech decisions.
+  2. Generates a global plan file for steps 2–6 where **each TODO task gets its own 4.1–4.6 cycle**; do not question this and add 4.x cycle per task. Include a global and per task pre-analysis.
   3. Do NOT call `plan_exit`. Do not question this and proceed in this way:
       - auto-approve if request or TODO file includes "Don't request me to approve plans".
-      - or present the global plan to the user using the `question` tool: include path to global plan; and include options "Approve Global and task Plans", "Approve Global Plan", "Reject Global Plan", "Custom Response".
+      - otherwise present the global plan to the user using the `question` tool: include global plan path and options "Approve Global and task Plans", "Approve Global Plan", "Reject Global Plan".
   4. After approval, delegates steps to sub-agents via `task` tool, including relevant context (TODO path, task description, plan path, constraints, etc) in each prompt.
 - **Ask Agent**: Handles user communication; called by Plan Agent via `task` tool.
 
@@ -61,7 +61,7 @@ Assigns to implementer sub-agent (`subagent_type: "implementer"`).
 - **Compliance Self-Check**: Before any 4.x sub-step, verify you are the Plan Agent orchestrating via `task` tool, the sub-step uses the correct `subagent_type`, and the task maps 1:1 to a single TODO item. If not, stop and re-read this workflow.
 - Process TODO tasks in file order. Before a new task, commit pending changes.
 - On failures: pause and invoke Ask Agent for user intervention.
-- **Context Passing**: when delegating via `task` tool, include relevant context (TODO path, task description, plan path, constraints, etc) in the prompt. Sub-agents read project context files independently.
+- **Context Passing**: on delegating via `task` tool, include relevant context (TODO file path, task description, plan path, constraints, global/task pre-analysis, etc) in the prompt. Sub-agents read project context files independently.
 
 #### Sub-Task Prompt Requirements
 
@@ -72,7 +72,7 @@ SUB-AGENT TASK — SINGLE DISCRETE STEP
 - You are executing exactly ONE step of a larger Critical Workflow plan.
 - Do ONLY what is described below. Do NOT execute subsequent steps.
 - Do NOT read or expand scope to the global plan for other tasks.
-- Prefer mcp tools, like vscode-mcp-server_* and Bifrost_*. Tools over bash for code operations. Reserve bash for git/npm/builds/tests.
+- Tools preference: .kilo/rules/tool-selection-priority.md.
 - Follow [Gitignore Compliance Rule](../.kilo/rules/gitignore-compliance.md)
 - The subagent_type parameter MUST match the type specified in the workflow step description for this step.
 - Signal completion with a clear summary: what was done, what was NOT done.

@@ -34,9 +34,7 @@ Before executing any implementation step, read these project files:
 
 ## Tool Preference
 
-- Code reading/searching/navigation: `vscode-mcp-server_*` and `Bifrost_*` tools.
-- Git, npm, builds, tests: bash tool.
-- Try to NEVER use bash for file manipulation or code refactoring.
+See .kilo/rules/tool-selection-priority.md.
 
 ## Boundaries
 
