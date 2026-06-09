@@ -1,0 +1,28 @@
+{
+  "$schema": "https://app.kilo.ai/config.json",
+  "agent": {
+    "plan": {
+      "enabled": true
+    }
+  },
+  "instructions": [
+    ".kilo/rules/**/*.md",
+    ".kilo/commands/**/*.md"
+  ],
+  "permission": {
+    "edit": {
+      "src/**": "allow",
+      ".agent/project-info/**": "allow",
+      ".agent/todos/**": "allow",
+      ".agent/project-structure.md": "allow",
+      ".kilo/plans/**": "allow",
+      "docs/**": "allow",
+      ".gitignore": "allow",
+      ".kilocodeignore": "allow",
+      "CHANGELOG.md": "allow",
+      "LICENSE": "allow",
+      "README.md": "allow",
+      "*": "ask"
+    }
+  }
+}
