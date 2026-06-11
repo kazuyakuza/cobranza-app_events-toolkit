@@ -7,7 +7,7 @@ permission:
   bash: allow
   glob: allow
   grep: allow
-  task: allow
+  task: deny
   webfetch: allow
   mcp: allow
 hidden: true
@@ -33,7 +33,7 @@ Before executing any implementation step, read these project files:
 5. Commit with meaningful messages.
 6. Verify each commit with `git status`.
 
-## Tools
+## Available Tools
 
 - `read` — read implementation plans, rules, and source files
 - `edit` / `write` — implement code changes, create new files
@@ -42,8 +42,7 @@ Before executing any implementation step, read these project files:
 - `glob` — find files by name
 - `bash` — CLI operations: git (commit, branch, merge), npm/yarn/pnpm (install, build, test), and other dev commands
 - `webfetch` — research when needed for implementation
-- `task` — delegate sub-tasks when specified by the plan
-- **RESTRICTIONS**: 
+- **RESTRICTIONS**:
   - NEVER push to remotes other than `origin`
   - NEVER run `git push --force` to main/master
   - NEVER use `git commit --amend` unless explicitly authorized
