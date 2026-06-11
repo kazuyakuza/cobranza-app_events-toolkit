@@ -7,8 +7,9 @@ permission:
   bash: allow
   glob: allow
   grep: allow
-  task: deny
+  task: allow
   webfetch: allow
+  mcp: allow
 hidden: true
 ---
 

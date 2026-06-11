@@ -7,8 +7,9 @@ permission:
     "*.md": allow
     "*": deny
   bash: deny
-  task: deny
+  task: allow
   webfetch: allow
+  mcp: true
 hidden: true
 ---
 
@@ -49,3 +50,7 @@ Also read any files referenced in the task prompt from the caller.
 
 - Plan only. Do NOT write implementation code, run git commands, or modify non-.md files.
 - Return the plan for approval. Do NOT proceed to implementation.
+
+## Tool Preference
+
+See .kilo/rules/tool-selection-priority.md.
