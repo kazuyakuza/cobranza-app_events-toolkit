@@ -10,6 +10,8 @@ permission:
   task: allow
   webfetch: allow
   mcp: allow
+  grep: allow
+  glob: allow
 hidden: true
 ---
 
@@ -51,6 +53,13 @@ Also read any files referenced in the task prompt from the caller.
 - Plan only. Do NOT write implementation code, run git commands, or modify non-.md files.
 - Return the plan for approval. Do NOT proceed to implementation.
 
-## Tool Preference
+## Tools
 
-See .kilo/rules/tool-selection-priority.md.
+- `read` — read project context, code files, and documentation
+- `mcp` (vscode-mcp-server_*, Bifrost_*) — semantic code analysis, navigation, and exploration
+- `grep` — search codebase for patterns
+- `glob` — find files by name pattern
+- `webfetch` — research external technologies, APIs, and documentation
+- `task` — delegate sub-tasks to other agents if needed
+- `edit` / `write` — create and update plan files (`.md` only)
+- **FORBIDDEN**: `bash` — no CLI operations; no modifying non-`.md` source files
