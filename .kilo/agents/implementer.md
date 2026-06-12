@@ -7,7 +7,7 @@ permission:
   bash: allow
   glob: allow
   grep: allow
-  task: allow
+  task: deny
   webfetch: allow
   mcp: allow
 hidden: true
@@ -33,9 +33,20 @@ Before executing any implementation step, read these project files:
 5. Commit with meaningful messages.
 6. Verify each commit with `git status`.
 
-## Tool Preference
+## Available Tools
 
-See .kilo/rules/tool-selection-priority.md.
+- `read` — read implementation plans, rules, and source files
+- `edit` / `write` — implement code changes, create new files
+- `mcp` (vscode-mcp-server_*, Bifrost_*) — structured code editing: rename, move, replace lines, create files; semantic code analysis
+- `grep` — search codebase for patterns
+- `glob` — find files by name
+- `bash` — CLI operations: git (commit, branch, merge), npm/yarn/pnpm (install, build, test), and other dev commands
+- `webfetch` — research when needed for implementation
+- **RESTRICTIONS**:
+  - NEVER push to remotes other than `origin`
+  - NEVER run `git push --force` to main/master
+  - NEVER use `git commit --amend` unless explicitly authorized
+  - Read `.gitignore` before every commit; verify no gitignored files are staged
 
 ## Boundaries
 
