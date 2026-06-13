@@ -1,9 +1,11 @@
 import { DynamicModule, Module, Provider, Type, ForwardReference } from '@nestjs/common';
+import { DiscoveryModule } from '@nestjs/core';
 import { JetStreamClient, NatsConnection } from 'nats';
 import { EventLoggerService } from '../logging/event-logger.service';
 import { ConsumerService } from './consumer.service';
 import { JetStreamConsumerService } from './jetstream-consumer.service';
 import { JETSTREAM_CONSUMER_DEPS_TOKEN } from './jetstream-consumer-deps.interface';
+import { OnEventExplorer } from './decorators/on-event.explorer';
 
 /** Injection token for resolved {@link ConsumerModuleOptions}. */
 export const CONSUMER_MODULE_OPTIONS = 'CONSUMER_MODULE_OPTIONS';
@@ -65,8 +67,9 @@ export class ConsumerModule {
     return {
       module: ConsumerModule,
       global: true,
-      providers: [depsProvider, ConsumerService, JetStreamConsumerService],
-      exports: [ConsumerService, JetStreamConsumerService],
+      imports: [DiscoveryModule],
+      providers: [depsProvider, ConsumerService, JetStreamConsumerService, OnEventExplorer],
+      exports: [ConsumerService, JetStreamConsumerService, OnEventExplorer],
     };
   }
 
@@ -99,9 +102,9 @@ export class ConsumerModule {
     return {
       module: ConsumerModule,
       global: true,
-      imports: asyncOptions.imports ?? [],
-      providers: [optionsProvider, depsProvider, ConsumerService, JetStreamConsumerService],
-      exports: [ConsumerService, JetStreamConsumerService],
+      imports: [DiscoveryModule, ...(asyncOptions.imports ?? [])],
+      providers: [optionsProvider, depsProvider, ConsumerService, JetStreamConsumerService, OnEventExplorer],
+      exports: [ConsumerService, JetStreamConsumerService, OnEventExplorer],
     };
   }
 }

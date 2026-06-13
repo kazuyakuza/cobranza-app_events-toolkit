@@ -5,6 +5,7 @@ import { JETSTREAM_TOKEN, ProducerModule } from './producer.module';
 import { EventLoggerService, EventLogContext } from '../logging/event-logger.service';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { ActorType } from '../common/envelope/actor-type.enum';
+import { EmitEventInterceptor } from './decorators/emit-event-interceptor';
 
 jest.mock('../common/utils/uuid.utils', () => ({
   generateEventId: jest.fn(() => 'evt_mock-uuid-1234'),
@@ -158,6 +159,7 @@ describe('ProducerService', () => {
       });
       expect(mockConnection.jetstream).toHaveBeenCalledTimes(1);
       expect(dynamicModule.exports).toContain(ProducerService);
+      expect(dynamicModule.exports).toContain(EmitEventInterceptor);
     });
 
     it('should use provided jetStream directly via forRoot', () => {
@@ -165,6 +167,7 @@ describe('ProducerService', () => {
         jetStream: jetStream as JetStreamClient,
       });
       expect(dynamicModule.exports).toContain(ProducerService);
+      expect(dynamicModule.exports).toContain(EmitEventInterceptor);
     });
 
     it('should throw if neither connection nor jetStream is provided', () => {

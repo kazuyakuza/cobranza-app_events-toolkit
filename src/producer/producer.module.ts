@@ -2,6 +2,7 @@ import { DynamicModule, Provider, Type } from '@nestjs/common';
 import { JetStreamClient, NatsConnection } from 'nats';
 import { EventLoggerService } from '../logging/event-logger.service';
 import { ProducerService } from './producer.service';
+import { EmitEventInterceptor } from './decorators/emit-event-interceptor';
 
 /** Injection token for the JetStream instance used by ProducerService. */
 export const JETSTREAM_TOKEN = 'NATS_JETSTREAM';
@@ -45,8 +46,8 @@ export class ProducerModule {
     return {
       module: ProducerModule,
       global: true,
-      providers: [{ provide: JETSTREAM_TOKEN, useValue: jetStream }, EventLoggerService, ProducerService],
-      exports: [ProducerService],
+      providers: [{ provide: JETSTREAM_TOKEN, useValue: jetStream }, EventLoggerService, ProducerService, EmitEventInterceptor],
+      exports: [ProducerService, EmitEventInterceptor],
     };
   }
 
@@ -70,8 +71,8 @@ export class ProducerModule {
     return {
       module: ProducerModule,
       global: true,
-      providers: [jetStreamProvider, EventLoggerService, ProducerService],
-      exports: [ProducerService],
+      providers: [jetStreamProvider, EventLoggerService, ProducerService, EmitEventInterceptor],
+      exports: [ProducerService, EmitEventInterceptor],
     };
   }
 }

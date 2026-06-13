@@ -1,8 +1,10 @@
 import { JetStreamClient, NatsConnection } from 'nats';
+import { DiscoveryModule } from '@nestjs/core';
 import { ConsumerModule, CONSUMER_MODULE_OPTIONS } from './consumer.module';
 import { JETSTREAM_CONSUMER_DEPS_TOKEN } from './jetstream-consumer-deps.interface';
 import { ConsumerService } from './consumer.service';
 import { JetStreamConsumerService } from './jetstream-consumer.service';
+import { OnEventExplorer } from './decorators/on-event.explorer';
 
 describe('ConsumerModule', () => {
   const mockJetStream = { publish: jest.fn(), subscribe: jest.fn() } as unknown as JetStreamClient;
@@ -17,6 +19,8 @@ describe('ConsumerModule', () => {
     expect(mockConnection.jetstream).toHaveBeenCalledTimes(1);
     expect(dynamicModule.exports).toContain(ConsumerService);
     expect(dynamicModule.exports).toContain(JetStreamConsumerService);
+    expect(dynamicModule.exports).toContain(OnEventExplorer);
+    expect(dynamicModule.imports).toContain(DiscoveryModule);
   });
 
   it('should use provided jetStream directly via forRoot', () => {
@@ -25,6 +29,7 @@ describe('ConsumerModule', () => {
     });
     expect(dynamicModule.exports).toContain(ConsumerService);
     expect(dynamicModule.exports).toContain(JetStreamConsumerService);
+    expect(dynamicModule.exports).toContain(OnEventExplorer);
   });
 
   it('should throw if neither connection nor jetStream is provided', () => {
@@ -58,12 +63,12 @@ describe('ConsumerModule', () => {
     expect(resolvedOptions).toEqual({ jetStream: mockJetStream });
   });
 
-  it('should support imports in forRootAsync', () => {
+  it('should include DiscoveryModule in imports for forRootAsync', () => {
     const dynamicModule = ConsumerModule.forRootAsync({
       imports: [] as Array<never>,
       useFactory: async () => ({ jetStream: mockJetStream }),
     });
-    expect(dynamicModule.imports).toEqual([]);
+    expect(dynamicModule.imports).toContain(DiscoveryModule);
   });
 
   it('should invoke useFactory only once in forRootAsync', async () => {
