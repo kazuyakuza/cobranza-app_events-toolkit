@@ -1,60 +1,75 @@
 import { DynamicModule, Module, Provider, Type, ForwardReference } from '@nestjs/common';
-import { DiscoveryModule } from '@nestjs/core';
+import { DiscoveryModule, DiscoveryService, Reflector } from '@nestjs/core';
 import { JetStreamClient, NatsConnection } from 'nats';
 import { EventLoggerService } from '../logging/event-logger.service';
 import { ConsumerService } from './consumer.service';
 import { JetStreamConsumerService } from './jetstream-consumer.service';
 import { JETSTREAM_CONSUMER_DEPS_TOKEN } from './jetstream-consumer-deps.interface';
 import { OnEventExplorer } from './decorators/on-event.explorer';
+import { ON_EVENT_EXPLORER_DEPS_TOKEN } from './decorators/on-event-explorer-deps.interface';
 
-/** Injection token for resolved {@link ConsumerModuleOptions}. */
 export const CONSUMER_MODULE_OPTIONS = 'CONSUMER_MODULE_OPTIONS';
+const DISCOVERY_REFLECTOR_PAIR = 'DISCOVERY_REFLECTOR_PAIR' as unknown as Type<unknown>;
+const RESOLVED_CONNECTION_TOKEN = 'RESOLVED_CONNECTION' as unknown as Type<unknown>;
+const CONSUMER_SERVICES_PAIR = 'CONSUMER_SERVICES_PAIR' as unknown as Type<unknown>;
+
+interface DiscoveryReflectorPair {
+  discovery: DiscoveryService;
+  reflector: Reflector;
+}
+
+interface ConsumerServicesPair {
+  consumerService: ConsumerService;
+  logger: EventLoggerService;
+}
+
+interface ResolvedConnection {
+  jetStream: JetStreamClient;
+  dlqSubjectBuilder?: (subject: string) => string;
+}
 
 /** Synchronous options for {@link ConsumerModule.forRoot}. */
 export interface ConsumerModuleOptions {
-  /** An existing NATS connection — JetStream will be obtained via `connection.jetstream()`. */
   connection?: NatsConnection;
-  /** A pre-obtained JetStream client instance — takes precedence over `connection`. */
   jetStream?: JetStreamClient;
-  /** Custom function that transforms a consumed subject into its DLQ subject. Defaults to prepending `dlq.`. */
   dlqSubjectBuilder?: (subject: string) => string;
 }
 
 /** Asynchronous options for {@link ConsumerModule.forRootAsync}. */
 export interface ConsumerModuleAsyncOptions {
-  /** Optional modules to import whose providers are available to the factory. */
   imports?: Array<Type<unknown> | DynamicModule | Promise<DynamicModule> | ForwardReference<unknown>>;
-  /** Factory that resolves module options, optionally injecting dependencies. */
   useFactory: (...args: unknown[]) => Promise<ConsumerModuleOptions> | ConsumerModuleOptions;
-  /** Optional dependencies to inject into the factory. */
   inject?: Array<string | symbol | Type<unknown>>;
 }
 
-/** Resolves a JetStream instance from the provided module options. */
 function resolveJetStream(options: ConsumerModuleOptions): JetStreamClient {
-  if (options.jetStream) {
-    return options.jetStream;
-  }
-  if (options.connection) {
-    return options.connection.jetstream();
-  }
+  if (options.jetStream) return options.jetStream;
+  if (options.connection) return options.connection.jetstream();
   throw new Error('ConsumerModule requires either connection or jetStream in options');
 }
 
-/**
- * NestJS DynamicModule for consuming events from NATS JetStream.
- *
- * The host application MUST provide {@link EventLoggerService} globally
- * (e.g. via a root module or a shared logging module).
- */
 @Module({})
 export class ConsumerModule {
-  /**
-   * Registers the ConsumerModule with synchronously resolved options.
-   */
   static forRoot(options: ConsumerModuleOptions): DynamicModule {
     const jetStream = resolveJetStream(options);
-    const depsProvider: Provider = {
+
+    const discoveryPairProvider: Provider = {
+      provide: DISCOVERY_REFLECTOR_PAIR,
+      useFactory: (discovery: DiscoveryService, reflector: Reflector) => ({ discovery, reflector }),
+      inject: [DiscoveryService, Reflector],
+    };
+
+    const explorerDepsProvider: Provider = {
+      provide: ON_EVENT_EXPLORER_DEPS_TOKEN,
+      useFactory: (pair: DiscoveryReflectorPair, consumerService: ConsumerService) => ({
+        discovery: pair.discovery,
+        reflector: pair.reflector,
+        consumerService,
+      }),
+      inject: [DISCOVERY_REFLECTOR_PAIR, ConsumerService],
+    };
+
+    const consumerDepsProvider: Provider = {
       provide: JETSTREAM_CONSUMER_DEPS_TOKEN,
       useFactory: (consumerService: ConsumerService, logger: EventLoggerService) => ({
         jetStream,
@@ -64,46 +79,87 @@ export class ConsumerModule {
       }),
       inject: [ConsumerService, EventLoggerService],
     };
+
     return {
       module: ConsumerModule,
       global: true,
       imports: [DiscoveryModule],
-      providers: [depsProvider, ConsumerService, JetStreamConsumerService, OnEventExplorer],
+      providers: [
+        discoveryPairProvider,
+        explorerDepsProvider,
+        consumerDepsProvider,
+        ConsumerService,
+        JetStreamConsumerService,
+        OnEventExplorer,
+      ],
       exports: [ConsumerService, JetStreamConsumerService, OnEventExplorer],
     };
   }
 
-  /**
-   * Registers the ConsumerModule with asynchronously resolved options.
-   *
-   * Use this when the JetStream connection depends on other injected providers.
-   * The factory is invoked exactly once — its result is shared across all providers.
-   */
   static forRootAsync(asyncOptions: ConsumerModuleAsyncOptions): DynamicModule {
     const optionsProvider: Provider = {
       provide: CONSUMER_MODULE_OPTIONS,
       useFactory: async (...args: unknown[]): Promise<ConsumerModuleOptions> => asyncOptions.useFactory(...args),
       inject: asyncOptions.inject ?? [],
     };
-    const depsProvider: Provider = {
-      provide: JETSTREAM_CONSUMER_DEPS_TOKEN,
-      useFactory: (
-        moduleOptions: ConsumerModuleOptions,
-        consumerService: ConsumerService,
-        logger: EventLoggerService,
-      ) => ({
-        jetStream: resolveJetStream(moduleOptions),
+
+    const discoveryPairProvider: Provider = {
+      provide: DISCOVERY_REFLECTOR_PAIR,
+      useFactory: (discovery: DiscoveryService, reflector: Reflector) => ({ discovery, reflector }),
+      inject: [DiscoveryService, Reflector],
+    };
+
+    const explorerDepsProvider: Provider = {
+      provide: ON_EVENT_EXPLORER_DEPS_TOKEN,
+      useFactory: (pair: DiscoveryReflectorPair, consumerService: ConsumerService) => ({
+        discovery: pair.discovery,
+        reflector: pair.reflector,
         consumerService,
-        logger,
+      }),
+      inject: [DISCOVERY_REFLECTOR_PAIR, ConsumerService],
+    };
+
+    const resolvedConnectionProvider: Provider = {
+      provide: RESOLVED_CONNECTION_TOKEN,
+      useFactory: (moduleOptions: ConsumerModuleOptions) => ({
+        jetStream: resolveJetStream(moduleOptions),
         dlqSubjectBuilder: moduleOptions.dlqSubjectBuilder,
       }),
-      inject: [CONSUMER_MODULE_OPTIONS, ConsumerService, EventLoggerService],
+      inject: [CONSUMER_MODULE_OPTIONS],
     };
+
+    const consumerServicesProvider: Provider = {
+      provide: CONSUMER_SERVICES_PAIR,
+      useFactory: (consumerService: ConsumerService, logger: EventLoggerService) => ({ consumerService, logger }),
+      inject: [ConsumerService, EventLoggerService],
+    };
+
+    const consumerDepsProvider: Provider = {
+      provide: JETSTREAM_CONSUMER_DEPS_TOKEN,
+      useFactory: (connection: ResolvedConnection, services: ConsumerServicesPair) => ({
+        jetStream: connection.jetStream,
+        consumerService: services.consumerService,
+        logger: services.logger,
+        dlqSubjectBuilder: connection.dlqSubjectBuilder,
+      }),
+      inject: [RESOLVED_CONNECTION_TOKEN, CONSUMER_SERVICES_PAIR],
+    };
+
     return {
       module: ConsumerModule,
       global: true,
       imports: [DiscoveryModule, ...(asyncOptions.imports ?? [])],
-      providers: [optionsProvider, depsProvider, ConsumerService, JetStreamConsumerService, OnEventExplorer],
+      providers: [
+        optionsProvider,
+        discoveryPairProvider,
+        explorerDepsProvider,
+        resolvedConnectionProvider,
+        consumerServicesProvider,
+        consumerDepsProvider,
+        ConsumerService,
+        JetStreamConsumerService,
+        OnEventExplorer,
+      ],
       exports: [ConsumerService, JetStreamConsumerService, OnEventExplorer],
     };
   }

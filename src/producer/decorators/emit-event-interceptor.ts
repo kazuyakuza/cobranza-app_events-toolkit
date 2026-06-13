@@ -7,6 +7,18 @@ import { SubjectBuilder } from '../../common/utils/subject.builder';
 import { ProducerService, EventContext } from '../producer.service';
 import { EMIT_EVENT_METADATA, EmitEventOptions } from './emit-event.decorator';
 
+interface EmissionInput {
+  options: EmitEventOptions;
+  context: ExecutionContext;
+  data: unknown;
+}
+
+interface EmitEventInput {
+  options: EmitEventOptions;
+  eventContext: EventContext;
+  data: unknown;
+}
+
 /**
  * NestJS interceptor that auto-publishes events for @EmitEvent() decorated methods.
  *
@@ -32,21 +44,15 @@ export class EmitEventInterceptor implements NestInterceptor {
       return next.handle();
     }
 
-    return next.handle().pipe(
-      concatMap(async (data) => await this.handleEmission(options, context, data)),
-    );
+    return next.handle().pipe(concatMap(async (data) => await this.handleEmission({ options, context, data })));
   }
 
-  private async handleEmission(
-    options: EmitEventOptions,
-    context: ExecutionContext,
-    data: unknown,
-  ): Promise<unknown> {
-    const eventContext = this.findEventContext(context);
+  private async handleEmission(input: EmissionInput): Promise<unknown> {
+    const eventContext = this.findEventContext(input.context);
     if (eventContext) {
-      await this.emitEvent(options, eventContext, data);
+      await this.emitEvent({ options: input.options, eventContext, data: input.data });
     }
-    return data;
+    return input.data;
   }
 
   private findEventContext(context: ExecutionContext): EventContext | undefined {
@@ -55,16 +61,20 @@ export class EmitEventInterceptor implements NestInterceptor {
   }
 
   private isEventContext(arg: unknown): arg is EventContext {
-    return typeof arg === 'object' && arg !== null && 'companyId' in arg && 'type' in arg;
+    return this.isNonNullObject(arg) && this.hasRequiredContextFields(arg);
   }
 
-  private async emitEvent(
-    options: EmitEventOptions,
-    eventContext: EventContext,
-    data: unknown,
-  ): Promise<void> {
-    const subject = this.buildSubject(options, eventContext);
-    await this.producerService.emit({ subject, data, context: eventContext });
+  private isNonNullObject(arg: unknown): arg is Record<string, unknown> {
+    return typeof arg === 'object' && arg !== null;
+  }
+
+  private hasRequiredContextFields(arg: Record<string, unknown>): boolean {
+    return 'companyId' in arg && 'type' in arg;
+  }
+
+  private async emitEvent(input: EmitEventInput): Promise<void> {
+    const subject = this.buildSubject(input.options, input.eventContext);
+    await this.producerService.emit({ subject, data: input.data, context: input.eventContext });
   }
 
   private buildSubject(options: EmitEventOptions, eventContext: EventContext): string {

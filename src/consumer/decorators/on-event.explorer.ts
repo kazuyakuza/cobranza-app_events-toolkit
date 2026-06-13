@@ -1,7 +1,12 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { DiscoveryService, Reflector } from '@nestjs/core';
-import { ConsumerService, EventHandler } from '../consumer.service';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { EventHandler } from '../consumer.service';
 import { ON_EVENT_METADATA, OnEventOptions } from './on-event.decorator';
+import { ON_EVENT_EXPLORER_DEPS_TOKEN, OnEventExplorerDeps } from './on-event-explorer-deps.interface';
+
+interface HandlerTarget {
+  instance: object;
+  prototype: object;
+}
 
 /**
  * Scans all providers and controllers for @OnEvent() decorated methods
@@ -11,15 +16,16 @@ import { ON_EVENT_METADATA, OnEventOptions } from './on-event.decorator';
  * then uses Reflector to read OnEvent metadata from their methods.
  * Builds a wildcard NATS subject (company.*) for each handler registration.
  *
+ * Note: This explorer only registers handlers with ConsumerService.
+ * The host application is responsible for calling
+ * JetStreamConsumerService.subscribe() to create NATS subscriptions
+ * that route incoming messages to the registered handlers.
+ *
  * Must be provided by ConsumerModule for automatic handler discovery.
  */
 @Injectable()
 export class OnEventExplorer implements OnModuleInit {
-  constructor(
-    private readonly discovery: DiscoveryService,
-    private readonly reflector: Reflector,
-    private readonly consumerService: ConsumerService,
-  ) {}
+  constructor(@Inject(ON_EVENT_EXPLORER_DEPS_TOKEN) private readonly deps: OnEventExplorerDeps) {}
 
   onModuleInit(): void {
     this.explore();
@@ -33,16 +39,15 @@ export class OnEventExplorer implements OnModuleInit {
   }
 
   private getValidInstances(): object[] {
-    const allWrappers = [
-      ...this.discovery.getProviders(),
-      ...this.discovery.getControllers(),
-    ];
-    return allWrappers
-      .filter((w) => this.isValidWrapper(w))
-      .map((w) => w.instance as object);
+    const allWrappers = [...this.deps.discovery.getProviders(), ...this.deps.discovery.getControllers()];
+    return allWrappers.filter((w) => this.isValidWrapper(w)).map((w) => w.instance as object);
   }
 
-  private isValidWrapper(wrapper: { instance?: unknown; isDependencyMetStatic?: boolean }): boolean {
+  private isValidWrapper(wrapper: { instance?: unknown }): boolean {
+    return this.hasObjectInstance(wrapper);
+  }
+
+  private hasObjectInstance(wrapper: { instance?: unknown }): boolean {
     return wrapper.instance != null && typeof wrapper.instance === 'object';
   }
 
@@ -51,18 +56,20 @@ export class OnEventExplorer implements OnModuleInit {
     const methodNames = Object.getOwnPropertyNames(prototype);
     for (const methodName of methodNames) {
       if (methodName === 'constructor') continue;
-      this.tryRegisterHandler(instance, prototype, methodName);
+      this.tryRegisterHandler({ instance, prototype }, methodName);
     }
   }
 
-  private tryRegisterHandler(instance: object, prototype: object, methodName: string): void {
-    const methodRef = (prototype as Record<string, Function>)[methodName];
-    const options = this.reflector.get<OnEventOptions>(ON_EVENT_METADATA, methodRef);
+  private tryRegisterHandler(target: HandlerTarget, methodName: string): void {
+    const methodRef = (target.prototype as Record<string, (...args: unknown[]) => unknown>)[methodName];
+    const options = this.deps.reflector.get<OnEventOptions>(ON_EVENT_METADATA, methodRef);
     if (!options) return;
 
-    const handler = ((instance as Record<string, Function>)[methodName]).bind(instance) as EventHandler;
+    const handler = (target.instance as Record<string, (...args: unknown[]) => unknown>)[methodName].bind(
+      target.instance,
+    ) as EventHandler;
     const subject = this.buildWildcardSubject(options);
-    this.consumerService.registerHandler(subject, handler);
+    this.deps.consumerService.registerHandler(subject, handler);
   }
 
   private buildWildcardSubject(options: OnEventOptions): string {

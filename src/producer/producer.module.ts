@@ -46,7 +46,12 @@ export class ProducerModule {
     return {
       module: ProducerModule,
       global: true,
-      providers: [{ provide: JETSTREAM_TOKEN, useValue: jetStream }, EventLoggerService, ProducerService, EmitEventInterceptor],
+      providers: [
+        { provide: JETSTREAM_TOKEN, useValue: jetStream },
+        EventLoggerService,
+        ProducerService,
+        EmitEventInterceptor,
+      ],
       exports: [ProducerService, EmitEventInterceptor],
     };
   }

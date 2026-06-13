@@ -1,9 +1,9 @@
 import 'reflect-metadata';
-import { Test } from '@nestjs/testing';
 import { DiscoveryService, Reflector } from '@nestjs/core';
 import { ConsumerService } from '../consumer.service';
 import { OnEventExplorer } from './on-event.explorer';
-import { ON_EVENT_METADATA, OnEventOptions } from './on-event.decorator';
+import { OnEvent } from './on-event.decorator';
+import { OnEventExplorerDeps } from './on-event-explorer-deps.interface';
 import { EventEnvelope } from '../../common/envelope/event-envelope.class';
 import { ActorType } from '../../common/envelope/actor-type.enum';
 import { EventContext } from '../../producer/producer.service';
@@ -11,11 +11,13 @@ import { EventContext } from '../../producer/producer.service';
 class SampleConsumer {
   handlerInvoked = false;
 
-  handleProofUploaded(_event: EventEnvelope<unknown>, _context: EventContext): void {
+  @OnEvent({ domain: 'payment', entity: 'proof', action: 'uploaded', version: '1' })
+  handleProofUploaded(): void {
     this.handlerInvoked = true;
   }
 
-  handleScheduleCreated(_event: EventEnvelope<unknown>, _context: EventContext): void {
+  @OnEvent({ domain: 'debt', entity: 'schedule', action: 'created' })
+  handleScheduleCreated(): void {
     this.handlerInvoked = true;
   }
 
@@ -26,48 +28,40 @@ class ConsumerWithoutDecorator {
   noEventMethod(): void {}
 }
 
+class CustomVersionConsumer {
+  handlerInvoked = false;
+
+  @OnEvent({ domain: 'client', entity: 'profile', action: 'updated', version: '2' })
+  handleUpdated(): void {
+    this.handlerInvoked = true;
+  }
+}
+
+function createDeps(discovery: DiscoveryService): OnEventExplorerDeps {
+  return { discovery, reflector: new Reflector(), consumerService: new ConsumerService() };
+}
+
 describe('OnEventExplorer', () => {
   let explorer: OnEventExplorer;
   let consumerService: ConsumerService;
+  let discovery: DiscoveryService;
 
   const sampleHandler = new SampleConsumer();
 
-  function applyOnEventMetadata(target: Function, options: OnEventOptions): void {
-    Reflect.defineMetadata(ON_EVENT_METADATA, options, target);
-  }
+  beforeEach(() => {
+    discovery = {
+      getProviders: jest.fn(),
+      getControllers: jest.fn(),
+    } as unknown as DiscoveryService;
 
-  beforeEach(async () => {
-    const module = await Test.createTestingModule({
-      providers: [
-        ConsumerService,
-        OnEventExplorer,
-        Reflector,
-        {
-          provide: DiscoveryService,
-          useValue: {
-            getProviders: jest.fn(),
-            getControllers: jest.fn(),
-          },
-        },
-      ],
-    }).compile();
-
-    explorer = module.get(OnEventExplorer);
-    consumerService = module.get(ConsumerService);
+    const deps = createDeps(discovery);
+    consumerService = deps.consumerService;
+    explorer = new OnEventExplorer(deps);
   });
 
   describe('onModuleInit', () => {
     it('should discover and register handlers with @OnEvent metadata', () => {
-      const proofOptions: OnEventOptions = { domain: 'payment', entity: 'proof', action: 'uploaded', version: '1' };
-      const scheduleOptions: OnEventOptions = { domain: 'debt', entity: 'schedule', action: 'created' };
-
-      applyOnEventMetadata(SampleConsumer.prototype.handleProofUploaded, proofOptions);
-      applyOnEventMetadata(SampleConsumer.prototype.handleScheduleCreated, scheduleOptions);
-
-      const discovery = explorer['discovery'] as DiscoveryService;
-      (discovery.getProviders as jest.Mock).mockReturnValue([
-        { instance: sampleHandler },
-      ]);
+      (discovery.getProviders as jest.Mock).mockReturnValue([{ instance: sampleHandler }]);
       (discovery.getControllers as jest.Mock).mockReturnValue([]);
 
       explorer.onModuleInit();
@@ -78,13 +72,7 @@ describe('OnEventExplorer', () => {
     });
 
     it('should build wildcard subject with default version when not specified', () => {
-      const options: OnEventOptions = { domain: 'debt', entity: 'schedule', action: 'created' };
-      applyOnEventMetadata(SampleConsumer.prototype.handleProofUploaded, options);
-
-      const discovery = explorer['discovery'] as DiscoveryService;
-      (discovery.getProviders as jest.Mock).mockReturnValue([
-        { instance: sampleHandler },
-      ]);
+      (discovery.getProviders as jest.Mock).mockReturnValue([{ instance: sampleHandler }]);
       (discovery.getControllers as jest.Mock).mockReturnValue([]);
 
       explorer.onModuleInit();
@@ -94,11 +82,7 @@ describe('OnEventExplorer', () => {
     });
 
     it('should skip providers and controllers without instance', () => {
-      const discovery = explorer['discovery'] as DiscoveryService;
-      (discovery.getProviders as jest.Mock).mockReturnValue([
-        { instance: null },
-        { instance: undefined },
-      ]);
+      (discovery.getProviders as jest.Mock).mockReturnValue([{ instance: null }, { instance: undefined }]);
       (discovery.getControllers as jest.Mock).mockReturnValue([]);
 
       explorer.onModuleInit();
@@ -108,10 +92,7 @@ describe('OnEventExplorer', () => {
 
     it('should skip methods without @OnEvent metadata', () => {
       const plainInstance = new ConsumerWithoutDecorator();
-      const discovery = explorer['discovery'] as DiscoveryService;
-      (discovery.getProviders as jest.Mock).mockReturnValue([
-        { instance: plainInstance },
-      ]);
+      (discovery.getProviders as jest.Mock).mockReturnValue([{ instance: plainInstance }]);
       (discovery.getControllers as jest.Mock).mockReturnValue([]);
 
       explorer.onModuleInit();
@@ -120,17 +101,8 @@ describe('OnEventExplorer', () => {
     });
 
     it('should also scan controllers for @OnEvent handlers', () => {
-      const proofOptions: OnEventOptions = { domain: 'payment', entity: 'proof', action: 'uploaded', version: '1' };
-      const scheduleOptions: OnEventOptions = { domain: 'debt', entity: 'schedule', action: 'created' };
-
-      applyOnEventMetadata(SampleConsumer.prototype.handleProofUploaded, proofOptions);
-      applyOnEventMetadata(SampleConsumer.prototype.handleScheduleCreated, scheduleOptions);
-
-      const discovery = explorer['discovery'] as DiscoveryService;
       (discovery.getProviders as jest.Mock).mockReturnValue([]);
-      (discovery.getControllers as jest.Mock).mockReturnValue([
-        { instance: sampleHandler },
-      ]);
+      (discovery.getControllers as jest.Mock).mockReturnValue([{ instance: sampleHandler }]);
 
       explorer.onModuleInit();
 
@@ -138,13 +110,7 @@ describe('OnEventExplorer', () => {
     });
 
     it('should register bound handlers that correctly invoke instance methods', async () => {
-      const options: OnEventOptions = { domain: 'payment', entity: 'proof', action: 'uploaded', version: '1' };
-      applyOnEventMetadata(SampleConsumer.prototype.handleProofUploaded, options);
-
-      const discovery = explorer['discovery'] as DiscoveryService;
-      (discovery.getProviders as jest.Mock).mockReturnValue([
-        { instance: sampleHandler },
-      ]);
+      (discovery.getProviders as jest.Mock).mockReturnValue([{ instance: sampleHandler }]);
       (discovery.getControllers as jest.Mock).mockReturnValue([]);
 
       explorer.onModuleInit();
@@ -168,13 +134,8 @@ describe('OnEventExplorer', () => {
     });
 
     it('should handle custom version in @OnEvent options', () => {
-      const options: OnEventOptions = { domain: 'client', entity: 'profile', action: 'updated', version: '2' };
-      applyOnEventMetadata(SampleConsumer.prototype.handleProofUploaded, options);
-
-      const discovery = explorer['discovery'] as DiscoveryService;
-      (discovery.getProviders as jest.Mock).mockReturnValue([
-        { instance: sampleHandler },
-      ]);
+      const instance = new CustomVersionConsumer();
+      (discovery.getProviders as jest.Mock).mockReturnValue([{ instance }]);
       (discovery.getControllers as jest.Mock).mockReturnValue([]);
 
       explorer.onModuleInit();

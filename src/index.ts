@@ -27,13 +27,27 @@ export {
 
 // ── Producer ──
 export { ProducerService, EventContext, EmitOptions } from './producer/producer.service';
-export { ProducerModule, JETSTREAM_TOKEN, ProducerModuleOptions, ProducerModuleAsyncOptions } from './producer/producer.module';
+export {
+  ProducerModule,
+  JETSTREAM_TOKEN,
+  ProducerModuleOptions,
+  ProducerModuleAsyncOptions,
+} from './producer/producer.module';
 export { EmitEvent, EMIT_EVENT_METADATA, EmitEventOptions } from './producer/decorators/emit-event.decorator';
 export { EmitEventInterceptor } from './producer/decorators/emit-event-interceptor';
 
 // ── Consumer ──
 export { ConsumerService, EventHandler } from './consumer/consumer.service';
 export { JetStreamConsumerService } from './consumer/jetstream-consumer.service';
-export { ConsumerModule, CONSUMER_MODULE_OPTIONS, ConsumerModuleOptions, ConsumerModuleAsyncOptions } from './consumer/consumer.module';
+export {
+  ConsumerModule,
+  CONSUMER_MODULE_OPTIONS,
+  ConsumerModuleOptions,
+  ConsumerModuleAsyncOptions,
+} from './consumer/consumer.module';
 export { OnEvent, ON_EVENT_METADATA, OnEventOptions } from './consumer/decorators/on-event.decorator';
 export { OnEventExplorer } from './consumer/decorators/on-event.explorer';
+export {
+  ON_EVENT_EXPLORER_DEPS_TOKEN,
+  OnEventExplorerDeps,
+} from './consumer/decorators/on-event-explorer-deps.interface';
