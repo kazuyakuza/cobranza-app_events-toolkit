@@ -62,3 +62,9 @@ For services without a main PostgreSQL database, the `SqliteOutboxService` provi
 - Zero event convention violations across microservices using the toolkit.
 - New microservice event setup completed in under 5 minutes.
 - AI agents can generate correct, convention-compliant event code without human correction.
+
+## 7. Related Documentation
+
+- [brief.md](brief.md) — Project scope and technical decisions.
+- [architecture.md](architecture.md) — System architecture and module design.
+- [tech.md](tech.md) — Technology stack and development setup.

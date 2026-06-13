@@ -56,3 +56,10 @@ The project is in its earliest phase (pre-implementation). Core documentation an
 - The project info files have been initialized. All 5 core files now exist.
 - All implementation must respect the coding rules listed in `.agent/RULES.md` (max 200 lines per file, max 50 lines per method, max 2 depth, max 2 params, prefer private members, self-documenting code, no commented code).
 - The folder structure in `brief.md` section 4 is authoritative.
+
+## Related Documentation
+
+- [brief.md](brief.md) — Project scope and folder structure.
+- [product.md](product.md) — Problem definition and product goals.
+- [architecture.md](architecture.md) — System architecture and module design.
+- [tech.md](tech.md) — Technology stack and development setup.

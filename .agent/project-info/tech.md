@@ -174,3 +174,9 @@ await this.outboxService.saveToOutbox(eventEnvelope);
 - Node.js >= 18.
 - NATS server >= 2.10 with JetStream enabled.
 - SQLite 3.x (via `better-sqlite3`).
+
+## 8. Related Documentation
+
+- [brief.md](brief.md) — Project scope and folder structure.
+- [architecture.md](architecture.md) — System architecture, module design, and data flows.
+- [event-messaging-convention.md](../../docs/event-messaging-convention.md) — Event & messaging convention standard.

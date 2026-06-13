@@ -1,4 +1,4 @@
-# BRIEF – `cobranza-apps/events-toolkit`
+# BRIEF — events-toolkit
 
 ## 1. Purpose
 
@@ -201,7 +201,14 @@ await this.producerService.publish(subject, new PaymentProofUploadedEvent(data, 
 - JSDoc on all public classes/methods
 - Section **"Guidelines for AI Agents"** with rules for naming new events
 
----
+## 11. Related Documentation
+
+- [product.md](product.md) — Problem definition, user experience, and product goals.
+- [context.md](context.md) — Current work focus and next steps.
+- [architecture.md](architecture.md) — System architecture and module design.
+- [tech.md](tech.md) — Technology stack and development setup.
+- [event-messaging-convention.md](../../docs/event-messaging-convention.md) — Event & messaging convention standard.
+
 ---
 
 <!-- DO NOT DELETE NEXT SECTION -->

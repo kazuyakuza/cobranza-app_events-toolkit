@@ -204,3 +204,9 @@ export { EventConsumerException } from './common/errors/event-consumer.exception
 - **Error Handling**: Consumer errors route to DLQ; producer errors logged and optionally retried.
 - **Tenant Isolation**: `company_id` mandatory in every event envelope.
 - **Idempotency**: `id` + `correlation_id` combination for deduplication at consumer level.
+
+## 8. Related Documentation
+
+- [brief.md](brief.md) — Project scope, objectives, and folder structure.
+- [tech.md](tech.md) — Technology stack, constraints, and testing strategy.
+- [event-messaging-convention.md](../../docs/event-messaging-convention.md) — Event & messaging convention standard.
