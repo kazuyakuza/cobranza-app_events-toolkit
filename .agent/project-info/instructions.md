@@ -37,6 +37,7 @@ After analysis:
 
 - Provide a technical summary to the user.
 - Create the `.agent/project-info/` structure and files.
+- Remove `.agent/project-info/.initialized` file.
 - Ask for user approval before finishing the Plan step.
 
 ### Project Info Update
