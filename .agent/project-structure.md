@@ -3,7 +3,7 @@
 # Folders in src/
 
 - common/ - Shared types, envelope, DTOs, utilities, and error classes
-- common/envelope/ - EventEnvelope base class, ActorType enum, EventBase
+- common/envelope/ - EventEnvelope base class, ActorType enum, EventBase, EventContext interface
 - common/envelope/validators/ - Custom class-validator decorators
 - common/dto/ - Data Transfer Objects (BuildSubjectDto)
 - common/utils/ - SubjectBuilder, EventFactory, UUID and date utilities

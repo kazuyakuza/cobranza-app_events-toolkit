@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { JetStreamClient, NatsConnection } from 'nats';
-import { ProducerService, EmitOptions, EventContext } from './producer.service';
+import { ProducerService, EmitOptions } from './producer.service';
+import { EventContext } from '../common/envelope/event-context.interface';
 import { JETSTREAM_TOKEN, ProducerModule } from './producer.module';
 import { EventLoggerService, EventLogContext } from '../logging/event-logger.service';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';

@@ -1,11 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
+import { EventContext } from '../common/envelope/event-context.interface';
 import { RequestReplyException } from '../common/errors/request-reply.exception';
 import { generateEventId } from '../common/utils/uuid.utils';
 import { nowIso } from '../common/utils/date.utils';
 import { encodeEvent, decodeEvent } from '../common/utils/serialization.utils';
 import { EventLoggerService, EventLogContext, EventErrorLogContext } from '../logging/event-logger.service';
-import { ProducerService, EventContext } from '../producer/producer.service';
+import { ProducerService } from '../producer/producer.service';
 import {
   RequestReplyConfig,
   RequestReplyDeps,

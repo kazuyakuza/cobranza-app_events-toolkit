@@ -1,6 +1,6 @@
 import { JsMsg, ConsumerOptsBuilder, ConsumerOpts } from 'nats';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
-import { EventContext } from '../producer/producer.service';
+import { EventContext } from '../common/envelope/event-context.interface';
 import { EventHandler } from './consumer.service';
 
 /** Consumer subscription options accepted by {@link SubscribeOptions}. */

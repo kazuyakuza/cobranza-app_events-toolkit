@@ -2,9 +2,10 @@ import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nes
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { concatMap } from 'rxjs/operators';
+import { EventContext } from '../../common/envelope/event-context.interface';
 import { BuildSubjectDto } from '../../common/dto/build-subject.dto';
 import { SubjectBuilder } from '../../common/utils/subject.builder';
-import { ProducerService, EventContext } from '../producer.service';
+import { ProducerService } from '../producer.service';
 import { EMIT_EVENT_METADATA, EmitEventOptions } from './emit-event.decorator';
 
 /** Internal bundle passed to handleEmission for post-handler event publishing. */

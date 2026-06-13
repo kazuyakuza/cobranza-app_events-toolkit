@@ -1,5 +1,5 @@
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
-import { EventContext } from '../producer/producer.service';
+import { EventContext } from '../common/envelope/event-context.interface';
 
 /** Options for {@link ConsumerService.dispatch}. */
 export interface DispatchOptions {

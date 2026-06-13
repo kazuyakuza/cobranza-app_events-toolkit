@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
+import { EventContext } from '../common/envelope/event-context.interface';
 import { EventConsumerException } from '../common/errors/event-consumer.exception';
-import { EventContext } from '../producer/producer.service';
 import { DispatchOptions } from './dispatch-options.interface';
 
 /** Handler function invoked when a consumed event matches a registered subject. */

@@ -5,6 +5,7 @@ export { EVENT_ID_PREFIX, LIBRARY_VERSION, DEFAULT_SUBJECT_VERSION } from './com
 export { EventEnvelope } from './common/envelope/event-envelope.class';
 export { EventBase } from './common/envelope/event-base.class';
 export { ActorType } from './common/envelope/actor-type.enum';
+export { EventContext } from './common/envelope/event-context.interface';
 
 // ── DTOs ──
 export { BuildSubjectDto } from './common/dto/build-subject.dto';
@@ -28,7 +29,7 @@ export {
 } from './logging/event-logger.service';
 
 // ── Producer ──
-export { ProducerService, EventContext, EmitOptions } from './producer/producer.service';
+export { ProducerService, EmitOptions } from './producer/producer.service';
 export {
   ProducerModule,
   JETSTREAM_TOKEN,

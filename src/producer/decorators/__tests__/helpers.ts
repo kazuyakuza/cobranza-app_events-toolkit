@@ -1,6 +1,6 @@
 import { of } from 'rxjs';
 import { ExecutionContext, CallHandler } from '@nestjs/common';
-import { EventContext } from '../../producer.service';
+import { EventContext } from '../../../common/envelope/event-context.interface';
 import { ActorType } from '../../../common/envelope/actor-type.enum';
 
 export const sampleContext: EventContext = {

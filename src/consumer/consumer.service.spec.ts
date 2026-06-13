@@ -2,7 +2,7 @@ import { Test } from '@nestjs/testing';
 import { ConsumerService } from './consumer.service';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { ActorType } from '../common/envelope/actor-type.enum';
-import { EventContext } from '../producer/producer.service';
+import { EventContext } from '../common/envelope/event-context.interface';
 import { EventConsumerException } from '../common/errors/event-consumer.exception';
 
 describe('ConsumerService', () => {

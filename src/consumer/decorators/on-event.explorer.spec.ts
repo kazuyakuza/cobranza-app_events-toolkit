@@ -6,7 +6,7 @@ import { OnEvent } from './on-event.decorator';
 import { OnEventExplorerDeps } from './on-event-explorer-deps.interface';
 import { EventEnvelope } from '../../common/envelope/event-envelope.class';
 import { ActorType } from '../../common/envelope/actor-type.enum';
-import { EventContext } from '../../producer/producer.service';
+import { EventContext } from '../../common/envelope/event-context.interface';
 
 class SampleConsumer {
   handlerInvoked = false;

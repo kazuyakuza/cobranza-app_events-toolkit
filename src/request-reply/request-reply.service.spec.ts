@@ -3,7 +3,7 @@ import { RequestReplyService } from './request-reply.service';
 import { RequestReplyConfig, RequestReplyDeps, REQUEST_REPLY_DEPS_TOKEN } from './request-reply.types';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { ActorType } from '../common/envelope/actor-type.enum';
-import { EventContext } from '../producer/producer.service';
+import { EventContext } from '../common/envelope/event-context.interface';
 import { RequestReplyException } from '../common/errors/request-reply.exception';
 
 jest.mock('../common/utils/uuid.utils', () => ({
