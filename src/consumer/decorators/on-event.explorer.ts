@@ -3,6 +3,7 @@ import { EventHandler } from '../consumer.service';
 import { ON_EVENT_METADATA, OnEventOptions } from './on-event.decorator';
 import { ON_EVENT_EXPLORER_DEPS_TOKEN, OnEventExplorerDeps } from './on-event-explorer-deps.interface';
 
+/** Pairs a class instance with its prototype for method metadata scanning. */
 interface HandlerTarget {
   instance: object;
   prototype: object;
@@ -25,8 +26,11 @@ interface HandlerTarget {
  */
 @Injectable()
 export class OnEventExplorer implements OnModuleInit {
-  constructor(@Inject(ON_EVENT_EXPLORER_DEPS_TOKEN) private readonly deps: OnEventExplorerDeps) {}
+  constructor(@Inject(ON_EVENT_EXPLORER_DEPS_TOKEN) private readonly deps: OnEventExplorerDeps) { }
 
+  /**
+   * NestJS lifecycle hook — triggers handler discovery and registration at startup.
+   */
   onModuleInit(): void {
     this.explore();
   }
@@ -43,11 +47,11 @@ export class OnEventExplorer implements OnModuleInit {
     return allWrappers.filter((w) => this.isValidWrapper(w)).map((w) => w.instance as object);
   }
 
-  private isValidWrapper(wrapper: { instance?: unknown }): boolean {
+  private isValidWrapper(wrapper: { instance?: unknown; }): boolean {
     return this.hasObjectInstance(wrapper);
   }
 
-  private hasObjectInstance(wrapper: { instance?: unknown }): boolean {
+  private hasObjectInstance(wrapper: { instance?: unknown; }): boolean {
     return wrapper.instance != null && typeof wrapper.instance === 'object';
   }
 

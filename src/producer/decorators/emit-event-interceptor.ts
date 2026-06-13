@@ -7,12 +7,14 @@ import { SubjectBuilder } from '../../common/utils/subject.builder';
 import { ProducerService, EventContext } from '../producer.service';
 import { EMIT_EVENT_METADATA, EmitEventOptions } from './emit-event.decorator';
 
+/** Internal bundle passed to handleEmission for post-handler event publishing. */
 interface EmissionInput {
   options: EmitEventOptions;
   context: ExecutionContext;
   data: unknown;
 }
 
+/** Internal bundle passed to emitEvent for subject building and publishing. */
 interface EmitEventInput {
   options: EmitEventOptions;
   eventContext: EventContext;
@@ -38,6 +40,14 @@ export class EmitEventInterceptor implements NestInterceptor {
     private readonly producerService: ProducerService,
   ) {}
 
+  /**
+   * Intercepts handler execution; if @EmitEvent() metadata is present,
+   * auto-publishes the return value after successful completion.
+   *
+   * @param context - NestJS execution context for the current request.
+   * @param next - Call handler providing the observable stream.
+   * @returns Observable that resolves to the handler's return value.
+   */
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const options = this.reflector.get<EmitEventOptions>(EMIT_EVENT_METADATA, context.getHandler());
     if (!options) {
