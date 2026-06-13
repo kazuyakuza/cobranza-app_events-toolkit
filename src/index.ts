@@ -13,9 +13,11 @@ export { BuildSubjectDto } from './common/dto/build-subject.dto';
 export { SubjectBuilder, buildSubject } from './common/utils/subject.builder';
 export { generateUuidV7, generateEventId } from './common/utils/uuid.utils';
 export { nowIso } from './common/utils/date.utils';
+export { encodeEvent, decodeEvent } from './common/utils/serialization.utils';
 
 // ── Errors ──
 export { EventConsumerException, EventConsumerExceptionOptions } from './common/errors/event-consumer.exception';
+export { RequestReplyException, RequestReplyExceptionOptions } from './common/errors/request-reply.exception';
 
 // ── Logging ──
 export {
@@ -56,7 +58,7 @@ export {
 export { RequestReplyService } from './request-reply/request-reply.service';
 export {
   RequestReplyConfig,
-  RequestReplyOptions,
+  RequestReplyRequestOptions,
   RequestReplyResponse,
   RequestReplyDeps,
   NATS_CONNECTION_TOKEN,

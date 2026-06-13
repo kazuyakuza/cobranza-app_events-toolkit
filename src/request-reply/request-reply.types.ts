@@ -1,5 +1,3 @@
-import { EventContext } from '../producer/producer.service';
-
 /** Injection token for the NATS connection used by RequestReplyService. */
 export const NATS_CONNECTION_TOKEN = 'NatsConnection';
 
@@ -19,22 +17,14 @@ export interface RequestReplyConfig {
 }
 
 /** Resolved configuration with defaults applied. */
-export function resolveRequestReplyConfig(
-  partial?: Partial<RequestReplyConfig>,
-): RequestReplyConfig {
+export function resolveRequestReplyConfig(partial?: Partial<RequestReplyConfig>): RequestReplyConfig {
   return {
     defaultTimeoutMs: partial?.defaultTimeoutMs ?? DEFAULT_TIMEOUT_MS,
   };
 }
 
-/** Options for sending a request and receiving a typed reply. */
-export interface RequestReplyOptions<T> {
-  /** NATS subject to send the request to. */
-  subject: string;
-  /** Domain-specific request payload. */
-  data: T;
-  /** Metadata context for building the event envelope. */
-  context: EventContext;
+/** Optional parameters for the request method. */
+export interface RequestReplyRequestOptions {
   /** Timeout in milliseconds (overrides config default). */
   timeoutMs?: number;
 }

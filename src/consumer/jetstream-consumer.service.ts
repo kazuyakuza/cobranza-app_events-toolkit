@@ -4,6 +4,7 @@ import { plainToInstance } from 'class-transformer';
 import { validateSync } from 'class-validator';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { EventConsumerException } from '../common/errors/event-consumer.exception';
+import { encodeEvent } from '../common/utils/serialization.utils';
 import { EventLoggerService, EventLogContext, EventErrorLogContext } from '../logging/event-logger.service';
 import { ConsumerService } from './consumer.service';
 import { DispatchOptions } from './dispatch-options.interface';
@@ -26,7 +27,6 @@ import {
  */
 @Injectable()
 export class JetStreamConsumerService {
-  private readonly encoder = new TextEncoder();
   private readonly jetStream: JetStreamClient;
   private readonly consumerService: ConsumerService;
   private readonly logger: EventLoggerService;
@@ -161,7 +161,7 @@ export class JetStreamConsumerService {
       failedAt: new Date().toISOString(),
     };
     try {
-      await this.jetStream.publish(dlqSubject, this.encoder.encode(JSON.stringify(dlqPayload)));
+      await this.jetStream.publish(dlqSubject, encodeEvent(dlqPayload));
       msg.ack();
     } catch (publishError: unknown) {
       this.logGeneralError(publishError, subject);

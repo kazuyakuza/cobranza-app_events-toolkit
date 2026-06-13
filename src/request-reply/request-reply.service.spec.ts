@@ -1,13 +1,10 @@
 import { Test } from '@nestjs/testing';
 import { RequestReplyService } from './request-reply.service';
-import {
-  RequestReplyConfig,
-  RequestReplyDeps,
-  REQUEST_REPLY_DEPS_TOKEN,
-} from './request-reply.types';
+import { RequestReplyConfig, RequestReplyDeps, REQUEST_REPLY_DEPS_TOKEN } from './request-reply.types';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { ActorType } from '../common/envelope/actor-type.enum';
 import { EventContext } from '../producer/producer.service';
+import { RequestReplyException } from '../common/errors/request-reply.exception';
 
 jest.mock('../common/utils/uuid.utils', () => ({
   generateEventId: jest.fn(() => 'evt_mock-request-uuid'),
@@ -23,6 +20,7 @@ describe('RequestReplyService', () => {
   let mockPublish: jest.Mock;
   let mockLogEmitted: jest.Mock;
   let mockLogConsumed: jest.Mock;
+  let mockLogError: jest.Mock;
   let config: RequestReplyConfig;
 
   const sampleContext: EventContext = {
@@ -37,30 +35,30 @@ describe('RequestReplyService', () => {
 
   const defaultConfig: RequestReplyConfig = { defaultTimeoutMs: 5000 };
 
-  beforeEach(async () => {
-    mockNatsRequest = jest.fn();
-    mockPublish = jest.fn().mockResolvedValue(undefined);
-    mockLogEmitted = jest.fn();
-    mockLogConsumed = jest.fn();
-    config = { ...defaultConfig };
-
-    const deps: RequestReplyDeps = {
+  function createDeps(): RequestReplyDeps {
+    return {
       natsConnection: { request: mockNatsRequest } as unknown as RequestReplyDeps['natsConnection'],
       producerService: { publish: mockPublish } as unknown as RequestReplyDeps['producerService'],
       logger: {
         logEventEmitted: mockLogEmitted,
         logEventConsumed: mockLogConsumed,
-        logEventError: jest.fn(),
+        logEventError: mockLogError,
         logEventDlq: jest.fn(),
       } as unknown as RequestReplyDeps['logger'],
       config,
     };
+  }
+
+  beforeEach(async () => {
+    mockNatsRequest = jest.fn();
+    mockPublish = jest.fn().mockResolvedValue(undefined);
+    mockLogEmitted = jest.fn();
+    mockLogConsumed = jest.fn();
+    mockLogError = jest.fn();
+    config = { ...defaultConfig };
 
     const module = await Test.createTestingModule({
-      providers: [
-        { provide: REQUEST_REPLY_DEPS_TOKEN, useValue: deps },
-        RequestReplyService,
-      ],
+      providers: [{ provide: REQUEST_REPLY_DEPS_TOKEN, useValue: createDeps() }, RequestReplyService],
     }).compile();
 
     service = module.get(RequestReplyService);
@@ -73,11 +71,11 @@ describe('RequestReplyService', () => {
       const encodedResponse = new TextEncoder().encode(JSON.stringify(replyEnvelope));
       mockNatsRequest.mockResolvedValue({ data: encodedResponse });
 
-      const result = await service.request({
-        subject: 'company.550e8400.payment.verification.requested.v1',
-        data: { paymentId: 'pay-001' },
-        context: sampleContext,
-      });
+      const result = await service.request(
+        'company.550e8400.payment.verification.requested.v1',
+        { paymentId: 'pay-001' },
+        { context: sampleContext },
+      );
 
       expect(mockNatsRequest).toHaveBeenCalledTimes(1);
       const [subject, payload, opts] = mockNatsRequest.mock.calls[0];
@@ -93,12 +91,7 @@ describe('RequestReplyService', () => {
         data: new TextEncoder().encode(JSON.stringify(replyEnvelope)),
       });
 
-      await service.request({
-        subject: 'test.subject',
-        data: { key: 'value' },
-        context: sampleContext,
-        timeoutMs: 10000,
-      });
+      await service.request('test.subject', { key: 'value' }, { context: sampleContext, timeoutMs: 10000 });
 
       const opts = mockNatsRequest.mock.calls[0][2];
       expect(opts.timeout).toBe(10000);
@@ -109,11 +102,7 @@ describe('RequestReplyService', () => {
         data: new TextEncoder().encode(JSON.stringify(replyEnvelope)),
       });
 
-      await service.request({
-        subject: 'test.subject',
-        data: { key: 'value' },
-        context: sampleContext,
-      });
+      await service.request('test.subject', { key: 'value' }, { context: sampleContext });
 
       const opts = mockNatsRequest.mock.calls[0][2];
       expect(opts.timeout).toBe(defaultConfig.defaultTimeoutMs);
@@ -124,11 +113,7 @@ describe('RequestReplyService', () => {
         data: new TextEncoder().encode(JSON.stringify(replyEnvelope)),
       });
 
-      await service.request({
-        subject: 'test.subject',
-        data: { amount: 100 },
-        context: sampleContext,
-      });
+      await service.request('test.subject', { amount: 100 }, { context: sampleContext });
 
       const payload = mockNatsRequest.mock.calls[0][1] as Uint8Array;
       const parsed = JSON.parse(new TextDecoder().decode(payload));
@@ -142,14 +127,60 @@ describe('RequestReplyService', () => {
         data: new TextEncoder().encode(JSON.stringify(replyEnvelope)),
       });
 
-      await service.request({
-        subject: 'test.subject',
-        data: {},
-        context: sampleContext,
-      });
+      await service.request('test.subject', {}, { context: sampleContext });
 
       expect(mockLogEmitted).toHaveBeenCalledTimes(1);
       expect(mockLogConsumed).toHaveBeenCalledTimes(1);
+    });
+
+    it('should log reply received with response envelope context', async () => {
+      mockNatsRequest.mockResolvedValue({
+        data: new TextEncoder().encode(JSON.stringify(replyEnvelope)),
+      });
+
+      await service.request('test.subject', {}, { context: sampleContext });
+
+      const consumedCtx = mockLogConsumed.mock.calls[0][0];
+      expect(consumedCtx.eventId).toBe('evt_reply-001');
+      expect(consumedCtx.eventType).toBe(replyEnvelope.type);
+      expect(consumedCtx.correlationId).toBe(replyEnvelope.correlation_id);
+    });
+
+    it('should throw RequestReplyException and log error on NATS timeout', async () => {
+      const natsError = new Error('Request timed out');
+      mockNatsRequest.mockRejectedValue(natsError);
+
+      await expect(service.request('test.subject', {}, { context: sampleContext })).rejects.toThrow(
+        RequestReplyException,
+      );
+
+      expect(mockLogError).toHaveBeenCalledTimes(1);
+      const errorCtx = mockLogError.mock.calls[0][0];
+      expect(errorCtx.error).toBe('Request timed out');
+    });
+
+    it('should throw RequestReplyException and log error on malformed reply payload', async () => {
+      const malformedData = new TextEncoder().encode('not-json{{{');
+      mockNatsRequest.mockResolvedValue({ data: malformedData });
+
+      await expect(service.request('test.subject', {}, { context: sampleContext })).rejects.toThrow(
+        RequestReplyException,
+      );
+
+      expect(mockLogError).toHaveBeenCalledTimes(1);
+    });
+
+    it('should include correlationId in RequestReplyException on request failure', async () => {
+      mockNatsRequest.mockRejectedValue(new Error('Connection refused'));
+
+      try {
+        await service.request('test.subject', {}, { context: sampleContext });
+      } catch (error) {
+        expect(error).toBeInstanceOf(RequestReplyException);
+        const ex = error as RequestReplyException;
+        expect(ex.correlationId).toBe(sampleContext.correlationId);
+        expect(ex.eventId).toBe('evt_mock-request-uuid');
+      }
     });
   });
 
@@ -168,7 +199,7 @@ describe('RequestReplyService', () => {
       expect(event).toBe(responseEvent);
     });
 
-    it('should log response sent via EventLoggerService', async () => {
+    it('should log response sent only once via ProducerService.publish', async () => {
       const responseEvent = createTestEnvelope({
         id: 'evt_response-002',
         reply_to: '_INBOX.reply.subject',
@@ -176,18 +207,20 @@ describe('RequestReplyService', () => {
 
       await service.sendResponse(sampleContext.correlationId, responseEvent);
 
-      expect(mockLogEmitted).toHaveBeenCalledTimes(1);
-      const logCtx = mockLogEmitted.mock.calls[0][0];
-      expect(logCtx.subject).toBe('_INBOX.reply.subject');
-      expect(logCtx.eventId).toBe('evt_response-002');
+      expect(mockLogEmitted).not.toHaveBeenCalled();
+      expect(mockPublish).toHaveBeenCalledTimes(1);
     });
 
-    it('should throw when reply_to is missing', async () => {
+    it('should throw RequestReplyException when reply_to is missing', async () => {
       const eventWithoutReply = createTestEnvelope({ id: 'evt_no_reply' });
 
-      await expect(
-        service.sendResponse(sampleContext.correlationId, eventWithoutReply),
-      ).rejects.toThrow('Cannot send response: event missing reply_to field');
+      await expect(service.sendResponse(sampleContext.correlationId, eventWithoutReply)).rejects.toThrow(
+        RequestReplyException,
+      );
+
+      await expect(service.sendResponse(sampleContext.correlationId, eventWithoutReply)).rejects.toThrow(
+        'Cannot send response: event missing reply_to field',
+      );
     });
   });
 
@@ -209,9 +242,7 @@ describe('RequestReplyService', () => {
   });
 });
 
-function createTestEnvelope<T = Record<string, unknown>>(
-  overrides: Partial<EventEnvelope<T>> = {},
-): EventEnvelope<T> {
+function createTestEnvelope<T = Record<string, unknown>>(overrides: Partial<EventEnvelope<T>> = {}): EventEnvelope<T> {
   return new EventEnvelope<T>({
     id: 'evt_test-123',
     type: 'payment.proof.uploaded',

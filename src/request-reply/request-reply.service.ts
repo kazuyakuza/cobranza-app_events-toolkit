@@ -1,13 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
+import { RequestReplyException } from '../common/errors/request-reply.exception';
 import { generateEventId } from '../common/utils/uuid.utils';
 import { nowIso } from '../common/utils/date.utils';
-import { EventLoggerService, EventLogContext } from '../logging/event-logger.service';
-import { ProducerService } from '../producer/producer.service';
+import { encodeEvent, decodeEvent } from '../common/utils/serialization.utils';
+import { EventLoggerService, EventLogContext, EventErrorLogContext } from '../logging/event-logger.service';
+import { ProducerService, EventContext } from '../producer/producer.service';
 import {
   RequestReplyConfig,
   RequestReplyDeps,
-  RequestReplyOptions,
+  RequestReplyRequestOptions,
   RequestReplyResponse,
   REQUEST_REPLY_DEPS_TOKEN,
 } from './request-reply.types';
@@ -21,8 +23,6 @@ import {
  */
 @Injectable()
 export class RequestReplyService {
-  private readonly encoder = new TextEncoder();
-  private readonly decoder = new TextDecoder();
   private readonly natsConnection: RequestReplyDeps['natsConnection'];
   private readonly producerService: ProducerService;
   private readonly logger: EventLoggerService;
@@ -38,20 +38,29 @@ export class RequestReplyService {
   /**
    * Sends a request event and waits for a typed reply within a timeout.
    *
-   * Builds an {@link EventEnvelope} from the provided options, publishes it
-   * via NATS request-reply, and decodes the response envelope payload.
+   * Builds an {@link EventEnvelope} from the provided context and payload,
+   * publishes it via NATS request-reply, and decodes the response envelope.
    */
-  async request<T, R>(options: RequestReplyOptions<T>): Promise<RequestReplyResponse<R>> {
-    const envelope = this.buildEnvelope(options);
-    const payload = this.encodeEnvelope(envelope);
-    const timeout = options.timeoutMs ?? this.config.defaultTimeoutMs;
-    this.logRequestSent(options.subject, envelope);
+  async request<T, R>(
+    subject: string,
+    payload: T,
+    options: RequestReplyRequestOptions & { context: EventContext },
+  ): Promise<RequestReplyResponse<R>> {
+    const { context, ...requestOptions } = options;
+    const envelope = this.buildEnvelope(context, payload);
+    const encoded = encodeEvent(envelope);
+    const timeout = requestOptions.timeoutMs ?? this.config.defaultTimeoutMs;
+    this.logRequestSent(subject, envelope);
 
-    const msg = await this.natsConnection.request(options.subject, payload, { timeout });
-    const responseEnvelope = this.decodeEnvelope<R>(msg.data);
-    this.logReplyReceived(options.subject, envelope);
-
-    return { data: responseEnvelope.data, raw: msg.data };
+    try {
+      const msg = await this.natsConnection.request(subject, encoded, { timeout });
+      const responseEnvelope = decodeEvent<EventEnvelope<R>>(msg.data);
+      this.logReplyReceived(subject, responseEnvelope);
+      return { data: responseEnvelope.data, raw: msg.data };
+    } catch (error: unknown) {
+      this.logRequestError(subject, envelope, error);
+      throw this.wrapRequestError(envelope, error);
+    }
   }
 
   /**
@@ -64,7 +73,6 @@ export class RequestReplyService {
     const replyTo = responseEvent.reply_to;
     this.ensureReplyTo(replyTo, correlationId);
     await this.producerService.publish(replyTo, responseEvent);
-    this.logResponseSent(replyTo, responseEvent);
   }
 
   /** Returns true when the event carries a `reply_to` subject. */
@@ -72,8 +80,7 @@ export class RequestReplyService {
     return typeof event.reply_to === 'string' && event.reply_to.length > 0;
   }
 
-  private buildEnvelope<T>(options: RequestReplyOptions<T>): EventEnvelope<T> {
-    const { context, data } = options;
+  private buildEnvelope<T>(context: EventContext, payload: T): EventEnvelope<T> {
     return new EventEnvelope<T>({
       id: generateEventId(),
       produced_at: nowIso(),
@@ -87,23 +94,18 @@ export class RequestReplyService {
       causation_id: context.causationId,
       trace_id: context.traceId,
       reply_to: context.replyTo,
-      data,
+      data: payload,
     });
-  }
-
-  private encodeEnvelope(envelope: EventEnvelope<unknown>): Uint8Array {
-    return this.encoder.encode(JSON.stringify(envelope));
-  }
-
-  private decodeEnvelope<R>(raw: Uint8Array): EventEnvelope<R> {
-    return JSON.parse(this.decoder.decode(raw)) as EventEnvelope<R>;
   }
 
   private ensureReplyTo(replyTo: string | undefined, correlationId: string): asserts replyTo is string {
     if (!replyTo) {
-      throw new Error(
-        `Cannot send response: event missing reply_to field (correlationId: ${correlationId})`,
-      );
+      throw new RequestReplyException({
+        message: `Cannot send response: event missing reply_to field (correlationId: ${correlationId})`,
+        eventId: 'unknown',
+        eventType: 'unknown',
+        correlationId,
+      });
     }
   }
 
@@ -115,14 +117,8 @@ export class RequestReplyService {
     this.logger.logEventConsumed(this.toLogContext(subject, envelope));
   }
 
-  private logResponseSent(replyTo: string, envelope: EventEnvelope<unknown>): void {
-    this.logger.logEventEmitted({
-      eventId: envelope.id,
-      eventType: envelope.type,
-      subject: replyTo,
-      correlationId: envelope.correlation_id,
-      traceId: envelope.trace_id,
-    });
+  private logRequestError(subject: string, envelope: EventEnvelope<unknown>, error: unknown): void {
+    this.logger.logEventError(this.toErrorLogContext(subject, envelope, error));
   }
 
   private toLogContext(subject: string, envelope: EventEnvelope<unknown>): EventLogContext {
@@ -133,5 +129,27 @@ export class RequestReplyService {
       correlationId: envelope.correlation_id,
       traceId: envelope.trace_id,
     };
+  }
+
+  private toErrorLogContext(subject: string, envelope: EventEnvelope<unknown>, error: unknown): EventErrorLogContext {
+    const err = error instanceof Error ? error : new Error(String(error));
+    return {
+      ...this.toLogContext(subject, envelope),
+      error: err.message,
+      stack: err.stack,
+    };
+  }
+
+  private wrapRequestError(envelope: EventEnvelope<unknown>, error: unknown): RequestReplyException {
+    if (error instanceof RequestReplyException) {
+      return error;
+    }
+    return new RequestReplyException({
+      message: error instanceof Error ? error.message : String(error),
+      eventId: envelope.id,
+      eventType: envelope.type,
+      correlationId: envelope.correlation_id,
+      cause: error instanceof Error ? error : undefined,
+    });
   }
 }

@@ -4,6 +4,7 @@ import { ActorType } from '../common/envelope/actor-type.enum';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { generateEventId } from '../common/utils/uuid.utils';
 import { nowIso } from '../common/utils/date.utils';
+import { encodeEvent } from '../common/utils/serialization.utils';
 import { EventLoggerService, EventLogContext, EventErrorLogContext } from '../logging/event-logger.service';
 import { JETSTREAM_TOKEN } from './producer.module';
 
@@ -50,8 +51,6 @@ export interface EmitOptions<T> {
  */
 @Injectable()
 export class ProducerService {
-  private readonly encoder = new TextEncoder();
-
   constructor(
     @Inject(JETSTREAM_TOKEN) private readonly jetStream: JetStreamClient,
     private readonly logger: EventLoggerService,
@@ -66,7 +65,7 @@ export class ProducerService {
    * @param event - Fully constructed event envelope.
    */
   async publish(subject: string, event: EventEnvelope<unknown>): Promise<void> {
-    const payload = this.encodeEvent(event);
+    const payload = encodeEvent(event);
     try {
       await this.jetStream.publish(subject, payload);
       this.logEmission(subject, event);
@@ -107,10 +106,6 @@ export class ProducerService {
       reply_to: context.replyTo,
       data,
     });
-  }
-
-  private encodeEvent(event: EventEnvelope<unknown>): Uint8Array {
-    return this.encoder.encode(JSON.stringify(event));
   }
 
   private logEmission(subject: string, event: EventEnvelope<unknown>): void {
