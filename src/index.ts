@@ -51,3 +51,16 @@ export {
   ON_EVENT_EXPLORER_DEPS_TOKEN,
   OnEventExplorerDeps,
 } from './consumer/decorators/on-event-explorer-deps.interface';
+
+// ── Request-Reply ──
+export { RequestReplyService } from './request-reply/request-reply.service';
+export {
+  RequestReplyConfig,
+  RequestReplyOptions,
+  RequestReplyResponse,
+  RequestReplyDeps,
+  NATS_CONNECTION_TOKEN,
+  REQUEST_REPLY_CONFIG_TOKEN,
+  REQUEST_REPLY_DEPS_TOKEN,
+  resolveRequestReplyConfig,
+} from './request-reply/request-reply.types';
