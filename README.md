@@ -15,7 +15,7 @@ NATS + JetStream event handling library for the Cobranza App microservices platf
 
 ### What it provides
 
-- **Event Envelope**: Strongly typed `EventEnvelope<T>` with built-in `class-validator` validation
+- **Event Envelope**: Strongly typed `EventEnvelope<T>` extending abstract `EventBase` with built-in `class-validator` validation
 - **Subject Builder**: Single entry point for all NATS subject generation following the convention
 - **Producer Module**: `@EmitEvent()` decorator and `ProducerService` for fire-and-forget publishing
 - **Consumer Module**: `@OnEvent()` decorator with automatic validation, error handling, and DLQ routing
@@ -62,7 +62,7 @@ The following must be installed in the consuming microservice:
 
 ### Event Envelope
 
-All messages follow a standardized envelope structure. The toolkit provides `EventEnvelope<T>` as the base class:
+All messages follow a standardized envelope structure. The toolkit provides `EventBase` as the abstract base class defining common envelope fields, and `EventEnvelope<T>` as the concrete generic class that extends it with a typed `data` payload:
 
 ```json
 {
@@ -129,6 +129,24 @@ enum ActorType {
 }
 ```
 
+### Event Context
+
+The `EventContext` provides the identity and traceability metadata required by every event. When constructing or factory-creating an event, you pass an `EventContext` object:
+
+```typescript
+interface EventContext {
+  companyId: string;      // Tenant UUID (mandatory)
+  actorType: ActorType;   // Who performed the action
+  actorId: string;        // Identifier of the actor
+  correlationId?: string; // Links events across a transaction chain
+  traceId?: string;       // Distributed tracing ID
+  causationId?: string;   // ID of the event that caused this one
+  replyTo?: string;       // Subject for request-reply responses
+}
+```
+
+The toolkit propagates `companyId`, `actorType`, and `actorId` into the envelope fields `company_id`, `actor_type`, and `actor_id`.
+
 ---
 
 ## Usage
@@ -162,7 +180,13 @@ Extend `EventEnvelope<T>` with your domain-specific data type:
 
 ```typescript
 import { EventEnvelope } from '@cobranza-app/events-toolkit';
-import { IsUUID, IsUrl, IsNumber } from 'class-validator';
+import { IsUUID, IsUrl, IsNumber, IsEnum } from 'class-validator';
+
+enum Currency {
+  USD = 'USD',
+  MXN = 'MXN',
+  COP = 'COP'
+}
 
 class PaymentProofUploadedData {
   @IsUUID()
@@ -173,6 +197,9 @@ class PaymentProofUploadedData {
 
   @IsNumber()
   amount: number;
+
+  @IsEnum(Currency)
+  currency: Currency;
 }
 
 class PaymentProofUploadedEvent extends EventEnvelope<PaymentProofUploadedData> {
@@ -261,7 +288,7 @@ async onProofUploaded(event: EventEnvelope<PaymentProofUploadedData>): Promise<v
 ### Request-Reply Pattern
 
 ```typescript
-import { RequestReplyService } from '@cobranza-app/events-toolkit';
+import { RequestReplyService, SubjectBuilder, EventContext } from '@cobranza-app/events-toolkit';
 
 class PaymentService {
   constructor(
@@ -269,7 +296,7 @@ class PaymentService {
     private readonly subjectBuilder: SubjectBuilder
   ) {}
 
-  async requestPaymentProof(companyId: string, paymentId: string): Promise<ProofResponse> {
+  async requestPaymentProof(companyId: string, paymentId: string, context: EventContext): Promise<ProofResponse> {
     const subject = this.subjectBuilder.build({
       companyId,
       domain: 'payment',
@@ -277,6 +304,11 @@ class PaymentService {
       action: 'requested',
       version: '1'
     });
+
+    const requestEvent = new PaymentProofRequestedEvent(
+      new PaymentProofRequestedData({ paymentId }),
+      context
+    );
 
     return this.requestReply.sendAndWait<ProofResponse>(subject, requestEvent, {
       timeout: 10000 // ms
@@ -332,13 +364,13 @@ const subject = subjectBuilder.build({
 
 ### Event Factory
 
-Create validated event instances without the `new` keyword:
+Create validated event instances without the `new` keyword. The factory accepts the event class (not a string) as the `type` parameter and instantiates it with the provided data and context:
 
 ```typescript
 import { createEvent } from '@cobranza-app/events-toolkit';
 
 const event = createEvent<PaymentProofUploadedEvent>({
-  type: PaymentProofUploadedEvent,
+  type: PaymentProofUploadedEvent, // The event class (not a string)
   data: paymentData,
   context: eventContext
 });
@@ -352,9 +384,11 @@ const event = createEvent<PaymentProofUploadedEvent>({
 src/
 ├── index.ts                    # Public API barrel exports
 ├── common/                     # Shared across all modules
+│   ├── constants.ts            # Magic strings, defaults
 │   ├── envelope/               # EventEnvelope<T>, ActorType, EventBase
+│   │   └── validators/         # Custom class-validator decorators
 │   ├── dto/                    # BuildSubjectDto
-│   ├── utils/                  # SubjectBuilder, EventFactory, UUIDv7, date utils
+│   ├── utils/                  # SubjectBuilder, EventFactory, uuid.utils, date utils
 │   └── errors/                 # EventConsumerException
 ├── producer/                   # ProducerModule, ProducerService, @EmitEvent()
 ├── consumer/                   # ConsumerModule, JetStreamConsumerService, @OnEvent()
