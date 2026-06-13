@@ -1,14 +1,12 @@
-import { DynamicModule, Provider, Type } from '@nestjs/common';
+import { DynamicModule, Module, Provider, Type, ForwardReference } from '@nestjs/common';
 import { JetStreamClient, NatsConnection } from 'nats';
 import { EventLoggerService } from '../logging/event-logger.service';
 import { ConsumerService } from './consumer.service';
 import { JetStreamConsumerService } from './jetstream-consumer.service';
+import { JETSTREAM_CONSUMER_DEPS_TOKEN } from './jetstream-consumer-deps.interface';
 
-/** Injection token for the JetStream client instance used by ConsumerModule. */
-export const NATS_JETSTREAM_TOKEN = 'NATS_CONSUMER_JETSTREAM';
-
-/** Injection token for the configurable DLQ subject builder function. */
-export const DLQ_SUBJECT_BUILDER_TOKEN = 'DLQ_SUBJECT_BUILDER';
+/** Injection token for resolved {@link ConsumerModuleOptions}. */
+export const CONSUMER_MODULE_OPTIONS = 'CONSUMER_MODULE_OPTIONS';
 
 /** Synchronous options for {@link ConsumerModule.forRoot}. */
 export interface ConsumerModuleOptions {
@@ -22,6 +20,8 @@ export interface ConsumerModuleOptions {
 
 /** Asynchronous options for {@link ConsumerModule.forRootAsync}. */
 export interface ConsumerModuleAsyncOptions {
+  /** Optional modules to import whose providers are available to the factory. */
+  imports?: Array<Type<unknown> | DynamicModule | Promise<DynamicModule> | ForwardReference<unknown>>;
   /** Factory that resolves module options, optionally injecting dependencies. */
   useFactory: (...args: unknown[]) => Promise<ConsumerModuleOptions> | ConsumerModuleOptions;
   /** Optional dependencies to inject into the factory. */
@@ -39,28 +39,33 @@ function resolveJetStream(options: ConsumerModuleOptions): JetStreamClient {
   throw new Error('ConsumerModule requires either connection or jetStream in options');
 }
 
-/** NestJS DynamicModule for consuming events from NATS JetStream. */
+/**
+ * NestJS DynamicModule for consuming events from NATS JetStream.
+ *
+ * The host application MUST provide {@link EventLoggerService} globally
+ * (e.g. via a root module or a shared logging module).
+ */
+@Module({})
 export class ConsumerModule {
   /**
    * Registers the ConsumerModule with synchronously resolved options.
-   *
-   * @param options - Connection, JetStream instance, and optional DLQ builder.
    */
   static forRoot(options: ConsumerModuleOptions): DynamicModule {
     const jetStream = resolveJetStream(options);
-    const providers: Provider[] = [
-      { provide: NATS_JETSTREAM_TOKEN, useValue: jetStream },
-      EventLoggerService,
-      ConsumerService,
-    ];
-    if (options.dlqSubjectBuilder) {
-      providers.push({ provide: DLQ_SUBJECT_BUILDER_TOKEN, useValue: options.dlqSubjectBuilder });
-    }
-    providers.push(JetStreamConsumerService);
+    const depsProvider: Provider = {
+      provide: JETSTREAM_CONSUMER_DEPS_TOKEN,
+      useFactory: (consumerService: ConsumerService, logger: EventLoggerService) => ({
+        jetStream,
+        consumerService,
+        logger,
+        dlqSubjectBuilder: options.dlqSubjectBuilder,
+      }),
+      inject: [ConsumerService, EventLoggerService],
+    };
     return {
       module: ConsumerModule,
       global: true,
-      providers,
+      providers: [depsProvider, ConsumerService, JetStreamConsumerService],
       exports: [ConsumerService, JetStreamConsumerService],
     };
   }
@@ -69,30 +74,33 @@ export class ConsumerModule {
    * Registers the ConsumerModule with asynchronously resolved options.
    *
    * Use this when the JetStream connection depends on other injected providers.
-   *
-   * @param asyncOptions - Factory and optional injection tokens for deferred resolution.
+   * The factory is invoked exactly once — its result is shared across all providers.
    */
   static forRootAsync(asyncOptions: ConsumerModuleAsyncOptions): DynamicModule {
-    const jetStreamProvider: Provider = {
-      provide: NATS_JETSTREAM_TOKEN,
-      useFactory: async (...args: unknown[]): Promise<JetStreamClient> => {
-        const moduleOptions = await asyncOptions.useFactory(...args);
-        return resolveJetStream(moduleOptions);
-      },
+    const optionsProvider: Provider = {
+      provide: CONSUMER_MODULE_OPTIONS,
+      useFactory: async (...args: unknown[]): Promise<ConsumerModuleOptions> => asyncOptions.useFactory(...args),
       inject: asyncOptions.inject ?? [],
     };
-    const dlqProvider: Provider = {
-      provide: DLQ_SUBJECT_BUILDER_TOKEN,
-      useFactory: async (...args: unknown[]): Promise<((subject: string) => string) | undefined> => {
-        const moduleOptions = await asyncOptions.useFactory(...args);
-        return moduleOptions.dlqSubjectBuilder;
-      },
-      inject: asyncOptions.inject ?? [],
+    const depsProvider: Provider = {
+      provide: JETSTREAM_CONSUMER_DEPS_TOKEN,
+      useFactory: (
+        moduleOptions: ConsumerModuleOptions,
+        consumerService: ConsumerService,
+        logger: EventLoggerService,
+      ) => ({
+        jetStream: resolveJetStream(moduleOptions),
+        consumerService,
+        logger,
+        dlqSubjectBuilder: moduleOptions.dlqSubjectBuilder,
+      }),
+      inject: [CONSUMER_MODULE_OPTIONS, ConsumerService, EventLoggerService],
     };
     return {
       module: ConsumerModule,
       global: true,
-      providers: [jetStreamProvider, dlqProvider, EventLoggerService, ConsumerService, JetStreamConsumerService],
+      imports: asyncOptions.imports ?? [],
+      providers: [optionsProvider, depsProvider, ConsumerService, JetStreamConsumerService],
       exports: [ConsumerService, JetStreamConsumerService],
     };
   }

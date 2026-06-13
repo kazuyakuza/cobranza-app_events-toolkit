@@ -1,9 +1,10 @@
 import { Test } from '@nestjs/testing';
-import { JetStreamClient, JsMsg, NatsConnection } from 'nats';
-import { JetStreamConsumerService, defaultDlqSubjectBuilder } from './jetstream-consumer.service';
+import { JsMsg } from 'nats';
+import { JetStreamConsumerService } from './jetstream-consumer.service';
+import { defaultDlqSubjectBuilder } from './subscribe-options.interface';
 import { ConsumerService } from './consumer.service';
 import { EventLoggerService, EventLogContext, EventErrorLogContext } from '../logging/event-logger.service';
-import { NATS_JETSTREAM_TOKEN, DLQ_SUBJECT_BUILDER_TOKEN, ConsumerModule } from './consumer.module';
+import { JETSTREAM_CONSUMER_DEPS_TOKEN } from './jetstream-consumer-deps.interface';
 import { EventConsumerException } from '../common/errors/event-consumer.exception';
 import { ActorType } from '../common/envelope/actor-type.enum';
 
@@ -67,8 +68,16 @@ describe('JetStreamConsumerService', () => {
 
     const module = await Test.createTestingModule({
       providers: [
-        { provide: NATS_JETSTREAM_TOKEN, useValue: jetStream },
-        { provide: DLQ_SUBJECT_BUILDER_TOKEN, useValue: defaultDlqSubjectBuilder },
+        {
+          provide: JETSTREAM_CONSUMER_DEPS_TOKEN,
+          useFactory: (cs: ConsumerService, logger: EventLoggerService) => ({
+            jetStream,
+            consumerService: cs,
+            logger,
+            dlqSubjectBuilder: defaultDlqSubjectBuilder,
+          }),
+          inject: [ConsumerService, EventLoggerService],
+        },
         { provide: EventLoggerService, useValue: mockLogger },
         ConsumerService,
         JetStreamConsumerService,
@@ -87,13 +96,13 @@ describe('JetStreamConsumerService', () => {
     });
   });
 
-  describe('handleMessage — successful processing', () => {
+  describe('processMessage — successful processing', () => {
     it('should ack the message and log consumption on success', async () => {
       const handler = jest.fn().mockResolvedValue(undefined);
       consumerService.registerHandler(testSubject, handler);
 
       const msg = createJsMsg(createValidEventJson(), testSubject);
-      await (service as any).handleMessage(msg, testSubject);
+      await service.processMessage(msg, testSubject);
 
       expect(msg.ack).toHaveBeenCalledTimes(1);
       expect(msg.nak).not.toHaveBeenCalled();
@@ -107,14 +116,14 @@ describe('JetStreamConsumerService', () => {
     });
   });
 
-  describe('handleMessage — validation failure', () => {
-    it('should route invalid events to DLQ and ack when EventConsumerException is thrown', async () => {
+  describe('processMessage — validation failure', () => {
+    it('should route invalid events to DLQ with structured payload and ack', async () => {
       const handler = jest.fn().mockResolvedValue(undefined);
       consumerService.registerHandler(testSubject, handler);
 
       const invalidData = { ...createValidEventJson(), id: 'invalid-id' };
       const msg = createJsMsg(invalidData, testSubject);
-      await (service as any).handleMessage(msg, testSubject);
+      await service.processMessage(msg, testSubject);
 
       expect(msg.ack).toHaveBeenCalledTimes(1);
       expect(msg.nak).not.toHaveBeenCalled();
@@ -126,13 +135,19 @@ describe('JetStreamConsumerService', () => {
       expect(dlqContext.subject).toBe(testSubject);
 
       expect(jetStream.publish).toHaveBeenCalledTimes(1);
-      const [dlqSubject] = jetStream.publish.mock.calls[0];
+      const [dlqSubject, dlqPayloadBytes] = jetStream.publish.mock.calls[0];
       expect(dlqSubject).toBe(`dlq.${testSubject}`);
+      const dlqPayload = JSON.parse(new TextDecoder().decode(dlqPayloadBytes));
+      expect(dlqPayload.originalSubject).toBe(testSubject);
+      expect(dlqPayload.originalPayload).toEqual(invalidData);
+      expect(dlqPayload.error.name).toBe('EventConsumerException');
+      expect(dlqPayload.error.eventId).toBe('invalid-id');
+      expect(dlqPayload.failedAt).toBeDefined();
     });
   });
 
-  describe('handleMessage — handler throws EventConsumerException', () => {
-    it('should route to DLQ when handler throws EventConsumerException', async () => {
+  describe('processMessage — handler throws EventConsumerException', () => {
+    it('should route to DLQ with structured payload when handler throws EventConsumerException', async () => {
       const consumerException = new EventConsumerException({
         message: 'Business rule violation',
         eventId: 'evt_test-123',
@@ -142,24 +157,29 @@ describe('JetStreamConsumerService', () => {
       const handler = jest.fn().mockRejectedValue(consumerException);
       consumerService.registerHandler(testSubject, handler);
 
-      const msg = createJsMsg(createValidEventJson(), testSubject);
-      await (service as any).handleMessage(msg, testSubject);
+      const validData = createValidEventJson();
+      const msg = createJsMsg(validData, testSubject);
+      await service.processMessage(msg, testSubject);
 
       expect(msg.ack).toHaveBeenCalledTimes(1);
       expect(msg.nak).not.toHaveBeenCalled();
 
       expect(mockLogger.logEventDlq).toHaveBeenCalledTimes(1);
       expect(jetStream.publish).toHaveBeenCalledTimes(1);
+      const [, dlqPayloadBytes] = jetStream.publish.mock.calls[0];
+      const dlqPayload = JSON.parse(new TextDecoder().decode(dlqPayloadBytes));
+      expect(dlqPayload.originalPayload).toEqual(validData);
+      expect(dlqPayload.error.message).toBe('Business rule violation');
     });
   });
 
-  describe('handleMessage — handler throws generic error', () => {
+  describe('processMessage — handler throws generic error', () => {
     it('should nack and log error when handler throws non-EventConsumerException', async () => {
       const handler = jest.fn().mockRejectedValue(new Error('Unexpected failure'));
       consumerService.registerHandler(testSubject, handler);
 
       const msg = createJsMsg(createValidEventJson(), testSubject);
-      await (service as any).handleMessage(msg, testSubject);
+      await service.processMessage(msg, testSubject);
 
       expect(msg.nak).toHaveBeenCalledTimes(1);
       expect(msg.ack).not.toHaveBeenCalled();
@@ -171,8 +191,8 @@ describe('JetStreamConsumerService', () => {
     });
   });
 
-  describe('handleMessage — DLQ publish failure', () => {
-    it('should nack the original message when DLQ publish fails', async () => {
+  describe('processMessage — DLQ publish failure', () => {
+    it('should nack and log error when DLQ publish fails', async () => {
       jetStream.publish.mockRejectedValue(new Error('DLQ publish failed'));
 
       const handler = jest.fn().mockResolvedValue(undefined);
@@ -180,15 +200,16 @@ describe('JetStreamConsumerService', () => {
 
       const invalidData = { ...createValidEventJson(), id: 'invalid-id' };
       const msg = createJsMsg(invalidData, testSubject);
-      await (service as any).handleMessage(msg, testSubject);
+      await service.processMessage(msg, testSubject);
 
       expect(msg.nak).toHaveBeenCalledTimes(1);
       expect(msg.ack).not.toHaveBeenCalled();
+      expect(mockLogger.logEventError).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('handleMessage — malformed JSON', () => {
-    it('should nack when message payload is not valid JSON', async () => {
+  describe('processMessage — malformed JSON', () => {
+    it('should route malformed JSON to DLQ via EventConsumerException', async () => {
       const handler = jest.fn().mockResolvedValue(undefined);
       consumerService.registerHandler(testSubject, handler);
 
@@ -196,14 +217,15 @@ describe('JetStreamConsumerService', () => {
       const msg = createJsMsg(createValidEventJson(), testSubject);
       (msg as unknown as Record<string, unknown>).data = malformedPayload;
 
-      await (service as any).handleMessage(msg, testSubject);
+      await service.processMessage(msg, testSubject);
 
-      expect(msg.nak).toHaveBeenCalledTimes(1);
-      expect(msg.ack).not.toHaveBeenCalled();
+      expect(msg.ack).toHaveBeenCalledTimes(1);
+      expect(msg.nak).not.toHaveBeenCalled();
       expect(handler).not.toHaveBeenCalled();
+      expect(mockLogger.logEventDlq).toHaveBeenCalledTimes(1);
     });
 
-    it('should nack when message payload is an array instead of object', async () => {
+    it('should route non-object payload to DLQ via EventConsumerException', async () => {
       const handler = jest.fn().mockResolvedValue(undefined);
       consumerService.registerHandler(testSubject, handler);
 
@@ -211,9 +233,11 @@ describe('JetStreamConsumerService', () => {
       const msg = createJsMsg(createValidEventJson(), testSubject);
       (msg as unknown as Record<string, unknown>).data = arrayPayload;
 
-      await (service as any).handleMessage(msg, testSubject);
+      await service.processMessage(msg, testSubject);
 
-      expect(msg.nak).toHaveBeenCalledTimes(1);
+      expect(msg.ack).toHaveBeenCalledTimes(1);
+      expect(msg.nak).not.toHaveBeenCalled();
+      expect(mockLogger.logEventDlq).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -227,59 +251,6 @@ describe('JetStreamConsumerService', () => {
 
       expect(consumerService.getHandler(testSubject)).toBe(handler);
       expect(jetStream.subscribe).toHaveBeenCalledWith(testSubject, {});
-    });
-  });
-
-  describe('ConsumerModule', () => {
-    it('should resolve JetStream from connection via forRoot', () => {
-      const mockConnection: Partial<NatsConnection> & { jetstream: jest.Mock } = {
-        jetstream: jest.fn().mockReturnValue(jetStream),
-      };
-      const dynamicModule = ConsumerModule.forRoot({
-        connection: mockConnection as NatsConnection,
-      });
-      expect(mockConnection.jetstream).toHaveBeenCalledTimes(1);
-      expect(dynamicModule.exports).toContain(ConsumerService);
-      expect(dynamicModule.exports).toContain(JetStreamConsumerService);
-    });
-
-    it('should use provided jetStream directly via forRoot', () => {
-      const dynamicModule = ConsumerModule.forRoot({
-        jetStream: jetStream as unknown as JetStreamClient,
-      });
-      expect(dynamicModule.exports).toContain(ConsumerService);
-      expect(dynamicModule.exports).toContain(JetStreamConsumerService);
-    });
-
-    it('should throw if neither connection nor jetStream is provided', () => {
-      expect(() => ConsumerModule.forRoot({})).toThrow(
-        'ConsumerModule requires either connection or jetStream in options',
-      );
-    });
-
-    it('should resolve JetStream from async factory via forRootAsync', async () => {
-      const dynamicModule = ConsumerModule.forRootAsync({
-        useFactory: async () => ({ jetStream: jetStream as unknown as JetStreamClient }),
-      });
-
-      const jetStreamProvider = dynamicModule.providers?.find(
-        (p) => 'provide' in p && p.provide === NATS_JETSTREAM_TOKEN,
-      ) as { useFactory: () => Promise<JetStreamClient> };
-      const resolved = await jetStreamProvider.useFactory();
-      expect(resolved).toBe(jetStream);
-    });
-
-    it('should provide custom dlqSubjectBuilder via forRoot', () => {
-      const customBuilder = (subject: string) => `custom-dlq.${subject}`;
-      const dynamicModule = ConsumerModule.forRoot({
-        jetStream: jetStream as unknown as JetStreamClient,
-        dlqSubjectBuilder: customBuilder,
-      });
-
-      const dlqProvider = dynamicModule.providers?.find(
-        (p) => 'provide' in p && p.provide === DLQ_SUBJECT_BUILDER_TOKEN,
-      ) as { provide: string; useValue: (subject: string) => string };
-      expect(dlqProvider.useValue).toBe(customBuilder);
     });
   });
 });

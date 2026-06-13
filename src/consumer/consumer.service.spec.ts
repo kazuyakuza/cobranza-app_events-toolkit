@@ -3,6 +3,7 @@ import { ConsumerService } from './consumer.service';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { ActorType } from '../common/envelope/actor-type.enum';
 import { EventContext } from '../producer/producer.service';
+import { EventConsumerException } from '../common/errors/event-consumer.exception';
 
 describe('ConsumerService', () => {
   let service: ConsumerService;
@@ -48,15 +49,18 @@ describe('ConsumerService', () => {
       service.registerHandler('company.*.payment.proof.uploaded.v1', handler);
 
       const event = createTestEvent();
-      await service.dispatch('company.*.payment.proof.uploaded.v1', event, sampleContext);
+      await service.dispatch({ subject: 'company.*.payment.proof.uploaded.v1', event, context: sampleContext });
 
       expect(handler).toHaveBeenCalledTimes(1);
       expect(handler).toHaveBeenCalledWith(event, sampleContext);
     });
 
-    it('should throw when no handler is registered for the subject', async () => {
+    it('should throw EventConsumerException when no handler is registered', async () => {
       const event = createTestEvent();
-      await expect(service.dispatch('unknown.subject', event, sampleContext)).rejects.toThrow(
+      await expect(service.dispatch({ subject: 'unknown.subject', event, context: sampleContext })).rejects.toThrow(
+        EventConsumerException,
+      );
+      await expect(service.dispatch({ subject: 'unknown.subject', event, context: sampleContext })).rejects.toThrow(
         'No handler registered for subject: unknown.subject',
       );
     });
@@ -67,9 +71,9 @@ describe('ConsumerService', () => {
       service.registerHandler('company.*.payment.proof.uploaded.v1', handler);
 
       const event = createTestEvent();
-      await expect(service.dispatch('company.*.payment.proof.uploaded.v1', event, sampleContext)).rejects.toThrow(
-        'Handler failed',
-      );
+      await expect(
+        service.dispatch({ subject: 'company.*.payment.proof.uploaded.v1', event, context: sampleContext }),
+      ).rejects.toThrow('Handler failed');
     });
   });
 

@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
+import { EventConsumerException } from '../common/errors/event-consumer.exception';
 import { EventContext } from '../producer/producer.service';
+import { DispatchOptions } from './dispatch-options.interface';
 
 /** Handler function invoked when a consumed event matches a registered subject. */
 export type EventHandler = (event: EventEnvelope<unknown>, context: EventContext) => Promise<void>;
@@ -20,9 +22,6 @@ export class ConsumerService {
    * Registers a handler function for the given subject pattern.
    *
    * If a handler is already registered for the subject, it is replaced.
-   *
-   * @param subject - NATS subject pattern to match (e.g. `company.*.payment.proof.uploaded.v1`).
-   * @param handler - Async function invoked when an event on the subject is consumed.
    */
   registerHandler(subject: string, handler: EventHandler): void {
     this.handlers.set(subject, handler);
@@ -31,30 +30,28 @@ export class ConsumerService {
   /**
    * Dispatches a consumed event to the handler registered for the subject.
    *
-   * Throws an error if no handler is registered for the subject.
-   *
-   * @param subject - Exact NATS subject of the incoming message.
-   * @param event - Deserialized and validated event envelope.
-   * @param context - Metadata context extracted from the event envelope.
+   * Throws {@link EventConsumerException} if no handler is registered,
+   * causing the message to be routed to the DLQ.
    */
-  async dispatch(subject: string, event: EventEnvelope<unknown>, context: EventContext): Promise<void> {
-    const handler = this.getHandler(subject);
+  async dispatch(options: DispatchOptions): Promise<void> {
+    const handler = this.getHandler(options.subject);
     if (!handler) {
-      throw new Error(`No handler registered for subject: ${subject}`);
+      throw new EventConsumerException({
+        message: `No handler registered for subject: ${options.subject}`,
+        eventId: options.event.id,
+        eventType: options.event.type,
+        correlationId: options.event.correlation_id,
+      });
     }
-    await handler(event, context);
+    await handler(options.event, options.context);
   }
 
-  /**
-   * Returns the handler for the given subject, or undefined if none is registered.
-   */
+  /** Returns the handler for the given subject, or undefined if none is registered. */
   getHandler(subject: string): EventHandler | undefined {
     return this.handlers.get(subject);
   }
 
-  /**
-   * Returns the number of registered handlers.
-   */
+  /** Returns the number of registered handlers. */
   get handlerCount(): number {
     return this.handlers.size;
   }
