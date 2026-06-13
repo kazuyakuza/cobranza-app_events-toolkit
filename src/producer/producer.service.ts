@@ -41,6 +41,13 @@ export interface EmitOptions<T> {
   context: EventContext;
 }
 
+/**
+ * Publishes domain events to NATS JetStream with structured logging.
+ *
+ * Provides two publishing modes:
+ * - `publish` — sends a pre-built {@link EventEnvelope} directly.
+ * - `emit` — builds an envelope from an {@link EventContext} and payload, then publishes.
+ */
 @Injectable()
 export class ProducerService {
   private readonly encoder = new TextEncoder();
@@ -50,6 +57,14 @@ export class ProducerService {
     private readonly logger: EventLoggerService,
   ) {}
 
+  /**
+   * Publishes a pre-built event envelope to the given NATS subject.
+   *
+   * Logs success or failure via {@link EventLoggerService}.
+   *
+   * @param subject - NATS subject to publish to.
+   * @param event - Fully constructed event envelope.
+   */
   async publish(subject: string, event: EventEnvelope<unknown>): Promise<void> {
     const payload = this.encodeEvent(event);
     try {
@@ -61,6 +76,15 @@ export class ProducerService {
     }
   }
 
+  /**
+   * Builds an {@link EventEnvelope} from structured options and publishes it.
+   *
+   * Higher-level convenience over {@link ProducerService.publish} — generates the
+   * event ID and timestamp automatically from the provided {@link EventContext}.
+   *
+   * @typeParam T - Domain-specific payload type.
+   * @param options - Subject, payload, and metadata context.
+   */
   async emit<T>(options: EmitOptions<T>): Promise<void> {
     const envelope = this.buildEnvelope(options);
     await this.publish(options.subject, envelope);

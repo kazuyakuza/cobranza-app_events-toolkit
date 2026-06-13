@@ -35,6 +35,11 @@ function resolveJetStream(options: ProducerModuleOptions): JetStreamClient {
 
 /** NestJS DynamicModule for event publishing via NATS JetStream. */
 export class ProducerModule {
+  /**
+   * Registers the ProducerModule with synchronously resolved options.
+   *
+   * @param options - Connection or JetStream instance to use for publishing.
+   */
   static forRoot(options: ProducerModuleOptions): DynamicModule {
     const jetStream = resolveJetStream(options);
     return {
@@ -45,6 +50,14 @@ export class ProducerModule {
     };
   }
 
+  /**
+   * Registers the ProducerModule with asynchronously resolved options.
+   *
+   * Use this when the JetStream connection depends on other injected providers
+   * (e.g. a configuration service or async NATS client factory).
+   *
+   * @param asyncOptions - Factory and optional injection tokens for deferred resolution.
+   */
   static forRootAsync(asyncOptions: ProducerModuleAsyncOptions): DynamicModule {
     const jetStreamProvider: Provider = {
       provide: JETSTREAM_TOKEN,
