@@ -1,111 +1,428 @@
-# Base Project for AI Agent Driven Development
+# @cobranza-app/events-toolkit
 
-This project serves as a foundational template for future AI-agent driven development. It is pre-configured with essential rules, workflows, and structures optimized for collaboration between human developers and AI agents (specifically Kilo Code).
+NATS + JetStream event handling library for the Cobranza App microservices platform.
 
-**Attention AI Agents:** Before making any changes, you **must** read and adhere to the guidelines outlined in [`AGENTS.md`](AGENTS.md). This file contains critical information about the project's workflow, rules, and architectural standards.
+[![NestJS](https://img.shields.io/badge/NestJS-10.x-E0234E?logo=nestjs)](https://nestjs.com)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript)](https://www.typescriptlang.org)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-339933?logo=node.js)](https://nodejs.org)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## Compatibility
+---
 
-This template was implemented and tested with the **Kilo Code VSCode plugin**. It should also work with:
+## Overview
 
-- **Kilo Code CLI** (command-line interface)
-- Any AI agent manager or similar tool that supports custom sub-agent definitions, rule files, and workflow commands via markdown-based configuration
+`events-toolkit` encapsulates all NATS/JetStream event infrastructure concerns into reusable NestJS modules, services, and decorators. It enforces the [Event & Messaging Convention](docs/event-messaging-convention.md) at compile-time and runtime, ensuring every microservice in the platform produces and consumes events consistently.
 
-The project uses standard Markdown-based configuration (`.kilo/`, `.agent/`) and does not depend on any proprietary format, making it adaptable to other AI-driven development tools.
+### What it provides
 
-## Prerequisites
+- **Event Envelope**: Strongly typed `EventEnvelope<T>` with built-in `class-validator` validation
+- **Subject Builder**: Single entry point for all NATS subject generation following the convention
+- **Producer Module**: `@EmitEvent()` decorator and `ProducerService` for fire-and-forget publishing
+- **Consumer Module**: `@OnEvent()` decorator with automatic validation, error handling, and DLQ routing
+- **Request-Reply**: `RequestReplyService` for async request to response patterns
+- **Outbox Module**: SQLite-based persistent outbox with background processor for transactional safety
+- **Event Logger**: Winston-based structured logging with trace and correlation IDs
 
-- **Kilo Code**: Optimized for the Kilo Code plugin for VSCode, with CLI support. See [compatibility section](#compatibility) for details.
-- **Git**: Ensure your environment is configured for the workflow. See [`how-to-set-up-git.md`](docs/how-to-set-up-git.md).
+### Non-goals
 
-## About this Project
+- Does NOT define domain-specific event payloads — each microservice owns its events.
+- Does NOT replace the main PostgreSQL outbox in `ms-db-gateway` — it supplements with SQLite for other services.
+- Is NOT a standalone service — it is a library consumed by NestJS microservices.
 
-The primary goal of this repository is to provide a clean, structured starting point for new projects with built-in "AI-Readiness."
+---
 
-### Design Principles
+## Installation
 
-- **Foundation**: A structured baseline for new repositories.
-- **AI-Readiness**: Integrated configurations (like `.kilo`, `.agent`, and `.kilocodeignore`) to enable immediate and effective AI agent participation.
-- **Standardization**: Established coding standards, workflows, and documentation practices.
-- **Project Info**: A persistent context and knowledge management system for agents.
-
-## Project Structure
-
-Understanding the purpose of the configuration directories is key to effective development:
-
-- [`.agent/`](.agent/): Stores project-specific agent context. Includes [`.agent/project-info/`](.agent/project-info/) for persistent project knowledge (`brief.md`, `product.md`, `context.md`, `architecture.md`, `tech.md`), the [`.agent/todos/`](.agent/todos/) directory for task tracking, local rules, and the [`project-structure.md`](.agent/project-structure.md) map.
-- [`.kilo/`](.kilo/): The operational core of the AI integration. Contains custom [`.kilo/agents/`](.kilo/agents/) (Architect, Implementer, Code Reviewer, Docs Specialist, etc.), global [`.kilo/rules/`](.kilo/rules/) (19 rule files), standardized [`.kilo/commands/`](.kilo/commands/) (workflows like the Critical Workflow), [`.kilo/modes/`](.kilo/modes/) for agent mode overrides, and the [`.kilo/plans/`](.kilo/plans/) directory where agents store detailed implementation plans.
-- [`.kilocodeignore`](.kilocodeignore): Controls which files are excluded from codebase indexing, skipping lock files, dependency directories, build outputs, and binary assets.
-
-## The Critical Workflow
-
-The project follows a standardized process for task execution, ensuring systematic progress from analysis to deployment. Each step is handled by a dedicated sub-agent:
-
-```mermaid
-graph TD
-    Start((Start)) --> Origin{1. Task Origin}
-    Origin -- Chat --> CreateTodo[Create TODO file]
-    Origin -- TODO File --> GitSetup["2. Git Feature Branch Setup<br/><small>[Implementer]</small>"]
-    CreateTodo --> GitSetup
-    GitSetup --> VersionUpdate["3. Version Update<br/><small>[Implementer]</small>"]
-    VersionUpdate --> Execution[Task Execution Loop]
-    subgraph ExecutionProcess [4. Task Execution]
-        Execution --> Analysis["4.1 Analysis & Planning<br/><small>[Architect]</small>"]
-        Analysis --> Implementation["4.2 Implementation<br/><small>[Implementer]</small>"]
-        Implementation --> CodeReview["4.3 Code Review<br/><small>[Code Reviewer]</small>"]
-        CodeReview -- Fixes Needed --> Fixes["4.3-fix Apply Fixes<br/><small>[Implementer]</small>"]
-        Fixes -- Re-review --> CodeReview
-        CodeReview -- Approved --> Documentation["4.4 Documentation<br/><small>[Docs Specialist]</small>"]
-        Documentation --> Check["4.5 Verification<br/><small>[Implementer]</small>"]
-        Check --> TaskCompletion["4.6 Task Completion<br/><small>[Implementer]</small>"]
-    end
-    TaskCompletion -- More Items --> Execution
-    TaskCompletion -- All Items Done --> TodoCompletion["5. TODO File Completion<br/><small>[Implementer]</small>"]
-    TodoCompletion --> Continuation{6. Continuation: more TODO files?}
-    Continuation -- Yes --> Ask{Ask User to Proceed}
-    Continuation -- No --> End((End))
-    Ask -- Yes --> GitSetup
-    Ask -- No --> End
+```bash
+npm install @cobranza-app/events-toolkit
 ```
 
-For full details, see [`critical-workflow.md`](.kilo/commands/critical-workflow.md).
+### Peer Dependencies
 
-## How to Start a Task
+The following must be installed in the consuming microservice:
 
-To initiate work with an AI agent, use one of the following copy-paste friendly commands in the chat.
-
-> **Note on Project Info:** When cloning this template for a new project, the Project Info initialization workflow will trigger automatically. The file `.agent/project-info/brief.md` defines the project's core requirements and scope — AI agents rely on this for context across sessions. To initialize, run `/critical-workflow` and ask to "initialize project info". See [`.kilo/commands/project-info-init.md`](.kilo/commands/project-info-init.md) for details. If the project brief is not defined, agents may produce work that does not align with your goals.
-
-### Option 1: Using a TODO File (Recommended)
-
-1. Create a new file named `YYYYMMDD-todo-X.md` inside a date-specific subdirectory under `.agent/todos/` (e.g., `.agent/todos/20260602/20260602-todo-1.md`).
-2. Populate it using one of the [recommended TODO file formats](docs/how-to-write-todo-files.md).
-3. Paste the following into the chat:
-
-```text
-full read @AGENTS.md & follow /critical-workflow
-do @/.agent/todos/<YYYYMMDD>/<YYYYMMDD>-todo-<number>.md
+```json
+{
+  "@nestjs/common": "^10.0.0",
+  "@nestjs/microservices": "^10.0.0",
+  "class-transformer": "^0.5.0",
+  "class-validator": "^0.14.0",
+  "nats": "^2.0.0"
+}
 ```
 
-### Option 2: Direct Chat Request
+### Requirements
 
-If you have a quick request, use this template:
+- Node.js >= 18
+- NATS server >= 2.10 with JetStream enabled
 
-```text
-full read @AGENTS.md & follow /critical-workflow
-do [Your specific task or request here]
+---
+
+## Core Concepts
+
+### Event Envelope
+
+All messages follow a standardized envelope structure. The toolkit provides `EventEnvelope<T>` as the base class:
+
+```json
+{
+  "id": "evt_01JXYZABC123456789012345",
+  "type": "payment.proof.uploaded",
+  "version": "1.0.0",
+  "produced_at": "2025-06-08T16:45:12.345Z",
+  "producer": "payment-service",
+  "company_id": "550e8400-e29b-41d4-a716-446655440000",
+  "actor_type": "client",
+  "actor_id": "clt_123e4567-e89b-12d3-a456-426614174000",
+  "correlation_id": "req_987fcdeb-51a2-43e8-9c4f-123456789abc",
+  "causation_id": "evt_01JXYZABC987654321098765",
+  "trace_id": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+  "reply_to": null,
+  "data": { }
+}
 ```
 
-## AI Agent Plans
+Key fields:
 
-The critical workflow requires the AI to generate detailed implementation plans for each task. The [Architect sub-agent](.kilo/agents/architect.md) handles analysis and planning (step 4.1), while the [Implementer sub-agent](.kilo/agents/implementer.md) executes the plan (step 4.2). A [Code Reviewer](.kilo/agents/code-reviewer.md) validates quality, and a [Docs Specialist](.kilo/agents/docs-specialist.md) maintains documentation.
+- `id` — UUIDv7 with `evt_` prefix
+- `company_id` — UUID for tenant isolation (mandatory)
+- `actor_type` / `actor_id` — who performed the action (mandatory for audit)
+- `correlation_id` — links events across a transaction chain
+- `data` — domain-specific payload (typed per microservice)
 
-The AI agent will ask for your approval before proceeding with plans. To skip approval prompts, include in the TODO file or chat request:
+### Subject Naming Convention
+
+All NATS subjects follow this pattern:
 
 ```text
-"Don't request me to approve plans"
+company.{company_id}.{domain}.{entity}.{action}.v{version}
+```
+
+| Token | Description | Example |
+| ----- | ----------- | ------ |
+| `company_id` | UUID without dashes | `550e8400e29b41d4a716446655440000` |
+| `domain` | Business domain | `payment`, `debt`, `bank`, `notification` |
+| `entity` | Main entity | `proof`, `statement`, `schedule` |
+| `action` | Past-tense verb | `uploaded`, `created`, `processed`, `sent` |
+| `version` | Major version | `v1`, `v2` |
+
+Examples:
+
+- `company.550e8400e29b41d4a716446655440000.debt.created.v1`
+- `company.550e8400e29b41d4a716446655440000.payment.proof.uploaded.v1`
+- `company.550e8400e29b41d4a716446655440000.bank.statement.processed.v1`
+
+For **Request then Async Response**: append `.response` to the base subject:
+
+- Request: `company.{id}.payment.proof.uploaded.v1`
+- Response: `company.{id}.payment.proof.uploaded.response.v1`
+
+### Actor Types
+
+```typescript
+enum ActorType {
+  CLIENT = "client",
+  COMPANY_USER = "company_user",
+  SYSTEM = "system",
+  SCHEDULER = "scheduler",
+  EXTERNAL_API = "external_api"
+}
 ```
 
 ---
 
-*Note: This workflow is actively maintained and updated to improve stability and introduce new features.*
+## Usage
+
+### Setup
+
+Import the modules you need in your NestJS application:
+
+```typescript
+import { Module } from '@nestjs/common';
+import { ProducerModule, ConsumerModule } from '@cobranza-app/events-toolkit';
+
+@Module({
+  imports: [
+    ProducerModule.register({
+      natsServers: ['nats://localhost:4222'],
+      producerName: 'payment-service'
+    }),
+    ConsumerModule.register({
+      natsServers: ['nats://localhost:4222'],
+      consumerName: 'payment-service'
+    })
+  ]
+})
+export class AppModule {}
+```
+
+### Defining an Event
+
+Extend `EventEnvelope<T>` with your domain-specific data type:
+
+```typescript
+import { EventEnvelope } from '@cobranza-app/events-toolkit';
+import { IsUUID, IsUrl, IsNumber } from 'class-validator';
+
+class PaymentProofUploadedData {
+  @IsUUID()
+  paymentAttemptId: string;
+
+  @IsUrl()
+  fileUrl: string;
+
+  @IsNumber()
+  amount: number;
+}
+
+class PaymentProofUploadedEvent extends EventEnvelope<PaymentProofUploadedData> {
+  readonly type = 'payment.proof.uploaded';
+  readonly version = '1.0.0';
+}
+```
+
+### Producer (Publishing Events)
+
+#### Option 1 — Decorator-based (`@EmitEvent()`)
+
+```typescript
+import { EmitEvent, SubjectBuilder } from '@cobranza-app/events-toolkit';
+
+class PaymentController {
+  constructor(private readonly subjectBuilder: SubjectBuilder) {}
+
+  @EmitEvent({ domain: 'payment', entity: 'proof', action: 'uploaded' })
+  async handleUpload(dto: UploadDto, context: EventContext): Promise<PaymentProofUploadedEvent> {
+    return new PaymentProofUploadedEvent(
+      new PaymentProofUploadedData({ paymentAttemptId, fileUrl, amount }),
+      context
+    );
+  }
+}
+```
+
+#### Option 2 — Direct service injection
+
+```typescript
+import { ProducerService, SubjectBuilder } from '@cobranza-app/events-toolkit';
+
+class PaymentService {
+  constructor(
+    private readonly producerService: ProducerService,
+    private readonly subjectBuilder: SubjectBuilder
+  ) {}
+
+  async processUpload(data: PaymentProofUploadedData, context: EventContext): Promise<void> {
+    const subject = this.subjectBuilder.build({
+      companyId: context.companyId,
+      domain: 'payment',
+      entity: 'proof',
+      action: 'uploaded',
+      version: '1'
+    });
+
+    const event = new PaymentProofUploadedEvent(data, context);
+    await this.producerService.publish(subject, event);
+  }
+}
+```
+
+### Consumer (Subscribing to Events)
+
+```typescript
+import { OnEvent, EventEnvelope } from '@cobranza-app/events-toolkit';
+
+class PaymentProofConsumer {
+  @OnEvent({ domain: 'payment', entity: 'proof', action: 'uploaded' })
+  async onProofUploaded(event: EventEnvelope<PaymentProofUploadedData>): Promise<void> {
+    const { data, company_id, correlation_id } = event;
+    // Business logic — toolkit handles parsing, validation, acknowledgment
+    await this.processProof(data);
+  }
+}
+```
+
+### Error Handling & DLQ
+
+Throw `EventConsumerException` to route a message to the Dead Letter Queue:
+
+```typescript
+import { EventConsumerException } from '@cobranza-app/events-toolkit';
+
+@OnEvent({ domain: 'payment', entity: 'proof', action: 'uploaded' })
+async onProofUploaded(event: EventEnvelope<PaymentProofUploadedData>): Promise<void> {
+  if (event.data.amount <= 0) {
+    throw new EventConsumerException('Invalid amount', { event, reason: 'negative_amount' });
+  }
+  // Process valid event
+}
+```
+
+### Request-Reply Pattern
+
+```typescript
+import { RequestReplyService } from '@cobranza-app/events-toolkit';
+
+class PaymentService {
+  constructor(
+    private readonly requestReply: RequestReplyService,
+    private readonly subjectBuilder: SubjectBuilder
+  ) {}
+
+  async requestPaymentProof(companyId: string, paymentId: string): Promise<ProofResponse> {
+    const subject = this.subjectBuilder.build({
+      companyId,
+      domain: 'payment',
+      entity: 'proof',
+      action: 'requested',
+      version: '1'
+    });
+
+    return this.requestReply.sendAndWait<ProofResponse>(subject, requestEvent, {
+      timeout: 10000 // ms
+    });
+  }
+}
+```
+
+### Outbox Pattern
+
+For transactional safety in services without a PostgreSQL database:
+
+```typescript
+import { SqliteOutboxService } from '@cobranza-app/events-toolkit';
+
+class PaymentService {
+  constructor(private readonly outboxService: SqliteOutboxService) {}
+
+  async processWithOutbox(data: PaymentProofUploadedData, context: EventContext): Promise<void> {
+    const event = new PaymentProofUploadedEvent(data, context);
+    // Persisted to SQLite file, published by background processor
+    await this.outboxService.saveToOutbox(event);
+  }
+}
+```
+
+The `OutboxModule` configuration:
+
+```typescript
+OutboxModule.register({
+  dbPath: '/data/outbox.sqlite',  // Use Docker volume path
+  publishInterval: 5000,           // Background processor interval (ms)
+  maxRetries: 5                    // Max publish retries before marking dead
+})
+```
+
+### Subject Builder
+
+The `SubjectBuilder` is the single entry point for subject generation:
+
+```typescript
+import { SubjectBuilder } from '@cobranza-app/events-toolkit';
+
+const subject = subjectBuilder.build({
+  companyId: '550e8400e29b41d4a716446655440000',
+  domain: 'payment',
+  entity: 'proof',
+  action: 'uploaded',
+  version: '1'
+});
+// Result: "company.550e8400e29b41d4a716446655440000.payment.proof.uploaded.v1"
+```
+
+### Event Factory
+
+Create validated event instances without the `new` keyword:
+
+```typescript
+import { createEvent } from '@cobranza-app/events-toolkit';
+
+const event = createEvent<PaymentProofUploadedEvent>({
+  type: PaymentProofUploadedEvent,
+  data: paymentData,
+  context: eventContext
+});
+```
+
+---
+
+## Architecture
+
+```text
+src/
+├── index.ts                    # Public API barrel exports
+├── common/                     # Shared across all modules
+│   ├── envelope/               # EventEnvelope<T>, ActorType, EventBase
+│   ├── dto/                    # BuildSubjectDto
+│   ├── utils/                  # SubjectBuilder, EventFactory, UUIDv7, date utils
+│   └── errors/                 # EventConsumerException
+├── producer/                   # ProducerModule, ProducerService, @EmitEvent()
+├── consumer/                   # ConsumerModule, JetStreamConsumerService, @OnEvent()
+├── request-reply/              # RequestReplyService
+├── outbox/                     # OutboxModule, SqliteOutboxService
+└── logging/                    # EventLoggerService (Winston)
+```
+
+Each concern is a separate NestJS `DynamicModule` — microservices import only what they need.
+
+---
+
+## Guidelines for AI Agents
+
+When generating event-related code in microservices using this toolkit, follow these rules:
+
+1. **Subject naming**: Always use `SubjectBuilder.build()` — never concatenate subject strings manually.
+2. **Event IDs**: Use `generateUuidV7()` from the toolkit, prefixed with `evt_`.
+3. **Validation**: Always decorate event data classes with `class-validator` decorators.
+4. **Actor context**: Always populate `actor_type` and `actor_id` in the event context.
+5. **Tenant isolation**: `company_id` is mandatory in every event envelope.
+6. **Idempotency**: Consumers must be idempotent — use `id` + `correlation_id` for deduplication.
+7. **Past-tense actions**: Action names must use past tense (`created`, `uploaded`, `processed`).
+8. **Consumer errors**: Throw `EventConsumerException` for business errors that should route to DLQ.
+9. **References over objects**: Prefer IDs over full object graphs in event payloads.
+10. **Events under 256KB**: Keep event payloads small.
+
+For the full convention specification, see [`docs/event-messaging-convention.md`](docs/event-messaging-convention.md).
+
+---
+
+## Development
+
+### Local Development Setup
+
+```bash
+git clone <repo-url>
+cd events-toolkit
+npm install
+```
+
+### Scripts
+
+```bash
+npm run build       # Compile TypeScript to dist/
+npm test            # Run unit tests (Jest)
+npm run test:e2e    # Run integration tests (requires NATS)
+npm run lint        # ESLint
+npm run format      # Prettier
+```
+
+### Local NATS for testing
+
+```bash
+docker run -p 4222:4222 nats:latest -js
+```
+
+---
+
+## Related Documentation
+
+- [Event & Messaging Convention](docs/event-messaging-convention.md) — Full event standard specification
+- [Architecture](.agent/project-info/architecture.md) — Module design and data flows
+- [Tech Stack](.agent/project-info/tech.md) — Technology choices and development setup
+- [Product Overview](.agent/project-info/product.md) — Problem definition and goals
+
+---
+
+## License
+
+MIT
