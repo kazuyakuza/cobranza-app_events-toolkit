@@ -1,4 +1,8 @@
-/** Standard prefix for all event IDs. */
+/**
+ * Standard prefix for all event IDs.
+ *
+ * @see {@link file:///C:/projects/cobranza-app/events-toolkit/docs/event-messaging-convention.md | Event & Messaging Convention} — §3 Event Envelope, `id` field.
+ */
 export const EVENT_ID_PREFIX = 'evt_';
 
 /** Current version of the events-toolkit library. */

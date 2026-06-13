@@ -20,6 +20,7 @@ export function generateUuidV7(): string {
  * Used as the `id` field in every {@link EventEnvelope}.
  *
  * @returns Event ID string with `evt_` prefix.
+ * @see {@link file:///C:/projects/cobranza-app/events-toolkit/docs/event-messaging-convention.md | Event & Messaging Convention} — §3 Event Envelope, `id` field.
  */
 export function generateEventId(): string {
   return `${EVENT_ID_PREFIX}${uuidv7()}`;
