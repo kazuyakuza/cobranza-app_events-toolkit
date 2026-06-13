@@ -117,6 +117,7 @@ export class JetStreamConsumerService {
     return parsed as Record<string, unknown>;
   }
 
+  /** Returns true when the parsed payload is not a plain JSON object (null, array, or primitive). */
   private isInvalidEventPayload(parsed: unknown): boolean {
     return typeof parsed !== 'object' || parsed === null || Array.isArray(parsed);
   }
