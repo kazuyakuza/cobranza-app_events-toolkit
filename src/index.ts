@@ -54,6 +54,14 @@ export {
   ON_EVENT_EXPLORER_DEPS_TOKEN,
   OnEventExplorerDeps,
 } from './consumer/decorators/on-event-explorer-deps.interface';
+export { DispatchOptions } from './consumer/dispatch-options.interface';
+export {
+  SubscribeOptions,
+  ConsumerSubscribeOpts,
+  defaultDlqSubjectBuilder,
+  envelopeToContext,
+} from './consumer/subscribe-options.interface';
+export { JetStreamConsumerDeps, JETSTREAM_CONSUMER_DEPS_TOKEN } from './consumer/jetstream-consumer-deps.interface';
 
 // ── Request-Reply ──
 export { RequestReplyService } from './request-reply/request-reply.service';
