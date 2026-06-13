@@ -17,6 +17,13 @@ import {
   DlqRoutingOptions,
 } from './subscribe-options.interface';
 
+/**
+ * Manages JetStream subscriptions and message lifecycle for the Consumer Module.
+ *
+ * Handles the full consume pipeline: JSON parsing, envelope validation,
+ * handler dispatch, ACK/NACK, and DLQ routing on failure.
+ * Requires {@link EventLoggerService} to be available globally.
+ */
 @Injectable()
 export class JetStreamConsumerService {
   private readonly encoder = new TextEncoder();
@@ -32,6 +39,14 @@ export class JetStreamConsumerService {
     this.dlqSubjectBuilder = deps.dlqSubjectBuilder ?? defaultDlqSubjectBuilder;
   }
 
+  /**
+   * Subscribes to a NATS subject and begins consuming messages.
+   *
+   * Registers the handler in {@link ConsumerService}, creates the JetStream
+   * subscription, and starts the async message-processing loop.
+   *
+   * @param options - Subject pattern, handler function, and optional consumer/DLQ configuration.
+   */
   async subscribe(options: SubscribeOptions): Promise<void> {
     this.consumerService.registerHandler(options.subject, options.handler);
     const subscription = await this.jetStream.subscribe(options.subject, options.consumerOpts ?? {});
