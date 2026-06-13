@@ -30,6 +30,9 @@ logs/
 build/
 dist/
 
+# Dependencies
+node_modules/
+
 # Tokens and secrets
 .git-credentials
 
