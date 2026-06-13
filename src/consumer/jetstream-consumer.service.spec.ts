@@ -189,6 +189,22 @@ describe('JetStreamConsumerService', () => {
       expect(errorContext.error).toBe('Unexpected failure');
       expect(errorContext.subject).toBe(testSubject);
     });
+
+    it('should nack and log error when handler rejects with a non-Error value', async () => {
+      const handler = jest.fn().mockRejectedValue('Unexpected failure');
+      consumerService.registerHandler(testSubject, handler);
+
+      const msg = createJsMsg(createValidEventJson(), testSubject);
+      await service.processMessage(msg, testSubject);
+
+      expect(msg.nak).toHaveBeenCalledTimes(1);
+      expect(msg.ack).not.toHaveBeenCalled();
+
+      expect(mockLogger.logEventError).toHaveBeenCalledTimes(1);
+      const errorContext = mockLogger.logEventError.mock.calls[0][0] as EventErrorLogContext;
+      expect(errorContext.error).toBe('Unexpected failure');
+      expect(errorContext.subject).toBe(testSubject);
+    });
   });
 
   describe('processMessage — DLQ publish failure', () => {

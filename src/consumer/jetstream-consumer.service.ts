@@ -76,7 +76,11 @@ export class JetStreamConsumerService {
       const dispatchOptions: DispatchOptions = { subject, event: envelope, context };
       await this.consumerService.dispatch(dispatchOptions);
       msg.ack();
-      this.logger.logEventConsumed(logCtx);
+      try {
+        this.logger.logEventConsumed(logCtx);
+      } catch (logError: unknown) {
+        this.logGeneralError(logError, subject);
+      }
     } catch (error: unknown) {
       await this.handleError({ error, msg, subject, originalPayload: plain });
     }
@@ -103,7 +107,7 @@ export class JetStreamConsumerService {
         eventType: 'unknown',
       });
     }
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    if (this.isInvalidEventPayload(parsed)) {
       throw new EventConsumerException({
         message: 'Message payload is not a valid JSON object',
         eventId: 'unknown',
@@ -111,6 +115,10 @@ export class JetStreamConsumerService {
       });
     }
     return parsed as Record<string, unknown>;
+  }
+
+  private isInvalidEventPayload(parsed: unknown): boolean {
+    return typeof parsed !== 'object' || parsed === null || Array.isArray(parsed);
   }
 
   private createValidationException(options: ValidationErrorOptions): EventConsumerException {
