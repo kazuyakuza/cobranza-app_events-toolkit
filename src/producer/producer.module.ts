@@ -1,4 +1,4 @@
-import { DynamicModule, Provider } from '@nestjs/common';
+import { DynamicModule, Provider, Type } from '@nestjs/common';
 import { JetStreamClient, NatsConnection } from 'nats';
 import { EventLoggerService } from '../logging/event-logger.service';
 import { ProducerService } from './producer.service';
@@ -17,9 +17,9 @@ export interface ProducerModuleOptions {
 /** Asynchronous options for {@link ProducerModule.forRootAsync}. */
 export interface ProducerModuleAsyncOptions {
   /** Factory that resolves module options, optionally injecting dependencies. */
-  useFactory: (...args: any[]) => Promise<ProducerModuleOptions> | ProducerModuleOptions;
+  useFactory: (...args: unknown[]) => Promise<ProducerModuleOptions> | ProducerModuleOptions;
   /** Optional dependencies to inject into the factory. */
-  inject?: any[];
+  inject?: Array<string | symbol | Type<unknown>>;
 }
 
 /** Resolves a JetStream instance from the provided module options. */
@@ -40,11 +40,7 @@ export class ProducerModule {
     return {
       module: ProducerModule,
       global: true,
-      providers: [
-        { provide: JETSTREAM_TOKEN, useValue: jetStream },
-        EventLoggerService,
-        ProducerService,
-      ],
+      providers: [{ provide: JETSTREAM_TOKEN, useValue: jetStream }, EventLoggerService, ProducerService],
       exports: [ProducerService],
     };
   }
@@ -52,7 +48,7 @@ export class ProducerModule {
   static forRootAsync(asyncOptions: ProducerModuleAsyncOptions): DynamicModule {
     const jetStreamProvider: Provider = {
       provide: JETSTREAM_TOKEN,
-      useFactory: async (...args: any[]): Promise<JetStreamClient> => {
+      useFactory: async (...args: unknown[]): Promise<JetStreamClient> => {
         const moduleOptions = await asyncOptions.useFactory(...args);
         return resolveJetStream(moduleOptions);
       },

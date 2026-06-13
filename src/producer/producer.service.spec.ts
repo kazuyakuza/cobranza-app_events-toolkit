@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { JetStreamClient, NatsConnection } from 'nats';
 import { ProducerService, EmitOptions, EventContext } from './producer.service';
 import { JETSTREAM_TOKEN, ProducerModule } from './producer.module';
 import { EventLoggerService, EventLogContext } from '../logging/event-logger.service';
@@ -15,8 +16,8 @@ jest.mock('../common/utils/date.utils', () => ({
 
 describe('ProducerService', () => {
   let service: ProducerService;
-  let jetStream: { publish: jest.Mock };
-  let mockLoggerService: { logEventEmitted: jest.Mock };
+  let jetStream: Partial<JetStreamClient> & { publish: jest.Mock };
+  let mockLoggerService: { logEventEmitted: jest.Mock; logEventError: jest.Mock };
 
   const sampleContext: EventContext = {
     type: 'payment.proof.uploaded',
@@ -30,7 +31,7 @@ describe('ProducerService', () => {
 
   beforeEach(async () => {
     jetStream = { publish: jest.fn().mockResolvedValue({}) };
-    mockLoggerService = { logEventEmitted: jest.fn() };
+    mockLoggerService = { logEventEmitted: jest.fn(), logEventError: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
@@ -66,6 +67,21 @@ describe('ProducerService', () => {
       const loggedContext = mockLoggerService.logEventEmitted.mock.calls[0][0] as EventLogContext;
       expect(loggedContext.eventId).toBe('evt_test-456');
       expect(loggedContext.subject).toBe('company.550e8400.payment.proof.uploaded.v1');
+    });
+
+    it('should log and rethrow JetStream publish errors', async () => {
+      const error = new Error('NATS publish failed');
+      jetStream.publish.mockRejectedValue(error);
+
+      const event = createTestEvent();
+      await expect(service.publish('company.550e8400.payment.proof.uploaded.v1', event)).rejects.toThrow(error);
+
+      expect(mockLoggerService.logEventError).toHaveBeenCalledTimes(1);
+      expect(mockLoggerService.logEventEmitted).not.toHaveBeenCalled();
+
+      const errorContext = mockLoggerService.logEventError.mock.calls[0][0];
+      expect(errorContext.error).toBe('NATS publish failed');
+      expect(errorContext.subject).toBe('company.550e8400.payment.proof.uploaded.v1');
     });
   });
 
@@ -134,14 +150,20 @@ describe('ProducerService', () => {
 
   describe('ProducerModule', () => {
     it('should resolve JetStream from connection via forRoot', () => {
-      const mockConnection = { jetstream: jest.fn().mockReturnValue(jetStream) };
-      const dynamicModule = ProducerModule.forRoot({ connection: mockConnection as any });
+      const mockConnection: Partial<NatsConnection> & { jetstream: jest.Mock } = {
+        jetstream: jest.fn().mockReturnValue(jetStream),
+      };
+      const dynamicModule = ProducerModule.forRoot({
+        connection: mockConnection as NatsConnection,
+      });
       expect(mockConnection.jetstream).toHaveBeenCalledTimes(1);
       expect(dynamicModule.exports).toContain(ProducerService);
     });
 
     it('should use provided jetStream directly via forRoot', () => {
-      const dynamicModule = ProducerModule.forRoot({ jetStream: jetStream as any });
+      const dynamicModule = ProducerModule.forRoot({
+        jetStream: jetStream as JetStreamClient,
+      });
       expect(dynamicModule.exports).toContain(ProducerService);
     });
 
@@ -150,10 +172,37 @@ describe('ProducerService', () => {
         'ProducerModule requires either connection or jetStream in options',
       );
     });
+
+    it('should resolve JetStream from async factory via forRootAsync', async () => {
+      const dynamicModule = ProducerModule.forRootAsync({
+        useFactory: async () => ({ jetStream: jetStream as JetStreamClient }),
+      });
+
+      const jetStreamProvider = dynamicModule.providers?.find(
+        (p) => 'provide' in p && p.provide === JETSTREAM_TOKEN,
+      ) as { useFactory: () => Promise<JetStreamClient> };
+      const resolved = await jetStreamProvider.useFactory();
+      expect(resolved).toBe(jetStream);
+    });
+
+    it('should pass inject dependencies to async factory via forRootAsync', () => {
+      const injectToken = 'TEST_TOKEN';
+      const dynamicModule = ProducerModule.forRootAsync({
+        useFactory: async () => ({ jetStream: jetStream as JetStreamClient }),
+        inject: [injectToken],
+      });
+
+      const jetStreamProvider = dynamicModule.providers?.find(
+        (p) => 'provide' in p && p.provide === JETSTREAM_TOKEN,
+      ) as { provide: string; inject: unknown[] };
+      expect(jetStreamProvider.inject).toContain(injectToken);
+    });
   });
 });
 
-function createTestEvent(overrides: Partial<EventEnvelope<{ amount: number }>> = {}): EventEnvelope<{ amount: number }> {
+function createTestEvent(
+  overrides: Partial<EventEnvelope<{ amount: number }>> = {},
+): EventEnvelope<{ amount: number }> {
   return new EventEnvelope({
     id: 'evt_test-123',
     type: 'payment.proof.uploaded',

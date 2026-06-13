@@ -4,7 +4,7 @@ import { ActorType } from '../common/envelope/actor-type.enum';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { generateEventId } from '../common/utils/uuid.utils';
 import { nowIso } from '../common/utils/date.utils';
-import { EventLoggerService, EventLogContext } from '../logging/event-logger.service';
+import { EventLoggerService, EventLogContext, EventErrorLogContext } from '../logging/event-logger.service';
 import { JETSTREAM_TOKEN } from './producer.module';
 
 /** Context metadata for building and tracing an event envelope. */
@@ -52,8 +52,13 @@ export class ProducerService {
 
   async publish(subject: string, event: EventEnvelope<unknown>): Promise<void> {
     const payload = this.encodeEvent(event);
-    await this.jetStream.publish(subject, payload);
-    this.logEmission(subject, event);
+    try {
+      await this.jetStream.publish(subject, payload);
+      this.logEmission(subject, event);
+    } catch (error: unknown) {
+      this.logger.logEventError(this.toErrorLogContext(subject, event, error));
+      throw error;
+    }
   }
 
   async emit<T>(options: EmitOptions<T>): Promise<void> {
@@ -95,6 +100,15 @@ export class ProducerService {
       subject,
       correlationId: event.correlation_id,
       traceId: event.trace_id,
+    };
+  }
+
+  private toErrorLogContext(subject: string, event: EventEnvelope<unknown>, error: unknown): EventErrorLogContext {
+    const err = error instanceof Error ? error : new Error(String(error));
+    return {
+      ...this.toLogContext(subject, event),
+      error: err.message,
+      stack: err.stack,
     };
   }
 }
