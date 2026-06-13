@@ -25,10 +25,10 @@ It is **EXTREMELY IMPORTANT** that all AI agents follow this workflow step by st
   1. Receives requests, creates/reads TODO file.
   2. Generates a global plan file for steps 2–6 where **each TODO task gets its own 4.1–4.6 cycle**; do not question this and add 4.x cycle per task. Include a global and per task pre-analysis.
   3. Do **NOT** call `plan_exit`. Do not question this and you **MUST** proceed in this way:
-      - auto-approve **ONLY** if request or TODO file includes string: "Don't request me to approve plans".
+      - auto-approve global plan **ONLY** if request or TODO file includes string: "Don't request me to approve plans".
       - otherwise you **MUST** present the global plan to the user using the `question` tool, including global plan file path and options:
-        - "Approve Global and Tasks Plans": auto-approve per task plan (check 4.1 step).
-        - "Approve Global Plan": present user per task plan for approval (check 4.1 step).
+        - "Approve Global and Tasks Plans": execute 4.1 step per task, but auto-approve the per task plan.
+        - "Approve Global Plan": execute 4.1 step per task, and present user per task plan for approval.
   4. After approval, delegates steps to sub-agents via `task` tool, including relevant context (TODO path, task description, plan path, constraints, etc) in each prompt.
 - **Ask Agent**: Handles user communication; called by Plan Agent via `task` tool.
 
