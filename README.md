@@ -5,7 +5,7 @@ NATS + JetStream event handling library for the Cobranza App microservices platf
 [![NestJS](https://img.shields.io/badge/NestJS-10.x-E0234E?logo=nestjs)](https://nestjs.com)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript)](https://www.typescriptlang.org)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-339933?logo=node.js)](https://nodejs.org)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Unlicense-blue.svg)](LICENSE)
 
 ---
 
@@ -44,6 +44,7 @@ The following must be installed in the consuming microservice:
 ```json
 {
   "@nestjs/common": "^10.0.0",
+  "@nestjs/core": "^10.0.0",
   "@nestjs/microservices": "^10.0.0",
   "class-transformer": "^0.5.0",
   "class-validator": "^0.14.0",
@@ -271,7 +272,7 @@ class PaymentProofConsumer {
 
 ### Error Handling & DLQ
 
-Throw `EventConsumerException` to route a message to the Dead Letter Queue:
+Throw `EventConsumerException` to route a message to the Dead Letter Queue. The consumer service catches this exception and forwards the failed message to the DLQ subject (`dlq.company.{company_id}.{domain}.{entity}.{action}.v{version}`):
 
 ```typescript
 import { EventConsumerException } from '@cobranza-app/events-toolkit';
@@ -279,10 +280,36 @@ import { EventConsumerException } from '@cobranza-app/events-toolkit';
 @OnEvent({ domain: 'payment', entity: 'proof', action: 'uploaded' })
 async onProofUploaded(event: EventEnvelope<PaymentProofUploadedData>): Promise<void> {
   if (event.data.amount <= 0) {
-    throw new EventConsumerException('Invalid amount', { event, reason: 'negative_amount' });
+    throw new EventConsumerException({
+      message: 'Invalid amount',
+      eventId: event.id,
+      eventType: event.type,
+      correlationId: event.correlation_id,
+    });
   }
   // Process valid event
 }
+```
+
+### Structured Logging
+
+`EventLoggerService` provides Winston-based structured logging for all event operations. It accepts optional custom transports, enabling microservices to integrate with existing logging infrastructure:
+
+```typescript
+import { EventLoggerService } from '@cobranza-app/events-toolkit';
+import * as winston from 'winston';
+
+const logger = new EventLoggerService({
+  transports: [new winston.transports.Console()],
+  level: 'info',
+});
+
+logger.logEventEmitted({
+  eventId: event.id,
+  eventType: event.type,
+  subject: 'company.550e8400e29b...payment.proof.uploaded.v1',
+  correlationId: event.correlation_id,
+});
 ```
 
 ### Request-Reply Pattern
@@ -459,4 +486,4 @@ docker run -p 4222:4222 nats:latest -js
 
 ## License
 
-MIT
+Unlicense
