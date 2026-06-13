@@ -8,6 +8,8 @@ import { EventEnvelope } from './event-envelope.class';
  *
  * @typeParam T - The domain-specific business payload type.
  *
+ * @see docs/event-messaging-convention.md — Section 3 (Event Envelope)
+ *
  * @example
  * ```ts
  * class PaymentProofUploadedEvent extends EventBase<PaymentProofData> {
