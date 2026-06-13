@@ -50,7 +50,7 @@ npm run test:e2e
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "nest build",
     "test": "jest",
     "test:e2e": "jest --config jest.e2e.config.js",
     "lint": "eslint src/",

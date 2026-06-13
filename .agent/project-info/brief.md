@@ -46,6 +46,7 @@ cobranza-apps/events-toolkit/
 │   │   │   └── build-subject.dto.ts
 │   │   ├── utils/
 │   │   │   ├── subject.builder.ts
+│   │   │   ├── event.factory.ts
 │   │   │   ├── uuid.utils.ts
 │   │   │   └── date.utils.ts
 │   │   └── errors/
@@ -66,6 +67,7 @@ cobranza-apps/events-toolkit/
 │   │   ├── request-reply.service.ts
 │   │   └── request-reply.types.ts
 │   ├── outbox/
+│   │   ├── outbox.module.ts
 │   │   ├── sqlite-outbox.service.ts
 │   │   └── outbox.entity.ts
 │   └── logging/
@@ -103,6 +105,7 @@ cobranza-apps/events-toolkit/
 - `SubjectBuilder.build(subjectDto: BuildSubjectDto)`
 - `createEvent<T>(options)`: factory
 - `EventConsumerException`: specific error for consumers to throw (triggers DLQ routing)
+- `generateUuidV7`: UUIDv7 generation utility
 - Event Logger with Winston
 
 ## 7. Subject Builder

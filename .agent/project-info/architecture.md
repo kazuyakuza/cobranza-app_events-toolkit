@@ -5,21 +5,21 @@
 The `events-toolkit` is a **NestJS library** (not a standalone service). It is imported as a dependency by each microservice in the Cobranza App platform. It does not run independently — it provides modules, services, and decorators consumed by NestJS applications.
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│  Microservice A   Microservice B   Microservice C        │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐     │
-│  │ events-toolkit│ │ events-toolkit│ │ events-toolkit│    │
-│  │ (dependency) │ │ (dependency) │ │ (dependency) │     │
-│  └──────┬───────┘ └──────┬───────┘ └──────┬───────┘     │
-│         │                │                │              │
-└─────────┼────────────────┼────────────────┼──────────────┘
-          │                │                │
-     ┌────▼────────────────▼────────────────▼────┐
-     │            NATS + JetStream               │
-     │  ┌──────────────────────────────────────┐ │
-     │  │ Topics / Subjects / Streams          │ │
-     │  └──────────────────────────────────────┘ │
-     └──────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│  Microservice A       Microservice B       Microservice C    │
+│ ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐│
+│ │ events-toolkit  │  │ events-toolkit  │  │ events-toolkit  ││
+│ │  (dependency)   │  │  (dependency)   │  │  (dependency)   ││
+│ └────────┬────────┘  └────────┬────────┘  └────────┬────────┘│
+│          │                   │                    │          │
+└──────────┼───────────────────┼────────────────────┼──────────┘
+           │                   │                    │
+      ┌────▼───────────────────▼────────────────────▼────────┐
+      │                NATS + JetStream                       │
+      │  ┌────────────────────────────────────────────────┐  │
+      │  │ Topics / Subjects / Streams                     │  │
+      │  └────────────────────────────────────────────────┘  │
+      └──────────────────────────────────────────────────────┘
 ```
 
 ## 2. Module Architecture
@@ -40,6 +40,7 @@ src/
 │   │   └── build-subject.dto.ts      # BuildSubjectDto with validation
 │   ├── utils/
 │   │   ├── subject.builder.ts        # SubjectBuilder class
+│   │   ├── event.factory.ts          # createEvent<T>() factory
 │   │   ├── uuid.utils.ts             # UUIDv7 generation
 │   │   └── date.utils.ts             # ISO 8601 timestamp helpers
 │   └── errors/
@@ -60,6 +61,7 @@ src/
 │   ├── request-reply.service.ts      # Request-reply helpers
 │   └── request-reply.types.ts        # Type definitions
 ├── outbox/                           # SQLite-based outbox
+│   ├── outbox.module.ts              # NestJS DynamicModule
 │   ├── sqlite-outbox.service.ts      # File-based outbox with BG processor
 │   └── outbox.entity.ts              # Outbox record entity
 └── logging/                          # Event logging

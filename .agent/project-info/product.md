@@ -5,7 +5,7 @@
 - **Name**: `@cobranza-app/events-toolkit`
 - **Type**: NestJS Shared Library / Developer Toolkit
 - **Target Users**: Backend developers and AI agents building microservices for the Cobranza App platform
-- **Platform**: Cobranza App (debt collection SaaS)
+- **Platform**: Cobranza App
 
 ## 2. Problem Definition
 
