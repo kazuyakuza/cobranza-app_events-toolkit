@@ -24,9 +24,9 @@ It is **EXTREMELY IMPORTANT** that all AI agents follow this workflow step by st
 - **Plan Agent**:
   1. Receives requests, creates/reads TODO file.
   2. Generates a global plan file for steps 2–6 where **each TODO task gets its own 4.1–4.6 cycle**; do not question this and add 4.x cycle per task. Include a global and per task pre-analysis.
-  3. Do NOT call `plan_exit`. Do not question this and proceed in this way:
-      - auto-approve if request or TODO file includes "Don't request me to approve plans".
-      - otherwise present the global plan to the user using the `question` tool: include global plan path and options:
+  3. Do **NOT** call `plan_exit`. Do not question this and you **MUST** proceed in this way:
+      - auto-approve **ONLY** if request or TODO file includes string: "Don't request me to approve plans".
+      - otherwise you **MUST** present the global plan to the user using the `question` tool, including global plan file path and options:
         - "Approve Global and Tasks Plans": auto-approve per task plan (check 4.1 step).
         - "Approve Global Plan": present user per task plan for approval (check 4.1 step).
   4. After approval, delegates steps to sub-agents via `task` tool, including relevant context (TODO path, task description, plan path, constraints, etc) in each prompt.
@@ -91,7 +91,7 @@ Assign to architect sub-agent (`subagent_type: "architect"`).
   2. Use approach to define extensive implementation plan with tiny, detailed steps; include clear file names/paths, structure, code snippets, terminal cmd details, etc.
   3. [CRITICAL] Save to `.kilo/plans/<YYYYMMDD>-<plan-name>.md`.
   4. Compare to original task; redo if incorrect. Otherwise, return plan path.
-- **Plan Agent presents plan to user for approval**.
+- **Plan Agent present plan to user for approval**.
   - NEVER call `plan_exit`. Instead, use `question` tool.
   - Auto-approve if request or TODO file includes "Don't request me to approve plans".
   - If feedback/rejection: re-do and re-present.
