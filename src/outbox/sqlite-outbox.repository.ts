@@ -35,6 +35,12 @@ const UPDATE_FAILED_SQL = `
   WHERE id = @id
 `;
 
+/**
+ * SQLite-backed {@link OutboxRepository} using `better-sqlite3`.
+ *
+ * Creates the outbox table on construction and enables WAL journaling
+ * for concurrent read/write performance.
+ */
 export class SqliteOutboxRepository implements OutboxRepository {
   private readonly database: Database.Database;
 
@@ -44,6 +50,7 @@ export class SqliteOutboxRepository implements OutboxRepository {
     this.database.exec(CREATE_TABLE_SQL);
   }
 
+  /** @inheritdoc */
   async save(params: SaveOutboxEntryParams): Promise<void> {
     const timestamp = nowIso();
     this.database.prepare(INSERT_SQL).run({
@@ -56,15 +63,18 @@ export class SqliteOutboxRepository implements OutboxRepository {
     });
   }
 
+  /** @inheritdoc */
   async getPending(limit = 100): Promise<OutboxEntry[]> {
     const rows = this.database.prepare(SELECT_PENDING_SQL).all(limit);
     return (rows as Array<Record<string, unknown>>).map(this.mapRowToEntry);
   }
 
+  /** @inheritdoc */
   async markAsSent(id: string): Promise<void> {
     this.database.prepare(UPDATE_SENT_SQL).run({ id, updated_at: nowIso() });
   }
 
+  /** @inheritdoc */
   async markAsFailed(id: string, error: string): Promise<void> {
     this.database.prepare(UPDATE_FAILED_SQL).run({ id, last_error: error, updated_at: nowIso() });
   }

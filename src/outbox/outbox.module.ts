@@ -21,8 +21,24 @@ function resolveRepository(options: OutboxModuleOptions): OutboxRepository {
   return new SqliteOutboxRepository(dbPath);
 }
 
+/**
+ * NestJS dynamic module that provides the transactional outbox pattern.
+ *
+ * Registers a global {@link OutboxRepository} provider backed by either
+ * SQLite or PostgreSQL, configurable via {@link OutboxModuleOptions}.
+ *
+ * @example Synchronous registration
+ * ```ts
+ * OutboxModule.forRoot({ type: 'sqlite', sqlite: { dbPath: './outbox.db' } })
+ * ```
+ */
 @Module({})
 export class OutboxModule {
+  /**
+   * Registers the outbox module with static configuration.
+   *
+   * @param options - Database type and connection settings.
+   */
   static forRoot(options: OutboxModuleOptions): DynamicModule {
     const repositoryProvider: Provider = {
       provide: OUTBOX_REPOSITORY_TOKEN,
@@ -37,6 +53,14 @@ export class OutboxModule {
     };
   }
 
+  /**
+   * Registers the outbox module with asynchronous configuration.
+   *
+   * Supports `useFactory` with dependency injection, allowing options
+   * to be resolved from config services or other providers at runtime.
+   *
+   * @param asyncOptions - Factory-based configuration with optional module imports.
+   */
   static forRootAsync(asyncOptions: OutboxModuleAsyncOptions): DynamicModule {
     const optionsProvider: Provider = {
       provide: OUTBOX_MODULE_OPTIONS_TOKEN,

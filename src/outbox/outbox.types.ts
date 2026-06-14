@@ -6,14 +6,23 @@ export const OUTBOX_REPOSITORY_TOKEN = 'OUTBOX_REPOSITORY';
 
 /** Represents a single row in the outbox persistence table. */
 export interface OutboxEntry {
+  /** Unique event identifier (matches {@link EventEnvelope.id}). */
   id: string;
+  /** Serialized JSON of the full event envelope. */
   eventData: string;
+  /** NATS subject the event will be published to. */
   subject: string;
+  /** Optional serialized metadata. */
   metadata: string | null;
+  /** Current processing status. */
   status: 'pending' | 'sent' | 'failed';
+  /** Number of delivery attempts made. */
   attempts: number;
+  /** Error message from the last failed attempt. */
   lastError: string | null;
+  /** ISO-8601 creation timestamp. */
   createdAt: string;
+  /** ISO-8601 last-update timestamp. */
   updatedAt: string;
 }
 
@@ -26,9 +35,13 @@ export interface SaveOutboxEntryParams {
 
 /** Persistence contract for the outbox module. */
 export interface OutboxRepository {
+  /** Persists a new event to the outbox with `pending` status. */
   save(params: SaveOutboxEntryParams): Promise<void>;
+  /** Retrieves pending entries ordered by creation time, up to `limit`. */
   getPending(limit?: number): Promise<OutboxEntry[]>;
+  /** Marks an entry as successfully delivered. */
   markAsSent(id: string): Promise<void>;
+  /** Marks an entry as failed, incrementing the attempt counter. */
   markAsFailed(id: string, error: string): Promise<void>;
 }
 

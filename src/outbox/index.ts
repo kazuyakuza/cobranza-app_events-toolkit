@@ -1,3 +1,7 @@
+/**
+ * @packageDocumentation
+ * Public API for the outbox module — transactional outbox pattern for reliable event publishing.
+ */
 export { OutboxModule } from './outbox.module';
 export {
   OUTBOX_REPOSITORY_TOKEN,

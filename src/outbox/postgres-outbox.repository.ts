@@ -33,6 +33,12 @@ const UPDATE_FAILED_SQL = `
   UPDATE outbox SET status = 'failed', attempts = attempts + 1, last_error = $2, updated_at = $3 WHERE id = $1
 `;
 
+/**
+ * PostgreSQL-backed {@link OutboxRepository} using a TypeORM-compatible {@link EntityManagerLike}.
+ *
+ * Defers table creation until the first query and caches the result to avoid
+ * repeated DDL execution. Uses `ON CONFLICT (id) DO NOTHING` for idempotent inserts.
+ */
 export class PostgresOutboxRepository implements OutboxRepository {
   private tableEnsured = false;
 
@@ -46,6 +52,7 @@ export class PostgresOutboxRepository implements OutboxRepository {
     this.tableEnsured = true;
   }
 
+  /** @inheritdoc */
   async save(params: SaveOutboxEntryParams): Promise<void> {
     await this.ensureTable();
     const timestamp = nowIso();
@@ -59,17 +66,20 @@ export class PostgresOutboxRepository implements OutboxRepository {
     ]);
   }
 
+  /** @inheritdoc */
   async getPending(limit = 100): Promise<OutboxEntry[]> {
     await this.ensureTable();
     const rows = await this.entityManager.query(SELECT_PENDING_SQL, [limit]);
     return (rows as Array<Record<string, unknown>>).map(this.mapRowToEntry);
   }
 
+  /** @inheritdoc */
   async markAsSent(id: string): Promise<void> {
     await this.ensureTable();
     await this.entityManager.query(UPDATE_SENT_SQL, [id, nowIso()]);
   }
 
+  /** @inheritdoc */
   async markAsFailed(id: string, error: string): Promise<void> {
     await this.ensureTable();
     await this.entityManager.query(UPDATE_FAILED_SQL, [id, error, nowIso()]);
