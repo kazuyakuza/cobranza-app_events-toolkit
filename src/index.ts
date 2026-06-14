@@ -75,3 +75,16 @@ export {
   REQUEST_REPLY_DEPS_TOKEN,
   resolveRequestReplyConfig,
 } from './request-reply/request-reply.types';
+
+// ── Outbox ──
+export { OutboxModule } from './outbox/outbox.module';
+export {
+  OUTBOX_REPOSITORY_TOKEN,
+  OutboxRepository,
+  OutboxEntry,
+  OutboxModuleOptions,
+  OutboxModuleAsyncOptions,
+  EntityManagerLike,
+} from './outbox/outbox.types';
+export { SqliteOutboxRepository } from './outbox/sqlite-outbox.repository';
+export { PostgresOutboxRepository } from './outbox/postgres-outbox.repository';

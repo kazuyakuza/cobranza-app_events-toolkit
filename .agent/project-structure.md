@@ -13,7 +13,7 @@
 - consumer/ - ConsumerModule, ConsumerService, JetStreamConsumerService
 - consumer/decorators/ - @OnEvent() decorator
 - request-reply/ - RequestReplyService and type definitions
-- outbox/ - OutboxModule, SqliteOutboxService, Outbox entity
+- outbox/ - OutboxModule, SqliteOutboxRepository, PostgresOutboxRepository, shared types
 - logging/ - EventLoggerService (Winston-based)
 
 # Other folders
