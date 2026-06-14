@@ -1,3 +1,8 @@
+/**
+ * @packageDocumentation
+ * Consumer module — JetStream event consumption, decorators, and subscription configuration.
+ */
+
 export { ConsumerService, EventHandler } from './consumer.service';
 export { JetStreamConsumerService } from './jetstream-consumer.service';
 export {

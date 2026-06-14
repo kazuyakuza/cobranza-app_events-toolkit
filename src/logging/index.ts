@@ -1,3 +1,8 @@
+/**
+ * @packageDocumentation
+ * Logging module — structured logger service and context types for event and outbox operations.
+ */
+
 export {
   EventLoggerService,
   EventLoggerOptions,

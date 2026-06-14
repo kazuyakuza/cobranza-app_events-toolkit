@@ -1,3 +1,8 @@
+/**
+ * @packageDocumentation
+ * Public API for the events-toolkit — unified entry point re-exporting all modules.
+ */
+
 // ── Common ──
 export * from './common';
 

@@ -1,3 +1,8 @@
+/**
+ * @packageDocumentation
+ * Request-reply module — synchronous request-reply pattern over NATS.
+ */
+
 export { RequestReplyService } from './request-reply.service';
 export {
   RequestReplyConfig,
