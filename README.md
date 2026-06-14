@@ -370,10 +370,10 @@ class PaymentService {
 
 For transactional safety, the Outbox module persists events before publishing. It supports two backends:
 
-| Backend  | Use Case                        | Service Type                                     |
-| --------| ------------------------------- | ------------------------------------------------ |
-| SQLite  | Lightweight, self-contained     | Services without their own database               |
-| Postgres| Shares main application DB      | `ms-db-gateway` and services with existing TypeORM|
+| Backend  | Use Case                        | Service Type                                       |
+| -------- | ------------------------------- | -------------------------------------------------- |
+| SQLite   | Lightweight, self-contained     | Services without their own database                |
+| Postgres | Shares main application DB      | `ms-db-gateway` and services with existing TypeORM |
 
 For detailed configuration, see [`docs/outbox-configuration.md`](docs/outbox-configuration.md).
 
