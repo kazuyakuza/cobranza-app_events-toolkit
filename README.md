@@ -1,4 +1,4 @@
-# @cobranza-app/events-toolkit
+# @cobranza-apps/events-toolkit
 
 NATS + JetStream event handling library for the Cobranza App microservices platform.
 
@@ -34,7 +34,7 @@ NATS + JetStream event handling library for the Cobranza App microservices platf
 ## Installation
 
 ```bash
-npm install @cobranza-app/events-toolkit
+npm install @cobranza-apps/events-toolkit
 ```
 
 ### Peer Dependencies
@@ -158,7 +158,7 @@ Import the modules you need in your NestJS application:
 
 ```typescript
 import { Module } from '@nestjs/common';
-import { ProducerModule, ConsumerModule } from '@cobranza-app/events-toolkit';
+import { ProducerModule, ConsumerModule } from '@cobranza-apps/events-toolkit';
 
 @Module({
   imports: [
@@ -180,7 +180,7 @@ export class AppModule {}
 Extend `EventEnvelope<T>` with your domain-specific data type:
 
 ```typescript
-import { EventEnvelope } from '@cobranza-app/events-toolkit';
+import { EventEnvelope } from '@cobranza-apps/events-toolkit';
 import { IsUUID, IsUrl, IsNumber, IsEnum } from 'class-validator';
 
 enum Currency {
@@ -214,7 +214,7 @@ class PaymentProofUploadedEvent extends EventEnvelope<PaymentProofUploadedData> 
 #### Option 1 — Decorator-based (`@EmitEvent()`)
 
 ```typescript
-import { EmitEvent, SubjectBuilder } from '@cobranza-app/events-toolkit';
+import { EmitEvent, SubjectBuilder } from '@cobranza-apps/events-toolkit';
 
 class PaymentController {
   constructor(private readonly subjectBuilder: SubjectBuilder) {}
@@ -232,7 +232,7 @@ class PaymentController {
 #### Option 2 — Direct service injection
 
 ```typescript
-import { ProducerService, SubjectBuilder } from '@cobranza-app/events-toolkit';
+import { ProducerService, SubjectBuilder } from '@cobranza-apps/events-toolkit';
 
 class PaymentService {
   constructor(
@@ -258,7 +258,7 @@ class PaymentService {
 ### Consumer (Subscribing to Events)
 
 ```typescript
-import { OnEvent, EventEnvelope } from '@cobranza-app/events-toolkit';
+import { OnEvent, EventEnvelope } from '@cobranza-apps/events-toolkit';
 
 class PaymentProofConsumer {
   @OnEvent({ domain: 'payment', entity: 'proof', action: 'uploaded' })
@@ -275,7 +275,7 @@ class PaymentProofConsumer {
 Throw `EventConsumerException` to route a message to the Dead Letter Queue. The consumer service catches this exception and forwards the failed message to the DLQ subject (`dlq.company.{company_id}.{domain}.{entity}.{action}.v{version}`):
 
 ```typescript
-import { EventConsumerException } from '@cobranza-app/events-toolkit';
+import { EventConsumerException } from '@cobranza-apps/events-toolkit';
 
 @OnEvent({ domain: 'payment', entity: 'proof', action: 'uploaded' })
 async onProofUploaded(event: EventEnvelope<PaymentProofUploadedData>): Promise<void> {
@@ -296,7 +296,7 @@ async onProofUploaded(event: EventEnvelope<PaymentProofUploadedData>): Promise<v
 `EventLoggerService` provides Winston-based structured logging for all event operations. It accepts optional custom transports, enabling microservices to integrate with existing logging infrastructure:
 
 ```typescript
-import { EventLoggerService } from '@cobranza-app/events-toolkit';
+import { EventLoggerService } from '@cobranza-apps/events-toolkit';
 import * as winston from 'winston';
 
 const logger = new EventLoggerService({
@@ -315,7 +315,7 @@ logger.logEventEmitted({
 ### Request-Reply Pattern
 
 ```typescript
-import { RequestReplyService, SubjectBuilder, EventContext } from '@cobranza-app/events-toolkit';
+import { RequestReplyService, SubjectBuilder, EventContext } from '@cobranza-apps/events-toolkit';
 
 class PaymentService {
   constructor(
@@ -349,7 +349,7 @@ class PaymentService {
 For transactional safety in services without a PostgreSQL database:
 
 ```typescript
-import { SqliteOutboxService } from '@cobranza-app/events-toolkit';
+import { SqliteOutboxService } from '@cobranza-apps/events-toolkit';
 
 class PaymentService {
   constructor(private readonly outboxService: SqliteOutboxService) {}
@@ -377,7 +377,7 @@ OutboxModule.register({
 The `SubjectBuilder` is the single entry point for subject generation:
 
 ```typescript
-import { SubjectBuilder } from '@cobranza-app/events-toolkit';
+import { SubjectBuilder } from '@cobranza-apps/events-toolkit';
 
 const subject = subjectBuilder.build({
   companyId: '550e8400e29b41d4a716446655440000',
@@ -394,7 +394,7 @@ const subject = subjectBuilder.build({
 Create validated event instances without the `new` keyword. The factory accepts the event class (not a string) as the `type` parameter and instantiates it with the provided data and context:
 
 ```typescript
-import { createEvent } from '@cobranza-app/events-toolkit';
+import { createEvent } from '@cobranza-apps/events-toolkit';
 
 const event = createEvent<PaymentProofUploadedEvent>({
   type: PaymentProofUploadedEvent, // The event class (not a string)

@@ -1,5 +1,5 @@
 {
-  "name": "@cobranza-app/events-toolkit",
+  "name": "@cobranza-apps/events-toolkit",
   "version": "0.2.0",
   "description": "NestJS library for standardized NATS+JetStream event handling across Cobranza App microservices",
   "keywords": [
@@ -9,14 +9,14 @@
     "events",
     "messaging",
     "microservices",
-    "cobranza"
+    "cobranza-app"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/cobranza-app/events-toolkit"
+    "url": "https://github.com/kazuyakuza/cobranza-app_events-toolkit"
   },
   "license": "Unlicense",
-  "author": "Cobranza App",
+  "author": "kazuyakuza",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
