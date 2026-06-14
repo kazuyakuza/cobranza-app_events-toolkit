@@ -42,15 +42,22 @@ export interface EventsToolkitConsumerOptions {
 
 /** Top-level options for EventsToolkitModule.forRoot. */
 export interface EventsToolkitModuleOptions {
+  /** NATS connection settings. Required. */
   nats: EventsToolkitNatsOptions;
+  /** Outbox persistence configuration. Omit to disable the outbox subsystem. */
   outbox?: EventsToolkitOutboxOptions;
+  /** Logging configuration passed to EventLoggerService. */
   logging?: EventsToolkitLoggingOptions;
+  /** Consumer subsystem toggle and options. */
   consumer?: EventsToolkitConsumerOptions;
 }
 
 /** Asynchronous options for EventsToolkitModule.forRootAsync. */
 export interface EventsToolkitModuleAsyncOptions {
+  /** Additional NestJS modules to import alongside the toolkit. */
   imports?: Array<Type<unknown> | DynamicModule | Promise<DynamicModule> | ForwardReference<unknown>>;
+  /** Factory that resolves toolkit options at runtime. Injected dependencies are passed as arguments. */
   useFactory: (...args: unknown[]) => Promise<EventsToolkitModuleOptions> | EventsToolkitModuleOptions;
+  /** Tokens to inject into the factory function. */
   inject?: Array<string | symbol | Type<unknown>>;
 }

@@ -60,8 +60,16 @@ function buildOutboxModuleOptions(outbox: EventsToolkitOutboxOptions): OutboxMod
   };
 }
 
+/**
+ * Root module that wires together Producer, Consumer, Outbox, and Logging subsystems
+ * into a single global NestJS dynamic module.
+ */
 @Module({})
 export class EventsToolkitModule implements OnModuleDestroy {
+  /**
+   * Registers the toolkit with synchronous, fully-resolved options.
+   * Creates or reuses a NATS connection and conditionally imports Consumer and Outbox modules.
+   */
   static async forRoot(options: EventsToolkitModuleOptions): Promise<DynamicModule> {
     const resolved = await resolveConnection(options);
     ownedConnection = resolved.owned ? resolved.connection : null;
@@ -93,6 +101,10 @@ export class EventsToolkitModule implements OnModuleDestroy {
     };
   }
 
+  /**
+   * Registers the toolkit with asynchronous options resolved via a factory provider.
+   * Defers NATS connection and sub-module configuration until runtime injection.
+   */
   static forRootAsync(asyncOptions: EventsToolkitModuleAsyncOptions): DynamicModule {
     const optionsProvider = buildAsyncOptionsProvider(asyncOptions);
     const jetStreamProvider = buildAsyncJetStreamProvider();
@@ -114,6 +126,7 @@ export class EventsToolkitModule implements OnModuleDestroy {
     };
   }
 
+  /** Closes the module-owned NATS connection, if one was created internally. */
   onModuleDestroy(): void {
     if (ownedConnection) {
       ownedConnection.close();
