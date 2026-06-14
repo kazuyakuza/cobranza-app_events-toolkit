@@ -1,4 +1,4 @@
-import { DynamicModule, Module, OnModuleDestroy, Provider } from '@nestjs/common';
+import { DynamicModule, ForwardReference, Module, OnModuleDestroy, Provider, Type } from '@nestjs/common';
 import { connect, NatsConnection, JetStreamClient } from 'nats';
 import { ProducerModule, JETSTREAM_TOKEN } from './producer/producer.module';
 import { ConsumerModule, ConsumerModuleOptions } from './consumer/consumer.module';
@@ -16,11 +16,15 @@ import {
 
 const EVENTS_TOOLKIT_OPTIONS = 'EVENTS_TOOLKIT_OPTIONS';
 
+type ModuleImport = Type<unknown> | DynamicModule | Promise<DynamicModule> | ForwardReference<unknown>;
+
 interface ResolvedNats {
   connection: NatsConnection;
   jetStream: JetStreamClient;
   owned: boolean;
 }
+
+let ownedConnection: NatsConnection | null = null;
 
 async function resolveConnection(options: EventsToolkitModuleOptions): Promise<ResolvedNats> {
   if (options.nats.connection) {
@@ -58,13 +62,11 @@ function buildOutboxModuleOptions(outbox: EventsToolkitOutboxOptions): OutboxMod
 
 @Module({})
 export class EventsToolkitModule implements OnModuleDestroy {
-  private static ownedConnection: NatsConnection | null = null;
-
   static async forRoot(options: EventsToolkitModuleOptions): Promise<DynamicModule> {
     const resolved = await resolveConnection(options);
-    EventsToolkitModule.ownedConnection = resolved.owned ? resolved.connection : null;
+    ownedConnection = resolved.owned ? resolved.connection : null;
 
-    const imports: DynamicModule[] = [ProducerModule.forRoot({ jetStream: resolved.jetStream })];
+    const imports: ModuleImport[] = [ProducerModule.forRoot({ jetStream: resolved.jetStream })];
 
     const consumerEnabled = options.consumer?.enable !== false;
     if (consumerEnabled) {
@@ -84,6 +86,7 @@ export class EventsToolkitModule implements OnModuleDestroy {
 
     return {
       module: EventsToolkitModule,
+      global: true,
       imports,
       providers: [loggingProvider],
       exports: [ProducerService, ConsumerService, OutboxService, EventLoggerService],
@@ -91,44 +94,30 @@ export class EventsToolkitModule implements OnModuleDestroy {
   }
 
   static forRootAsync(asyncOptions: EventsToolkitModuleAsyncOptions): DynamicModule {
-    const optionsProvider: Provider = {
-      provide: EVENTS_TOOLKIT_OPTIONS,
-      useFactory: async (...args: unknown[]): Promise<EventsToolkitModuleOptions> => asyncOptions.useFactory(...args),
-      inject: asyncOptions.inject ?? [],
-    };
+    const optionsProvider = buildAsyncOptionsProvider(asyncOptions);
+    const jetStreamProvider = buildAsyncJetStreamProvider();
+    const loggingProvider = buildAsyncLoggingProvider();
 
-    const jetStreamProvider: Provider = {
-      provide: JETSTREAM_TOKEN,
-      useFactory: async (opts: EventsToolkitModuleOptions): Promise<JetStreamClient> => {
-        const resolved = await resolveConnection(opts);
-        EventsToolkitModule.ownedConnection = resolved.owned ? resolved.connection : null;
-        return resolved.jetStream;
-      },
-      inject: [EVENTS_TOOLKIT_OPTIONS],
-    };
+    const imports: ModuleImport[] = [
+      ProducerModule.forRootAsync({ useExisting: JETSTREAM_TOKEN, useFactory: async () => ({}), inject: [] }),
+      buildConsumerAsyncImport(),
+      buildOutboxAsyncImport(),
+      ...(asyncOptions.imports ?? []),
+    ];
 
     return {
       module: EventsToolkitModule,
-      imports: [
-        ProducerModule.forRootAsync({
-          useFactory: async (...args: unknown[]) => {
-            const opts = await asyncOptions.useFactory(...args);
-            const resolved = await resolveConnection(opts);
-            return { jetStream: resolved.jetStream };
-          },
-          inject: asyncOptions.inject ?? [],
-        }),
-        ...(asyncOptions.imports ?? []),
-      ],
-      providers: [optionsProvider, jetStreamProvider],
-      exports: [],
+      global: true,
+      imports,
+      providers: [optionsProvider, jetStreamProvider, loggingProvider],
+      exports: [ProducerService, ConsumerService, OutboxService, EventLoggerService],
     };
   }
 
   onModuleDestroy(): void {
-    if (EventsToolkitModule.ownedConnection) {
-      EventsToolkitModule.ownedConnection.close();
-      EventsToolkitModule.ownedConnection = null;
+    if (ownedConnection) {
+      ownedConnection.close();
+      ownedConnection = null;
     }
   }
 }
@@ -142,4 +131,65 @@ function buildLoggingProvider(options: EventsToolkitModuleOptions): Provider {
     return { provide: EventLoggerService, useValue: new EventLoggerService(loggerOptions) };
   }
   return { provide: EventLoggerService, useClass: EventLoggerService };
+}
+
+function buildAsyncOptionsProvider(asyncOptions: EventsToolkitModuleAsyncOptions): Provider {
+  return {
+    provide: EVENTS_TOOLKIT_OPTIONS,
+    useFactory: async (...args: unknown[]): Promise<EventsToolkitModuleOptions> => asyncOptions.useFactory(...args),
+    inject: asyncOptions.inject ?? [],
+  };
+}
+
+function buildAsyncJetStreamProvider(): Provider {
+  return {
+    provide: JETSTREAM_TOKEN,
+    useFactory: async (opts: EventsToolkitModuleOptions): Promise<JetStreamClient> => {
+      const resolved = await resolveConnection(opts);
+      ownedConnection = resolved.owned ? resolved.connection : null;
+      return resolved.jetStream;
+    },
+    inject: [EVENTS_TOOLKIT_OPTIONS],
+  };
+}
+
+function buildAsyncLoggingProvider(): Provider {
+  return {
+    provide: EventLoggerService,
+    useFactory: (opts: EventsToolkitModuleOptions): EventLoggerService => {
+      if (opts.logging) {
+        return new EventLoggerService({
+          level: opts.logging.level,
+          transports: opts.logging.transports,
+        });
+      }
+      return new EventLoggerService();
+    },
+    inject: [EVENTS_TOOLKIT_OPTIONS],
+  };
+}
+
+function buildConsumerAsyncImport(): DynamicModule {
+  return ConsumerModule.forRootAsync({
+    useFactory: async (...args: unknown[]): Promise<ConsumerModuleOptions> => {
+      const jetStream = args[0] as JetStreamClient;
+      const opts = args[1] as EventsToolkitModuleOptions;
+      return {
+        jetStream,
+        dlqSubjectBuilder: opts.consumer?.dlqSubjectBuilder,
+      };
+    },
+    inject: [JETSTREAM_TOKEN, EVENTS_TOOLKIT_OPTIONS],
+  });
+}
+
+function buildOutboxAsyncImport(): DynamicModule {
+  return OutboxModule.forRootAsync({
+    useFactory: async (...args: unknown[]): Promise<OutboxModuleOptions> => {
+      const opts = args[0] as EventsToolkitModuleOptions;
+      const outbox = opts.outbox ?? { type: 'sqlite' as const, sqlitePath: ':memory:' };
+      return buildOutboxModuleOptions(outbox);
+    },
+    inject: [EVENTS_TOOLKIT_OPTIONS],
+  });
 }

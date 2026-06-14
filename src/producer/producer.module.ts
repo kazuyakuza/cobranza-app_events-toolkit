@@ -17,6 +17,8 @@ export interface ProducerModuleOptions {
 
 /** Asynchronous options for {@link ProducerModule.forRootAsync}. */
 export interface ProducerModuleAsyncOptions {
+  /** Existing token that provides a JetStreamClient. Skips JETSTREAM_TOKEN provider creation. */
+  useExisting?: string | symbol | Type<unknown>;
   /** Factory that resolves module options, optionally injecting dependencies. */
   useFactory: (...args: unknown[]) => Promise<ProducerModuleOptions> | ProducerModuleOptions;
   /** Optional dependencies to inject into the factory. */
@@ -65,6 +67,14 @@ export class ProducerModule {
    * @param asyncOptions - Factory and optional injection tokens for deferred resolution.
    */
   static forRootAsync(asyncOptions: ProducerModuleAsyncOptions): DynamicModule {
+    if (asyncOptions.useExisting) {
+      return {
+        module: ProducerModule,
+        global: true,
+        providers: [EventLoggerService, ProducerService, EmitEventInterceptor],
+        exports: [ProducerService, EmitEventInterceptor],
+      };
+    }
     const jetStreamProvider: Provider = {
       provide: JETSTREAM_TOKEN,
       useFactory: async (...args: unknown[]): Promise<JetStreamClient> => {
