@@ -96,3 +96,22 @@ export { OutboxService } from './outbox/outbox.service';
 export { OutboxServiceDeps, OUTBOX_SERVICE_DEPS_TOKEN } from './outbox/outbox-service-deps.interface';
 export { OutboxServiceOptions, OUTBOX_SERVICE_OPTIONS_TOKEN } from './outbox/outbox-service-options.interface';
 export { buildDlqSubject } from './outbox/outbox.utils';
+
+// ── Events Toolkit (Unified) ──
+export { EventsToolkitModule } from './events-toolkit.module';
+export {
+  EventsToolkitModuleOptions,
+  EventsToolkitModuleAsyncOptions,
+  EventsToolkitNatsOptions,
+  EventsToolkitOutboxOptions,
+  EventsToolkitLoggingOptions,
+  EventsToolkitConsumerOptions,
+} from './events-toolkit-options.interface';
+
+// ── Security Utilities ──
+export {
+  sanitizeCompanyId,
+  assertValidCompanyId,
+  validateSubject,
+  sanitizeSubjectPart,
+} from './common/utils/security.utils';

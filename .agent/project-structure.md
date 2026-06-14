@@ -6,7 +6,7 @@
 - common/envelope/ - EventEnvelope base class, ActorType enum, EventBase, EventContext interface
 - common/envelope/validators/ - Custom class-validator decorators
 - common/dto/ - Data Transfer Objects (BuildSubjectDto)
-- common/utils/ - SubjectBuilder, EventFactory, UUID and date utilities
+- common/utils/ - SubjectBuilder, EventFactory, UUID, date, serialization, and security utilities
 - common/errors/ - EventConsumerException and error index
 - producer/ - ProducerModule, ProducerService, EmitEvent decorator
 - producer/decorators/ - @EmitEvent() decorator
