@@ -14,6 +14,7 @@ export { BuildSubjectDto } from './common/dto/build-subject.dto';
 export { SubjectBuilder, buildSubject } from './common/utils/subject.builder';
 export { generateUuidV7, generateEventId } from './common/utils/uuid.utils';
 export { nowIso } from './common/utils/date.utils';
+export { createEvent } from './common/utils/event.factory';
 export { encodeEvent, decodeEvent } from './common/utils/serialization.utils';
 
 // ── Errors ──
