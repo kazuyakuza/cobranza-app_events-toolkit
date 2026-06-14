@@ -146,9 +146,7 @@ describe('SqliteOutboxRepository', () => {
       await repository.markAsSent('evt_020');
 
       expect(mockDb.prepare).toHaveBeenCalledWith(expect.stringContaining("status = 'sent'"));
-      expect(capturedRuns[capturedRuns.length - 1]).toEqual(
-        expect.objectContaining({ id: 'evt_020' }),
-      );
+      expect(capturedRuns[capturedRuns.length - 1]).toEqual(expect.objectContaining({ id: 'evt_020' }));
     });
   });
 

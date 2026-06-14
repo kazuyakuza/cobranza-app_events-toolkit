@@ -66,10 +66,12 @@ export class PostgresOutboxRepository implements OutboxRepository {
   }
 
   async markAsSent(id: string): Promise<void> {
+    await this.ensureTable();
     await this.entityManager.query(UPDATE_SENT_SQL, [id, nowIso()]);
   }
 
   async markAsFailed(id: string, error: string): Promise<void> {
+    await this.ensureTable();
     await this.entityManager.query(UPDATE_FAILED_SQL, [id, error, nowIso()]);
   }
 

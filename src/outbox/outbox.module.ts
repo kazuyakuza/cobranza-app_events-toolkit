@@ -13,9 +13,7 @@ const OUTBOX_MODULE_OPTIONS_TOKEN = 'OUTBOX_MODULE_OPTIONS';
 function resolveRepository(options: OutboxModuleOptions): OutboxRepository {
   if (options.type === 'postgres') {
     if (!options.postgres?.entityManager) {
-      throw new Error(
-        'OutboxModule with type "postgres" requires options.postgres.entityManager',
-      );
+      throw new Error('OutboxModule with type "postgres" requires options.postgres.entityManager');
     }
     return new PostgresOutboxRepository(options.postgres.entityManager);
   }
@@ -42,15 +40,13 @@ export class OutboxModule {
   static forRootAsync(asyncOptions: OutboxModuleAsyncOptions): DynamicModule {
     const optionsProvider: Provider = {
       provide: OUTBOX_MODULE_OPTIONS_TOKEN,
-      useFactory: async (...args: unknown[]): Promise<OutboxModuleOptions> =>
-        asyncOptions.useFactory(...args),
+      useFactory: async (...args: unknown[]): Promise<OutboxModuleOptions> => asyncOptions.useFactory(...args),
       inject: asyncOptions.inject ?? [],
     };
 
     const repositoryProvider: Provider = {
       provide: OUTBOX_REPOSITORY_TOKEN,
-      useFactory: (moduleOptions: OutboxModuleOptions): OutboxRepository =>
-        resolveRepository(moduleOptions),
+      useFactory: (moduleOptions: OutboxModuleOptions): OutboxRepository => resolveRepository(moduleOptions),
       inject: [OUTBOX_MODULE_OPTIONS_TOKEN],
     };
 

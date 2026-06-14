@@ -72,7 +72,7 @@ describe('OutboxModule', () => {
   describe('forRootAsync', () => {
     it('should resolve options from factory', async () => {
       const dynamicModule = OutboxModule.forRootAsync({
-        useFactory: async () => ({ type: 'sqlite' } as const),
+        useFactory: async () => ({ type: 'sqlite' }) as const,
       });
 
       const optionsProvider = dynamicModule.providers?.find(
