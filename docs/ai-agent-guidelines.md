@@ -58,9 +58,13 @@ class PaymentProofUploadedEvent extends EventEnvelope<PaymentProofUploadedData> 
 
 ```typescript
 const event = new PaymentProofUploadedEvent(data, {
+  type: 'payment.proof.uploaded',
+  version: '1.0.0',
+  producer: 'payment-service',
   companyId: '550e8400-e29b-41d4-a716-446655440000',
   actorType: ActorType.CLIENT,
   actorId: 'clt_123e4567-e89b-12d3-a456-426614174000',
+  correlationId: 'req_987fcdeb-51a2-43e8-9c4f-123456789abc',
 });
 ```
 
@@ -85,17 +89,14 @@ Domain: payment → Entity: proof → Action: uploaded → Subject: company.{id}
 ### Option 1 — Decorator-based (`@EmitEvent()`)
 
 ```typescript
-import { EmitEvent, SubjectBuilder } from '@cobranza-apps/events-toolkit';
+import { EmitEvent, SubjectBuilder, EventContext } from '@cobranza-apps/events-toolkit';
 
 class PaymentController {
   constructor(private readonly subjectBuilder: SubjectBuilder) {}
 
   @EmitEvent({ domain: 'payment', entity: 'proof', action: 'uploaded' })
-  async handleUpload(dto: UploadDto, context: EventContext): Promise<PaymentProofUploadedEvent> {
-    return new PaymentProofUploadedEvent(
-      new PaymentProofUploadedData({ paymentAttemptId, fileUrl, amount }),
-      context,
-    );
+  async handleUpload(dto: UploadDto, context: EventContext): Promise<PaymentProofUploadedData> {
+    return new PaymentProofUploadedData({ paymentAttemptId, fileUrl, amount });
   }
 }
 ```

@@ -136,13 +136,16 @@ The `EventContext` provides the identity and traceability metadata required by e
 
 ```typescript
 interface EventContext {
+  type: string;            // Event type in dot-notation (e.g. 'payment.proof.uploaded')
+  version: string;         // Schema version (e.g. '1.0.0')
+  producer: string;        // Name of the producing microservice (e.g. 'payment-service')
   companyId: string;      // Tenant UUID (mandatory)
-  actorType: ActorType;   // Who performed the action
-  actorId: string;        // Identifier of the actor
-  correlationId?: string; // Links events across a transaction chain
-  traceId?: string;       // Distributed tracing ID
+  actorType: ActorType;    // Who performed the action
+  actorId: string;         // Identifier of the actor
+  correlationId: string;   // Links events across a transaction chain
   causationId?: string;   // ID of the event that caused this one
-  replyTo?: string;       // Subject for request-reply responses
+  traceId?: string;        // Distributed tracing ID
+  replyTo?: string;        // Subject for request-reply responses
 }
 ```
 
@@ -159,17 +162,14 @@ Import the modules you need in your NestJS application:
 ```typescript
 import { Module } from '@nestjs/common';
 import { ProducerModule, ConsumerModule } from '@cobranza-apps/events-toolkit';
+import { connect } from 'nats';
+
+const natsConnection = await connect({ servers: ['nats://localhost:4222'] });
 
 @Module({
   imports: [
-    ProducerModule.register({
-      natsServers: ['nats://localhost:4222'],
-      producerName: 'payment-service'
-    }),
-    ConsumerModule.register({
-      natsServers: ['nats://localhost:4222'],
-      consumerName: 'payment-service'
-    })
+    ProducerModule.forRoot({ connection: natsConnection }),
+    ConsumerModule.forRoot({ connection: natsConnection }),
   ]
 })
 export class AppModule {}
@@ -238,17 +238,14 @@ class PaymentProofUploadedEvent extends EventEnvelope<PaymentProofUploadedData> 
 #### Option 1 — Decorator-based (`@EmitEvent()`)
 
 ```typescript
-import { EmitEvent, SubjectBuilder } from '@cobranza-apps/events-toolkit';
+import { EmitEvent, SubjectBuilder, EventContext } from '@cobranza-apps/events-toolkit';
 
 class PaymentController {
   constructor(private readonly subjectBuilder: SubjectBuilder) {}
 
   @EmitEvent({ domain: 'payment', entity: 'proof', action: 'uploaded' })
-  async handleUpload(dto: UploadDto, context: EventContext): Promise<PaymentProofUploadedEvent> {
-    return new PaymentProofUploadedEvent(
-      new PaymentProofUploadedData({ paymentAttemptId, fileUrl, amount }),
-      context
-    );
+  async handleUpload(dto: UploadDto, context: EventContext): Promise<PaymentProofUploadedData> {
+    return new PaymentProofUploadedData({ paymentAttemptId, fileUrl, amount });
   }
 }
 ```
@@ -356,14 +353,15 @@ class PaymentService {
       version: '1'
     });
 
-    const requestEvent = new PaymentProofRequestedEvent(
-      new PaymentProofRequestedData({ paymentId }),
-      context
+    const payload = new PaymentProofRequestedData({ paymentId });
+
+    const response = await this.requestReply.request<PaymentProofRequestedData, ProofResponse>(
+      subject,
+      payload,
+      { context, timeoutMs: 10000 }
     );
 
-    return this.requestReply.sendAndWait<ProofResponse>(subject, requestEvent, {
-      timeout: 10000 // ms
-    });
+    return response.data;
   }
 }
 ```
@@ -445,16 +443,22 @@ const subject = subjectBuilder.build({
 
 ### Event Factory
 
-Create validated event instances without the `new` keyword. The factory accepts the event class (not a string) as the `type` parameter and instantiates it with the provided data and context:
+Create validated event instances without the `new` keyword. The factory accepts the data payload and an `EventContext`, and returns a fully-populated `EventEnvelope`:
 
 ```typescript
-import { createEvent } from '@cobranza-apps/events-toolkit';
+import { createEvent, ActorType } from '@cobranza-apps/events-toolkit';
 
-const event = createEvent<PaymentProofUploadedEvent>({
-  type: PaymentProofUploadedEvent, // The event class (not a string)
-  data: paymentData,
-  context: eventContext
-});
+const eventContext: EventContext = {
+  type: 'payment.proof.uploaded',
+  version: '1.0.0',
+  producer: 'payment-service',
+  companyId: '550e8400-e29b-41d4-a716-446655440000',
+  actorType: ActorType.CLIENT,
+  actorId: 'clt_123e4567-e89b-12d3-a456-426614174000',
+  correlationId: 'req_987fcdeb-51a2-43e8-9c4f-123456789abc',
+};
+
+const event = createEvent(paymentData, eventContext);
 ```
 
 ---
@@ -487,7 +491,7 @@ Each concern is a separate NestJS `DynamicModule` — microservices import only 
 When generating event-related code in microservices using this toolkit, follow these rules:
 
 1. **Subject naming**: Always use `SubjectBuilder.build()` — never concatenate subject strings manually.
-2. **Event IDs**: Use `generateUuidV7()` from the toolkit, prefixed with `evt_`.
+2. **Event IDs**: Use `generateEventId()` from the toolkit, which returns a UUIDv7 prefixed with `evt_`.
 3. **Validation**: Always decorate event data classes with `class-validator` decorators.
 4. **Actor context**: Always populate `actor_type` and `actor_id` in the event context.
 5. **Tenant isolation**: `company_id` is mandatory in every event envelope.
