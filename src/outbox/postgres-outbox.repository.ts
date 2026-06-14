@@ -30,7 +30,7 @@ const UPDATE_SENT_SQL = `
 `;
 
 const UPDATE_FAILED_SQL = `
-  UPDATE outbox SET status = 'failed', attempts = attempts + 1, last_error = $2, updated_at = $3 WHERE id = $1
+  UPDATE outbox SET status = 'pending', attempts = attempts + 1, last_error = $2, updated_at = $3 WHERE id = $1
 `;
 
 /**

@@ -14,6 +14,11 @@ import { SqliteOutboxRepository } from './sqlite-outbox.repository';
 import { PostgresOutboxRepository } from './postgres-outbox.repository';
 
 const OUTBOX_MODULE_OPTIONS_TOKEN = 'OUTBOX_MODULE_OPTIONS';
+const OUTBOX_SERVICE_BASE_DEPS_PAIR_TOKEN = 'OUTBOX_SERVICE_BASE_DEPS_PAIR';
+const OUTBOX_SERVICE_CONFIG_PAIR_TOKEN = 'OUTBOX_SERVICE_CONFIG_PAIR';
+
+type OutboxServiceBaseDepsPair = Pick<OutboxServiceDeps, 'producerService' | 'logger'>;
+type OutboxServiceConfigPair = Pick<OutboxServiceDeps, 'repository' | 'options'>;
 
 function resolveRepository(options: OutboxModuleOptions): OutboxRepository {
   if (options.type === 'postgres') {
@@ -53,20 +58,31 @@ export class OutboxModule {
       useValue: options.serviceOptions ?? {},
     };
 
-    const depsProvider: Provider = {
-      provide: OUTBOX_SERVICE_DEPS_TOKEN,
-      useFactory: (
-        repo: OutboxRepository,
-        producer: ProducerService,
-        logger: EventLoggerService,
-        serviceOpts: OutboxServiceOptions,
-      ): OutboxServiceDeps => ({
-        repository: repo,
-        producerService: producer,
+    const baseDepsPairProvider: Provider = {
+      provide: OUTBOX_SERVICE_BASE_DEPS_PAIR_TOKEN,
+      useFactory: (producerService: ProducerService, logger: EventLoggerService): OutboxServiceBaseDepsPair => ({
+        producerService,
         logger,
+      }),
+      inject: [ProducerService, EventLoggerService],
+    };
+
+    const configPairProvider: Provider = {
+      provide: OUTBOX_SERVICE_CONFIG_PAIR_TOKEN,
+      useFactory: (repository: OutboxRepository, serviceOpts: OutboxServiceOptions): OutboxServiceConfigPair => ({
+        repository,
         options: serviceOpts,
       }),
-      inject: [OUTBOX_REPOSITORY_TOKEN, ProducerService, EventLoggerService, OUTBOX_SERVICE_OPTIONS_TOKEN],
+      inject: [OUTBOX_REPOSITORY_TOKEN, OUTBOX_SERVICE_OPTIONS_TOKEN],
+    };
+
+    const depsProvider: Provider = {
+      provide: OUTBOX_SERVICE_DEPS_TOKEN,
+      useFactory: (base: OutboxServiceBaseDepsPair, config: OutboxServiceConfigPair): OutboxServiceDeps => ({
+        ...base,
+        ...config,
+      }),
+      inject: [OUTBOX_SERVICE_BASE_DEPS_PAIR_TOKEN, OUTBOX_SERVICE_CONFIG_PAIR_TOKEN],
     };
 
     return {
@@ -75,6 +91,8 @@ export class OutboxModule {
       providers: [
         { provide: OUTBOX_REPOSITORY_TOKEN, useValue: repository },
         serviceOptionsProvider,
+        baseDepsPairProvider,
+        configPairProvider,
         depsProvider,
         OutboxService,
       ],
@@ -109,27 +127,46 @@ export class OutboxModule {
       inject: [OUTBOX_MODULE_OPTIONS_TOKEN],
     };
 
-    const depsProvider: Provider = {
-      provide: OUTBOX_SERVICE_DEPS_TOKEN,
-      useFactory: (
-        repo: OutboxRepository,
-        producer: ProducerService,
-        logger: EventLoggerService,
-        serviceOpts: OutboxServiceOptions,
-      ): OutboxServiceDeps => ({
-        repository: repo,
-        producerService: producer,
+    const baseDepsPairProvider: Provider = {
+      provide: OUTBOX_SERVICE_BASE_DEPS_PAIR_TOKEN,
+      useFactory: (producerService: ProducerService, logger: EventLoggerService): OutboxServiceBaseDepsPair => ({
+        producerService,
         logger,
+      }),
+      inject: [ProducerService, EventLoggerService],
+    };
+
+    const configPairProvider: Provider = {
+      provide: OUTBOX_SERVICE_CONFIG_PAIR_TOKEN,
+      useFactory: (repository: OutboxRepository, serviceOpts: OutboxServiceOptions): OutboxServiceConfigPair => ({
+        repository,
         options: serviceOpts,
       }),
-      inject: [OUTBOX_REPOSITORY_TOKEN, ProducerService, EventLoggerService, OUTBOX_SERVICE_OPTIONS_TOKEN],
+      inject: [OUTBOX_REPOSITORY_TOKEN, OUTBOX_SERVICE_OPTIONS_TOKEN],
+    };
+
+    const depsProvider: Provider = {
+      provide: OUTBOX_SERVICE_DEPS_TOKEN,
+      useFactory: (base: OutboxServiceBaseDepsPair, config: OutboxServiceConfigPair): OutboxServiceDeps => ({
+        ...base,
+        ...config,
+      }),
+      inject: [OUTBOX_SERVICE_BASE_DEPS_PAIR_TOKEN, OUTBOX_SERVICE_CONFIG_PAIR_TOKEN],
     };
 
     return {
       module: OutboxModule,
       global: true,
       imports: [...(asyncOptions.imports ?? [])],
-      providers: [moduleOptionsProvider, repositoryProvider, serviceOptionsProvider, depsProvider, OutboxService],
+      providers: [
+        moduleOptionsProvider,
+        repositoryProvider,
+        serviceOptionsProvider,
+        baseDepsPairProvider,
+        configPairProvider,
+        depsProvider,
+        OutboxService,
+      ],
       exports: [OUTBOX_REPOSITORY_TOKEN, OutboxService],
     };
   }

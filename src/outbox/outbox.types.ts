@@ -42,7 +42,10 @@ export interface OutboxRepository {
   getPending(limit?: number): Promise<OutboxEntry[]>;
   /** Marks an entry as successfully delivered. */
   markAsSent(id: string): Promise<void>;
-  /** Marks an entry as failed, incrementing the attempt counter. */
+  /**
+   * Records a failed attempt, incrementing the attempt counter while keeping
+   * the entry in `pending` status so the processor can retry it.
+   */
   markAsFailed(id: string, error: string): Promise<void>;
 }
 

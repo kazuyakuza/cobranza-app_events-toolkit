@@ -154,7 +154,7 @@ describe('SqliteOutboxRepository', () => {
     it('should call prepare with UPDATE SQL and run with id and error', async () => {
       await repository.markAsFailed('evt_030', 'connection timeout');
 
-      expect(mockDb.prepare).toHaveBeenCalledWith(expect.stringContaining("status = 'failed'"));
+      expect(mockDb.prepare).toHaveBeenCalledWith(expect.stringContaining("status = 'pending'"));
       expect(capturedRuns[capturedRuns.length - 1]).toEqual(
         expect.objectContaining({ id: 'evt_030', last_error: 'connection timeout' }),
       );

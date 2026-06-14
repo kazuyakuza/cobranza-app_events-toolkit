@@ -31,7 +31,7 @@ const UPDATE_SENT_SQL = `
 
 const UPDATE_FAILED_SQL = `
   UPDATE outbox
-  SET status = 'failed', attempts = attempts + 1, last_error = @last_error, updated_at = @updated_at
+  SET status = 'pending', attempts = attempts + 1, last_error = @last_error, updated_at = @updated_at
   WHERE id = @id
 `;
 
