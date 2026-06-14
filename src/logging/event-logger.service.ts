@@ -109,7 +109,7 @@ export class EventLoggerService {
     const level = options?.level ?? 'info';
     return winston.createLogger({
       level,
-      format: winston.format.json(),
+      format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
       transports,
     });
   }
