@@ -2,19 +2,19 @@
 
 # Folders in src/
 
-- common/ - Shared types, envelope, DTOs, utilities, and error classes
-- common/envelope/ - EventEnvelope base class, ActorType enum, EventBase, EventContext interface
+- common/ - Shared types, envelope, DTOs, utilities, and error classes (barrel: index.ts)
+- common/envelope/ - EventEnvelope base class, ActorType enum, EventBase, EventContext interface (barrel: index.ts)
 - common/envelope/validators/ - Custom class-validator decorators
-- common/dto/ - Data Transfer Objects (BuildSubjectDto)
-- common/utils/ - SubjectBuilder, EventFactory, UUID, date, serialization, and security utilities
-- common/errors/ - EventConsumerException and error index
-- producer/ - ProducerModule, ProducerService, EmitEvent decorator
+- common/dto/ - Data Transfer Objects (BuildSubjectDto) (barrel: index.ts)
+- common/utils/ - SubjectBuilder, EventFactory, UUID, date, serialization, and security utilities (barrel: index.ts)
+- common/errors/ - EventConsumerException and error index (barrel: index.ts)
+- producer/ - ProducerModule, ProducerService, EmitEvent decorator (barrel: index.ts)
 - producer/decorators/ - @EmitEvent() decorator
-- consumer/ - ConsumerModule, ConsumerService, JetStreamConsumerService
+- consumer/ - ConsumerModule, ConsumerService, JetStreamConsumerService (barrel: index.ts)
 - consumer/decorators/ - @OnEvent() decorator
-- request-reply/ - RequestReplyService and type definitions
-- outbox/ - OutboxModule, SqliteOutboxRepository, PostgresOutboxRepository, shared types
-- logging/ - EventLoggerService (Winston-based)
+- request-reply/ - RequestReplyService and type definitions (barrel: index.ts)
+- outbox/ - OutboxModule, SqliteOutboxRepository, PostgresOutboxRepository, shared types (barrel: index.ts)
+- logging/ - EventLoggerService (Winston-based) (barrel: index.ts)
 
 # Other folders
 
