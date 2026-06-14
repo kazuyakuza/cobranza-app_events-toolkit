@@ -63,6 +63,42 @@ export class EventLoggerService {
   }
 
   /**
+   * Logs an event that has been persisted to the outbox for later delivery.
+   *
+   * @param context - Outbox event metadata.
+   */
+  logOutboxSaved(context: OutboxLogContext): void {
+    this.logger.info('Outbox event saved', { ...context });
+  }
+
+  /**
+   * Logs a successfully processed outbox event.
+   *
+   * @param context - Outbox event metadata.
+   */
+  logOutboxProcessed(context: OutboxLogContext): void {
+    this.logger.info('Outbox event processed', { ...context });
+  }
+
+  /**
+   * Logs an outbox processing failure that will be retried.
+   *
+   * @param context - Outbox event metadata plus error details.
+   */
+  logOutboxFailed(context: OutboxErrorLogContext): void {
+    this.logger.warn('Outbox event processing failed', { ...context });
+  }
+
+  /**
+   * Logs an outbox event that has been routed to the Dead Letter Queue.
+   *
+   * @param context - Outbox event metadata plus error details.
+   */
+  logOutboxDlq(context: OutboxErrorLogContext): void {
+    this.logger.warn('Outbox event routed to DLQ', { ...context });
+  }
+
+  /**
    * Creates a Winston logger instance from the provided options.
    *
    * Falls back to Console transport at `info` level with JSON format
@@ -103,6 +139,30 @@ export interface EventLogContext {
 
 /** Metadata context for error and DLQ event log entries. */
 export interface EventErrorLogContext extends EventLogContext {
+  /** Error message describing the failure. */
+  error: string;
+  /** Stack trace of the underlying error. Optional. */
+  stack?: string;
+}
+
+/** Metadata context for outbox event log entries. */
+export interface OutboxLogContext {
+  /** Unique event identifier. */
+  eventId: string;
+  /** Event type in dot-notation. */
+  eventType: string;
+  /** NATS subject the event will be published to. */
+  subject: string;
+  /** Current delivery attempt number (0 for initial save). */
+  attempt: number;
+  /** Correlation ID for request chain tracing. Optional. */
+  correlationId?: string;
+  /** OpenTelemetry trace ID. Optional. */
+  traceId?: string;
+}
+
+/** Metadata context for outbox error and DLQ event log entries. */
+export interface OutboxErrorLogContext extends OutboxLogContext {
   /** Error message describing the failure. */
   error: string;
   /** Stack trace of the underlying error. Optional. */

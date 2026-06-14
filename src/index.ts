@@ -26,6 +26,8 @@ export {
   EventLoggerOptions,
   EventLogContext,
   EventErrorLogContext,
+  OutboxLogContext,
+  OutboxErrorLogContext,
 } from './logging/event-logger.service';
 
 // ── Producer ──
@@ -82,9 +84,14 @@ export {
   OUTBOX_REPOSITORY_TOKEN,
   OutboxRepository,
   OutboxEntry,
+  SaveOutboxEntryParams,
   OutboxModuleOptions,
   OutboxModuleAsyncOptions,
   EntityManagerLike,
 } from './outbox/outbox.types';
 export { SqliteOutboxRepository } from './outbox/sqlite-outbox.repository';
 export { PostgresOutboxRepository } from './outbox/postgres-outbox.repository';
+export { OutboxService } from './outbox/outbox.service';
+export { OutboxServiceDeps, OUTBOX_SERVICE_DEPS_TOKEN } from './outbox/outbox-service-deps.interface';
+export { OutboxServiceOptions, OUTBOX_SERVICE_OPTIONS_TOKEN } from './outbox/outbox-service-options.interface';
+export { buildDlqSubject } from './outbox/outbox.utils';

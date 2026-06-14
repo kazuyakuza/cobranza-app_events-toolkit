@@ -1,5 +1,6 @@
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { Type, DynamicModule, ForwardReference } from '@nestjs/common';
+import { OutboxServiceOptions } from './outbox-service-options.interface';
 
 /** Injection token for the OutboxRepository provider selected by the module configuration. */
 export const OUTBOX_REPOSITORY_TOKEN = 'OUTBOX_REPOSITORY';
@@ -55,6 +56,8 @@ export interface OutboxModuleOptions {
   type: 'sqlite' | 'postgres';
   sqlite?: { dbPath: string };
   postgres?: { entityManager: EntityManagerLike };
+  /** Optional configuration for the OutboxService background processor. */
+  serviceOptions?: OutboxServiceOptions;
 }
 
 /** Asynchronous options for OutboxModule.forRootAsync. */
