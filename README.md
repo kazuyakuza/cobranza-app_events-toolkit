@@ -20,13 +20,13 @@ NATS + JetStream event handling library for the Cobranza App microservices platf
 - **Producer Module**: `@EmitEvent()` decorator and `ProducerService` for fire-and-forget publishing
 - **Consumer Module**: `@OnEvent()` decorator with automatic validation, error handling, and DLQ routing
 - **Request-Reply**: `RequestReplyService` for async request to response patterns
-- **Outbox Module**: SQLite-based persistent outbox with background processor for transactional safety
+- **Outbox Module**: Persistent outbox with SQLite or PostgreSQL backends, background processor for transactional safety
 - **Event Logger**: Winston-based structured logging with trace and correlation IDs
 
 ### Non-goals
 
 - Does NOT define domain-specific event payloads — each microservice owns its events.
-- Does NOT replace the main PostgreSQL outbox in `ms-db-gateway` — it supplements with SQLite for other services.
+- Does NOT replace the main PostgreSQL outbox in `ms-db-gateway` — it supplements with SQLite for other services. However, a shared PostgreSQL backend is available for services that already have one.
 - Is NOT a standalone service — it is a library consumed by NestJS microservices.
 
 ---
@@ -152,7 +152,7 @@ The toolkit propagates `companyId`, `actorType`, and `actorId` into the envelope
 
 ## Usage
 
-### Setup
+### Setup (Individual Modules)
 
 Import the modules you need in your NestJS application:
 
@@ -171,6 +171,30 @@ import { ProducerModule, ConsumerModule } from '@cobranza-apps/events-toolkit';
       consumerName: 'payment-service'
     })
   ]
+})
+export class AppModule {}
+```
+
+### Setup (Unified Module)
+
+Use `EventsToolkitModule.forRoot()` to configure all subsystems in a single call:
+
+```typescript
+import { Module } from '@nestjs/common';
+import { EventsToolkitModule } from '@cobranza-apps/events-toolkit';
+
+@Module({
+  imports: [
+    EventsToolkitModule.forRoot({
+      nats: { servers: ['nats://localhost:4222'] },
+      outbox: {
+        type: 'sqlite',
+        sqlitePath: '/data/outbox.sqlite',
+        serviceOptions: { maxRetries: 3 },
+      },
+      logging: { level: 'info' },
+    }),
+  ],
 })
 export class AppModule {}
 ```
@@ -346,29 +370,59 @@ class PaymentService {
 
 ### Outbox Pattern
 
-For transactional safety in services without a PostgreSQL database:
+For transactional safety, the Outbox module persists events before publishing. It supports two backends:
+
+| Backend  | Use Case                        | Service Type                                     |
+| --------| ------------------------------- | ------------------------------------------------ |
+| SQLite  | Lightweight, self-contained     | Services without their own database               |
+| Postgres| Shares main application DB      | `ms-db-gateway` and services with existing TypeORM|
+
+For detailed configuration, see [`docs/outbox-configuration.md`](docs/outbox-configuration.md).
 
 ```typescript
-import { SqliteOutboxService } from '@cobranza-apps/events-toolkit';
+import { OutboxService, SubjectBuilder } from '@cobranza-apps/events-toolkit';
 
 class PaymentService {
-  constructor(private readonly outboxService: SqliteOutboxService) {}
+  constructor(
+    private readonly outboxService: OutboxService,
+    private readonly subjectBuilder: SubjectBuilder,
+  ) {}
 
   async processWithOutbox(data: PaymentProofUploadedData, context: EventContext): Promise<void> {
+    const subject = this.subjectBuilder.build({
+      companyId: context.companyId,
+      domain: 'payment',
+      entity: 'proof',
+      action: 'uploaded',
+      version: '1',
+    });
     const event = new PaymentProofUploadedEvent(data, context);
-    // Persisted to SQLite file, published by background processor
-    await this.outboxService.saveToOutbox(event);
+    // Persisted to outbox, published by background processor
+    await this.outboxService.saveToOutbox(event, subject);
   }
 }
 ```
 
-The `OutboxModule` configuration:
+SQLite configuration:
 
 ```typescript
-OutboxModule.register({
-  dbPath: '/data/outbox.sqlite',  // Use Docker volume path
-  publishInterval: 5000,           // Background processor interval (ms)
-  maxRetries: 5                    // Max publish retries before marking dead
+OutboxModule.forRoot({
+  type: 'sqlite',
+  sqlite: { dbPath: '/data/outbox.sqlite' },  // Use Docker volume path
+  serviceOptions: {
+    processorIntervalMs: 5000,  // Background processor interval (ms)
+    maxRetries: 3,              // Max publish retries before DLQ routing
+  },
+})
+```
+
+PostgreSQL configuration:
+
+```typescript
+OutboxModule.forRoot({
+  type: 'postgres',
+  postgres: { entityManager: myTypeOrmEntityManager },
+  serviceOptions: { maxRetries: 3 },
 })
 ```
 
@@ -420,7 +474,7 @@ src/
 ├── producer/                   # ProducerModule, ProducerService, @EmitEvent()
 ├── consumer/                   # ConsumerModule, JetStreamConsumerService, @OnEvent()
 ├── request-reply/              # RequestReplyService
-├── outbox/                     # OutboxModule, SqliteOutboxService
+├── outbox/                     # OutboxModule, OutboxService, SqliteOutboxRepository, PostgresOutboxRepository
 └── logging/                    # EventLoggerService (Winston)
 ```
 
@@ -442,6 +496,8 @@ When generating event-related code in microservices using this toolkit, follow t
 8. **Consumer errors**: Throw `EventConsumerException` for business errors that should route to DLQ.
 9. **References over objects**: Prefer IDs over full object graphs in event payloads.
 10. **Events under 256KB**: Keep event payloads small.
+
+For step-by-step instructions on creating events, naming subjects, and common pitfalls, see [`docs/ai-agent-guidelines.md`](docs/ai-agent-guidelines.md).
 
 For the full convention specification, see [`docs/event-messaging-convention.md`](docs/event-messaging-convention.md).
 
@@ -478,6 +534,8 @@ docker run -p 4222:4222 nats:latest -js
 ## Related Documentation
 
 - [Event & Messaging Convention](docs/event-messaging-convention.md) — Full event standard specification
+- [Outbox Configuration](docs/outbox-configuration.md) — SQLite vs Postgres setup, service options, and migration guide
+- [AI Agent Guidelines](docs/ai-agent-guidelines.md) — Step-by-step event creation, naming, and common mistakes
 - [Architecture](.agent/project-info/architecture.md) — Module design and data flows
 - [Tech Stack](.agent/project-info/tech.md) — Technology choices and development setup
 - [Product Overview](.agent/project-info/product.md) — Problem definition and goals
