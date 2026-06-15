@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { RequestReplyService } from './request-reply.service';
-import { RequestReplyConfig, RequestReplyDeps, REQUEST_REPLY_DEPS_TOKEN, SendRequestOptions, SendRequestResult, BuildResponseEnvelopeOptions } from './request-reply.types';
+import { RequestReplyConfig, RequestReplyDeps, REQUEST_REPLY_DEPS_TOKEN } from './request-reply.types';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { ActorType } from '../common/envelope/actor-type.enum';
 import { EventContext } from '../common/envelope/event-context.interface';
