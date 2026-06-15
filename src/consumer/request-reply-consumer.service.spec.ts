@@ -1,0 +1,189 @@
+import { Test } from '@nestjs/testing';
+import { RequestReplyConsumerService } from './request-reply-consumer.service';
+import { REQUEST_REPLY_CONSUMER_DEPS_TOKEN } from './request-reply-consumer-deps.interface';
+import { defaultDlqSubjectBuilder } from './subscribe-options.interface';
+import { EventConsumerException } from '../common/errors/event-consumer.exception';
+import { ActorType } from '../common/envelope/actor-type.enum';
+import { EventLoggerService } from '../logging/event-logger.service';
+
+describe('RequestReplyConsumerService', () => {
+  let service: RequestReplyConsumerService;
+  let jetStream: { publish: jest.Mock; subscribe: jest.Mock };
+  let mockLogger: {
+    logEventConsumed: jest.Mock;
+    logEventError: jest.Mock;
+    logEventDlq: jest.Mock;
+    logEventEmitted: jest.Mock;
+  };
+
+  beforeEach(async () => {
+    jetStream = { publish: jest.fn().mockResolvedValue({}), subscribe: jest.fn() };
+    mockLogger = {
+      logEventConsumed: jest.fn(),
+      logEventError: jest.fn(),
+      logEventDlq: jest.fn(),
+      logEventEmitted: jest.fn(),
+    };
+
+    const module = await Test.createTestingModule({
+      providers: [
+        {
+          provide: REQUEST_REPLY_CONSUMER_DEPS_TOKEN,
+          useFactory: (logger: EventLoggerService) => ({
+            jetStream,
+            logger,
+            dlqSubjectBuilder: defaultDlqSubjectBuilder,
+            responseSubjectPattern: 'company.*.response.v1',
+          }),
+          inject: [EventLoggerService],
+        },
+        { provide: EventLoggerService, useValue: mockLogger },
+        RequestReplyConsumerService,
+      ],
+    }).compile();
+
+    service = module.get(RequestReplyConsumerService);
+  });
+
+  describe('registerHandler', () => {
+    it('should register a handler by eventType', () => {
+      const handler = jest.fn();
+      service.registerHandler({ eventType: 'payment.proof.uploaded', handler });
+      expect(service.handlerCount).toBe(1);
+      expect(service.getHandler('payment.proof.uploaded')).toBe(handler);
+    });
+
+    it('should register a handler with eventType + companyId', () => {
+      const handler = jest.fn();
+      service.registerHandler({
+        eventType: 'payment.proof.uploaded',
+        handler,
+        companyId: 'tenant-1',
+      });
+      expect(service.handlerCount).toBe(1);
+      expect(service.getHandler('payment.proof.uploaded', 'tenant-1')).toBe(handler);
+    });
+
+    it('should replace an existing handler for the same key', () => {
+      const firstHandler = jest.fn();
+      const secondHandler = jest.fn();
+      service.registerHandler({ eventType: 'payment.proof.uploaded', handler: firstHandler });
+      service.registerHandler({ eventType: 'payment.proof.uploaded', handler: secondHandler });
+      expect(service.handlerCount).toBe(1);
+      expect(service.getHandler('payment.proof.uploaded')).toBe(secondHandler);
+    });
+  });
+
+  describe('dispatch', () => {
+    it('should invoke handler matched by eventType', async () => {
+      const handler = jest.fn().mockResolvedValue(undefined);
+      service.registerHandler({ eventType: 'payment.proof.uploaded', handler });
+
+      const event = createTestEvent();
+      await service.dispatch({ subject: 'company.response.v1', event, context: createTestContext() });
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler).toHaveBeenCalledWith(event, createTestContext());
+    });
+
+    it('should prefer eventType:companyId handler over eventType-only handler', async () => {
+      const genericHandler = jest.fn().mockResolvedValue(undefined);
+      const specificHandler = jest.fn().mockResolvedValue(undefined);
+
+      service.registerHandler({ eventType: 'payment.proof.uploaded', handler: genericHandler });
+      service.registerHandler({
+        eventType: 'payment.proof.uploaded',
+        handler: specificHandler,
+        companyId: '550e8400-e29b-41d4-a716-446655440000',
+      });
+
+      const event = createTestEvent();
+      await service.dispatch({ subject: 'company.response.v1', event, context: createTestContext() });
+
+      expect(specificHandler).toHaveBeenCalledTimes(1);
+      expect(genericHandler).not.toHaveBeenCalled();
+    });
+
+    it('should fall back to eventType-only handler when no company-specific handler exists', async () => {
+      const genericHandler = jest.fn().mockResolvedValue(undefined);
+      service.registerHandler({ eventType: 'payment.proof.uploaded', handler: genericHandler });
+
+      const event = createTestEvent();
+      await service.dispatch({ subject: 'company.response.v1', event, context: createTestContext() });
+
+      expect(genericHandler).toHaveBeenCalledTimes(1);
+    });
+
+    it('should throw EventConsumerException when no handler matches', async () => {
+      const event = createTestEvent();
+      await expect(
+        service.dispatch({ subject: 'company.response.v1', event, context: createTestContext() }),
+      ).rejects.toThrow(EventConsumerException);
+    });
+
+    it('should propagate handler errors', async () => {
+      const handlerError = new Error('Handler failed');
+      const handler = jest.fn().mockRejectedValue(handlerError);
+      service.registerHandler({ eventType: 'payment.proof.uploaded', handler });
+
+      const event = createTestEvent();
+      await expect(
+        service.dispatch({ subject: 'company.response.v1', event, context: createTestContext() }),
+      ).rejects.toThrow('Handler failed');
+    });
+
+    it('should throw with event type in message when no handler', async () => {
+      const event = createTestEvent();
+      await expect(
+        service.dispatch({ subject: 'company.response.v1', event, context: createTestContext() }),
+      ).rejects.toThrow('payment.proof.uploaded');
+    });
+  });
+
+  describe('getHandler', () => {
+    it('should return undefined for unregistered eventType', () => {
+      expect(service.getHandler('unknown.type')).toBeUndefined();
+    });
+  });
+
+  describe('handlerCount', () => {
+    it('should return 0 initially', () => {
+      expect(service.handlerCount).toBe(0);
+    });
+
+    it('should reflect the number of registered handlers', () => {
+      service.registerHandler({ eventType: 'type.a', handler: jest.fn() });
+      service.registerHandler({ eventType: 'type.b', handler: jest.fn() });
+      expect(service.handlerCount).toBe(2);
+    });
+  });
+});
+
+function createTestEvent(overrides: Partial<Record<string, unknown>> = {}): import('../common/envelope/event-envelope.class').EventEnvelope<unknown> {
+  const { EventEnvelope } = jest.requireActual('../common/envelope/event-envelope.class');
+  return new EventEnvelope({
+    id: 'evt_test-123',
+    type: 'payment.proof.uploaded',
+    version: '1.0.0',
+    produced_at: '2026-06-13T15:00:00.000Z',
+    producer: 'payment-service',
+    company_id: '550e8400-e29b-41d4-a716-446655440000',
+    actor_type: ActorType.CLIENT,
+    actor_id: 'user-123',
+    correlation_id: '660e8400-e29b-41d4-a716-446655440001',
+    data: { amount: 100 },
+    ...overrides,
+  });
+}
+
+function createTestContext(): import('../common/envelope/event-context.interface').EventContext {
+  return {
+    type: 'payment.proof.uploaded',
+    version: '1.0.0',
+    producer: 'payment-service',
+    companyId: '550e8400-e29b-41d4-a716-446655440000',
+    actorType: ActorType.CLIENT,
+    actorId: 'user-123',
+    correlationId: '660e8400-e29b-41d4-a716-446655440001',
+  };
+}
