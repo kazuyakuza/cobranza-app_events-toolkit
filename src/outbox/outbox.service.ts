@@ -23,9 +23,7 @@ const DEFAULTS: Required<OutboxServiceOptions> = {
   retryBackoffBaseMs: 1000,
   dlqSubjectBuilder: buildDlqSubject,
 };
-
 const PENDING_BATCH_SIZE = 100;
-
 /**
  * Manages the transactional outbox pattern for reliable event publishing.
  *

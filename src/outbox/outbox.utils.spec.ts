@@ -48,12 +48,10 @@ describe('outbox.utils', () => {
         'dlq.company.abc.payment.proof.uploaded.v1',
       );
     });
-
     it('works with any subject string', () => {
       expect(buildDlqSubject('test.subject')).toBe('dlq.test.subject');
     });
   });
-
   describe('parseEnvelope', () => {
     it('parses JSON eventData string to EventEnvelope object', () => {
       const entry = createTestEntry();
@@ -83,7 +81,6 @@ describe('outbox.utils', () => {
     it('returns String(value) for non-Error values', () => {
       expect(extractErrorMessage('plain string')).toBe('plain string');
     });
-
     it('returns string for primitive values', () => {
       expect(extractErrorMessage(42)).toBe('42');
       expect(extractErrorMessage(true)).toBe('true');
@@ -94,15 +91,12 @@ describe('outbox.utils', () => {
     it('returns baseMs for attempt 1', () => {
       expect(calculateBackoff(1, 1000)).toBe(1000);
     });
-
     it('returns 2x baseMs for attempt 2', () => {
       expect(calculateBackoff(2, 1000)).toBe(2000);
     });
-
     it('returns 4x baseMs for attempt 3', () => {
       expect(calculateBackoff(3, 1000)).toBe(4000);
     });
-
     it('returns 8x baseMs for attempt 4 with base 2000', () => {
       expect(calculateBackoff(4, 2000)).toBe(16000);
     });
