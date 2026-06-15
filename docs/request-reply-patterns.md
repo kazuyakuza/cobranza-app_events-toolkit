@@ -77,8 +77,8 @@ class PaymentService {
 
 ### Error handling for responders
 
-- If the responder throws a `RequestReplyException`, it is re-thrown to the caller.
-- Network errors and timeouts are wrapped in `RequestReplyException` automatically.
+- Network errors, timeouts, and malformed replies are wrapped in `RequestReplyException` on the caller side.
+- Responder business errors should be encoded in the response payload (or headers) so the caller can inspect them.
 
 ---
 
@@ -177,7 +177,19 @@ class CreditCheckConsumer {
       actorType: ActorType.SYSTEM,
       actorId: 'credit-service',
       correlationId: event.correlation_id,
+      replyTo: event.reply_to,
     };
+
+    const responseEvent = this.requestReply.buildResponseEnvelope({
+      requestEvent: event,
+      responseContext,
+      responseData: result,
+    });
+
+    await this.requestReply.sendResponse(event.correlation_id, responseEvent);
+  }
+}
+
 
     const responseEvent = this.requestReply.buildResponseEnvelope({
       requestEvent: event,
@@ -193,11 +205,14 @@ class CreditCheckConsumer {
 ### Code example — Response handler (`@OnRequestReply`)
 
 ```typescript
-import { OnRequestReply, EventEnvelope } from '@cobranza-apps/events-toolkit';
+import { OnRequestReply, EventEnvelope, EventContext } from '@cobranza-apps/events-toolkit';
 
 class DebtServiceResponseHandler {
   @OnRequestReply({ eventType: 'credit.check.completed' })
-  async handleCreditCheckResponse(event: EventEnvelope<CreditCheckResultData>): Promise<void> {
+  async handleCreditCheckResponse(
+    event: EventEnvelope<CreditCheckResultData>,
+    context: EventContext,
+  ): Promise<void> {
     await this.processCreditResult(event.data, event.correlation_id);
   }
 }
@@ -346,6 +361,7 @@ const responseEvent = this.requestReply.buildResponseEnvelope({
     actorType: ActorType.SYSTEM,
     actorId: 'credit-service',
     correlationId: event.correlation_id,
+    replyTo: event.reply_to,
   },
   responseData: { status: 'approved', score: 750 },
 });
@@ -355,7 +371,7 @@ await this.requestReply.sendResponse(event.correlation_id, responseEvent);
 
 ### Error response
 
-For the **sync pattern**, the responder should throw a `RequestReplyException`. The NATS request-reply mechanism propagates the error back to the caller.
+For the **sync pattern**, responder errors should be returned as part of the response payload. The caller receives the response and interprets the embedded error. Timeouts and transport failures on the caller side are thrown as `RequestReplyException`.
 
 For the **async pattern**, publish an error response event with error details in the payload:
 

@@ -434,6 +434,7 @@ class CreditCheckConsumer {
         producer: 'credit-service', companyId: event.company_id,
         actorType: ActorType.SYSTEM, actorId: 'credit-service',
         correlationId: event.correlation_id,
+        replyTo: event.reply_to,
       },
       responseData: await this.performCheck(event.data),
     });
@@ -445,7 +446,10 @@ class CreditCheckConsumer {
 // ── Requester: handle async response ──
 class DebtServiceResponseHandler {
   @OnRequestReply({ eventType: 'credit.check.completed' })
-  async handleCreditCheckResponse(event: EventEnvelope<CreditCheckResultData>): Promise<void> {
+  async handleCreditCheckResponse(
+    event: EventEnvelope<CreditCheckResultData>,
+    context: EventContext,
+  ): Promise<void> {
     await this.processCreditResult(event.data, event.correlation_id);
   }
 }
