@@ -38,12 +38,61 @@ company.{company_id}.{domain}.{entity}.{action}.v{version}
 - `company.550e8400e29b41d4a716446655440000.notification.sent.v1`
 - `company.550e8400e29b41d4a716446655440000.client.updated.v1`
 
-**For Request → Async Response pattern:**
+### 2.1 Response Subject Naming Convention
 
-Use `.response` suffix on the same base subject:
+When a service responds to a request event, the response subject can follow either of two conventions:
 
-- Request: `company.{company_id}.payment.proof.uploaded.v1`
-- Response: `company.{company_id}.payment.proof.uploaded.response.v1`
+#### Preferred: Descriptive Past-Tense Action
+
+Use a distinct past-tense action that describes the **outcome** of the request. This treats the response as a first-class event.
+
+- Request:  `company.{id}.debt.schedule.calculate.v1`
+- Response: `company.{id}.debt.schedule.calculated.v1`
+
+This approach is preferred because:
+- Response subjects are discoverable and self-documenting.
+- No special parsing is needed — the subject follows the same format as any event.
+- Works with standard `@OnEvent()` handlers without special routing.
+
+To build a preferred response subject, use `SubjectBuilder.build()` or `buildSubject()` with the appropriate action:
+
+```ts
+const responseSubject = buildSubject({
+  companyId,
+  domain: 'debt',
+  entity: 'schedule',
+  action: 'calculated',  // past-tense outcome of "calculate"
+  version: '1',
+});
+```
+
+#### Alternative: `.response` Suffix
+
+Append `.response` to the request's action segment. This is useful for programmatic derivation of response subjects.
+
+- Request:  `company.{id}.debt.schedule.calculate.v1`
+- Response: `company.{id}.debt.schedule.calculate.response.v1`
+
+To build an alternative response subject, use `buildResponseSubject()`:
+
+```ts
+import { buildResponseSubject } from '@cobranza-app/events-toolkit';
+
+const requestSubject = 'company.abc.debt.schedule.calculate.v1';
+const responseSubject = buildResponseSubject(requestSubject);
+// => 'company.abc.debt.schedule.calculate.response.v1'
+```
+
+**Trade-offs**:
+
+| Aspect | Preferred (Past-Tense) | Alternative (`.response`) |
+|--------|------------------------|--------------------------|
+| Discoverability | High — each response is a distinct event type | Lower — `.response` subjects are derived |
+| Programmatic derivation | Manual — choose the action name | Automatic — use `buildResponseSubject()` |
+| Handler routing | Standard `@OnEvent()` | Standard `@OnEvent()` with `.response` action |
+| Subject parsing | Standard format | Requires awareness of `.response` suffix |
+
+> **Rule of thumb**: Use the preferred convention when the response has a distinct semantic meaning (e.g., `calculated`, `approved`, `rejected`). Use the alternative when the response is purely a reply to the request with no distinct outcome verb.
 
 ## 3. Event Envelope (Payload Structure)
 
@@ -128,10 +177,11 @@ The toolkit supports two request-reply patterns over NATS JetStream:
 
 **Response naming convention:**
 
-Use `action: '{original_action}.response'` in `BuildSubjectDto` to produce response subjects:
+See [Section 2.1](#21-response-subject-naming-convention) for the full convention specification.
 
-- Request: `company.{company_id}.{domain}.{entity}.{action}.v{version}`
-- Response: `company.{company_id}.{domain}.{entity}.{action}.response.v{version}`
+Quick reference:
+- **Preferred**: Use a descriptive past-tense action (e.g., `calculated` for a `calculate` request).
+- **Alternative**: Use `buildResponseSubject(requestSubject)` to derive the `.response` suffix automatically.
 
 **Flow:**
 

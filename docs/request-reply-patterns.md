@@ -102,7 +102,7 @@ class PaymentService {
 ### Code example — Requester side
 
 ```typescript
-import { RequestReplyService, SubjectBuilder, EventContext, ActorType, generateUuidV7 } from '@cobranza-apps/events-toolkit';
+import { RequestReplyService, SubjectBuilder, buildResponseSubject, EventContext, ActorType, generateUuidV7 } from '@cobranza-apps/events-toolkit';
 
 class DebtService {
   constructor(
@@ -119,15 +119,18 @@ class DebtService {
       version: '1',
     });
 
-    // Build response subject: set action to include ".response"
+    // Alternative convention — buildResponseSubject():
     // Produces: company.{id}.credit.check.requested.response.v1
-    const replySubject = this.subjectBuilder.build({
-      companyId,
-      domain: 'credit',
-      entity: 'check',
-      action: 'requested.response',
-      version: '1',
-    });
+    const replySubject = buildResponseSubject(requestSubject);
+
+    // Preferred convention — past-tense action:
+    // const replySubject = buildSubject({
+    //   companyId,
+    //   domain: 'credit',
+    //   entity: 'check',
+    //   action: 'calculated',  // past-tense outcome
+    //   version: '1',
+    // });
 
     const context: EventContext = {
       type: 'credit.check.requested',
@@ -206,6 +209,38 @@ class DebtServiceResponseHandler {
   }
 }
 ```
+
+#### Building Response Subjects
+
+The toolkit provides two approaches for constructing response subjects:
+
+**Preferred approach — Descriptive past-tense action:**
+
+```typescript
+import { buildSubject } from '@cobranza-app/events-toolkit';
+
+const responseSubject = buildSubject({
+  companyId: event.company_id,
+  domain: 'credit',
+  entity: 'check',
+  action: 'calculated',
+  version: '1',
+});
+// => 'company.550e...credit.check.calculated.v1'
+```
+
+**Alternative approach — `.response` suffix via `buildResponseSubject`:**
+
+```typescript
+import { buildResponseSubject } from '@cobranza-app/events-toolkit';
+
+const responseSubject = buildResponseSubject(
+  'company.550e8400e29b41d4a716446655440000.credit.check.requested.v1',
+);
+// => 'company.550e8400e29b41d4a716446655440000.credit.check.requested.response.v1'
+```
+
+See [Event & Messaging Convention §2.1](event-messaging-convention.md#21-response-subject-naming-convention) for the full convention details.
 
 ---
 
@@ -433,6 +468,13 @@ async onCreditCheckRequested(event: EventEnvelope<CreditCheckRequestedData>): Pr
 | Field | Type | Default | Description |
 | ----- | ---- | ------- | ----------- |
 | `defaultTimeoutMs` | `number` | `5000` | Default timeout for `request()` operations |
+
+### Subject Utility Functions
+
+| Function | Description |
+|----------|-------------|
+| `buildResponseSubject(requestSubject)` | Derives a response subject by appending `.response` to the action segment of a request subject |
+| `RESPONSE_SUFFIX` | Constant `.response` — the suffix appended by `buildResponseSubject` |
 
 ---
 
