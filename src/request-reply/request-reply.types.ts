@@ -1,3 +1,6 @@
+import type { EventContext } from '../common/envelope/event-context.interface';
+import type { EventEnvelope } from '../common/envelope/event-envelope.class';
+
 /** Injection token for the NATS connection used by RequestReplyService. */
 export const NATS_CONNECTION_TOKEN = 'NatsConnection';
 
@@ -48,9 +51,6 @@ export interface RequestReplyDeps {
   /** Service configuration with applied defaults. */
   config: RequestReplyConfig;
 }
-
-import type { EventContext } from '../common/envelope/event-context.interface';
-import type { EventEnvelope } from '../common/envelope/event-envelope.class';
 
 /** Options for the {@link RequestReplyService.sendRequest} fire-and-forget method. */
 export interface SendRequestOptions<T> {

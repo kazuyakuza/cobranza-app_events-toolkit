@@ -1,11 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { EventContext } from '../common/envelope/event-context.interface';
-import { RequestReplyException } from '../common/errors/request-reply.exception';
-import { generateEventId } from '../common/utils/uuid.utils';
-import { nowIso } from '../common/utils/date.utils';
 import { encodeEvent, decodeEvent } from '../common/utils/serialization.utils';
-import { EventLoggerService, EventLogContext, EventErrorLogContext } from '../logging/event-logger.service';
+import { EventLoggerService } from '../logging/event-logger.service';
 import { ProducerService } from '../producer/producer.service';
 import {
   RequestReplyConfig,
@@ -17,6 +14,15 @@ import {
   SendRequestResult,
   BuildResponseEnvelopeOptions,
 } from './request-reply.types';
+import {
+  buildEnvelope,
+  ensureReplyTo,
+  ensureReplyToSet,
+  logRequestSent,
+  logReplyReceived,
+  logRequestError,
+  wrapRequestError,
+} from './request-reply.helpers';
 
 /**
  * Provides request-reply messaging over NATS JetStream.
@@ -51,19 +57,19 @@ export class RequestReplyService {
     options: RequestReplyRequestOptions & { context: EventContext; },
   ): Promise<RequestReplyResponse<R>> {
     const { context, ...requestOptions } = options;
-    const envelope = this.buildEnvelope(context, payload);
+    const envelope = buildEnvelope(context, payload);
     const encoded = encodeEvent(envelope);
     const timeout = requestOptions.timeoutMs ?? this.config.defaultTimeoutMs;
-    this.logRequestSent(subject, envelope);
+    logRequestSent(this.logger, subject, envelope);
 
     try {
       const msg = await this.natsConnection.request(subject, encoded, { timeout });
       const responseEnvelope = decodeEvent<EventEnvelope<R>>(msg.data);
-      this.logReplyReceived(subject, responseEnvelope);
+      logReplyReceived(this.logger, subject, responseEnvelope);
       return { data: responseEnvelope.data, raw: msg.data };
     } catch (error: unknown) {
-      this.logRequestError(subject, envelope, error);
-      throw this.wrapRequestError(envelope, error);
+      logRequestError(this.logger, subject, envelope, error);
+      throw wrapRequestError(envelope, error);
     }
   }
 
@@ -75,7 +81,7 @@ export class RequestReplyService {
    */
   async sendResponse(correlationId: string, responseEvent: EventEnvelope<unknown>): Promise<void> {
     const replyTo = responseEvent.reply_to;
-    this.ensureReplyTo(replyTo, correlationId);
+    ensureReplyTo(replyTo, correlationId);
     await this.producerService.publish(replyTo, responseEvent);
   }
 
@@ -94,8 +100,8 @@ export class RequestReplyService {
    * @typeParam T - Request payload type.
    */
   async sendRequest<T>(options: SendRequestOptions<T>): Promise<SendRequestResult> {
-    this.ensureReplyToSet(options.context.replyTo);
-    const envelope = this.buildEnvelope(options.context, options.payload);
+    ensureReplyToSet(options.context.replyTo);
+    const envelope = buildEnvelope(options.context, options.payload);
     await this.producerService.publish(options.subject, envelope);
     return { correlationId: envelope.correlation_id };
   }
@@ -114,90 +120,6 @@ export class RequestReplyService {
       correlationId: options.requestEvent.correlation_id,
       causationId: options.requestEvent.id,
     };
-    return this.buildEnvelope(preservedContext, options.responseData);
-  }
-
-  private buildEnvelope<T>(context: EventContext, payload: T): EventEnvelope<T> {
-    return new EventEnvelope<T>({
-      id: generateEventId(),
-      produced_at: nowIso(),
-      type: context.type,
-      version: context.version,
-      producer: context.producer,
-      company_id: context.companyId,
-      actor_type: context.actorType,
-      actor_id: context.actorId,
-      correlation_id: context.correlationId,
-      causation_id: context.causationId,
-      trace_id: context.traceId,
-      reply_to: context.replyTo,
-      data: payload,
-    });
-  }
-
-  private ensureReplyTo(replyTo: string | undefined, correlationId: string): asserts replyTo is string {
-    if (!replyTo) {
-      throw new RequestReplyException({
-        message: `Cannot send response: event missing reply_to field (correlationId: ${correlationId})`,
-        eventId: 'unknown',
-        eventType: 'unknown',
-        correlationId,
-      });
-    }
-  }
-
-  private ensureReplyToSet(replyTo: string | undefined): asserts replyTo is string {
-    if (!replyTo) {
-      throw new RequestReplyException({
-        message: 'sendRequest requires reply_to in context',
-        eventId: 'unknown',
-        eventType: 'unknown',
-        correlationId: 'unknown',
-      });
-    }
-  }
-
-  private logRequestSent(subject: string, envelope: EventEnvelope<unknown>): void {
-    this.logger.logEventEmitted(this.toLogContext(subject, envelope));
-  }
-
-  private logReplyReceived(subject: string, envelope: EventEnvelope<unknown>): void {
-    this.logger.logEventConsumed(this.toLogContext(subject, envelope));
-  }
-
-  private logRequestError(subject: string, envelope: EventEnvelope<unknown>, error: unknown): void {
-    this.logger.logEventError(this.toErrorLogContext(subject, envelope, error));
-  }
-
-  private toLogContext(subject: string, envelope: EventEnvelope<unknown>): EventLogContext {
-    return {
-      eventId: envelope.id,
-      eventType: envelope.type,
-      subject,
-      correlationId: envelope.correlation_id,
-      traceId: envelope.trace_id,
-    };
-  }
-
-  private toErrorLogContext(subject: string, envelope: EventEnvelope<unknown>, error: unknown): EventErrorLogContext {
-    const err = error instanceof Error ? error : new Error(String(error));
-    return {
-      ...this.toLogContext(subject, envelope),
-      error: err.message,
-      stack: err.stack,
-    };
-  }
-
-  private wrapRequestError(envelope: EventEnvelope<unknown>, error: unknown): RequestReplyException {
-    if (error instanceof RequestReplyException) {
-      return error;
-    }
-    return new RequestReplyException({
-      message: error instanceof Error ? error.message : String(error),
-      eventId: envelope.id,
-      eventType: envelope.type,
-      correlationId: envelope.correlation_id,
-      cause: error instanceof Error ? error : undefined,
-    });
+    return buildEnvelope(preservedContext, options.responseData);
   }
 }
