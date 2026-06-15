@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { RequestReplyService } from './request-reply.service';
-import { RequestReplyConfig, RequestReplyDeps, REQUEST_REPLY_DEPS_TOKEN } from './request-reply.types';
+import { RequestReplyConfig, RequestReplyDeps, REQUEST_REPLY_DEPS_TOKEN, SendRequestOptions, SendRequestResult, BuildResponseEnvelopeOptions } from './request-reply.types';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { ActorType } from '../common/envelope/actor-type.enum';
 import { EventContext } from '../common/envelope/event-context.interface';
@@ -238,6 +238,157 @@ describe('RequestReplyService', () => {
     it('should return false when reply_to is empty string', () => {
       const event = createTestEnvelope({ reply_to: '' });
       expect(service.isRequestReplyMessage(event)).toBe(false);
+    });
+  });
+
+  describe('sendRequest', () => {
+    const replyContext: EventContext = {
+      ...sampleContext,
+      replyTo: '_INBOX.test.reply',
+    };
+
+    it('should throw RequestReplyException when replyTo is not set in context', async () => {
+      const contextWithoutReply = { ...sampleContext };
+      delete (contextWithoutReply as Partial<EventContext>).replyTo;
+
+      await expect(
+        service.sendRequest({
+          subject: 'test.subject',
+          payload: { key: 'value' },
+          context: contextWithoutReply,
+        }),
+      ).rejects.toThrow(RequestReplyException);
+    });
+
+    it('should throw RequestReplyException with message when replyTo is empty string', async () => {
+      const contextWithEmptyReply: EventContext = {
+        ...sampleContext,
+        replyTo: '',
+      };
+
+      await expect(
+        service.sendRequest({
+          subject: 'test.subject',
+          payload: {},
+          context: contextWithEmptyReply,
+        }),
+      ).rejects.toThrow('sendRequest requires reply_to in context');
+    });
+
+    it('should publish envelope via ProducerService and return correlationId', async () => {
+      const result = await service.sendRequest({
+        subject: 'test.subject',
+        payload: { paymentId: 'pay-001' },
+        context: replyContext,
+      });
+
+      expect(mockPublish).toHaveBeenCalledTimes(1);
+      const [subject, publishedEnvelope] = mockPublish.mock.calls[0];
+      expect(subject).toBe('test.subject');
+      expect(publishedEnvelope.reply_to).toBe('_INBOX.test.reply');
+      expect(result.correlationId).toBe('660e8400-e29b-41d4-a716-446655440001');
+    });
+
+    it('should build envelope with auto-generated id and timestamp', async () => {
+      await service.sendRequest({
+        subject: 'test.subject',
+        payload: { amount: 100 },
+        context: replyContext,
+      });
+
+      const publishedEnvelope = mockPublish.mock.calls[0][1] as EventEnvelope<unknown>;
+      expect(publishedEnvelope.id).toBe('evt_mock-request-uuid');
+      expect(publishedEnvelope.produced_at).toBe('2026-06-13T19:00:00.000Z');
+      expect(publishedEnvelope.correlation_id).toBe(sampleContext.correlationId);
+    });
+
+    it('should not call natsConnection.request (fire-and-forget)', async () => {
+      await service.sendRequest({
+        subject: 'test.subject',
+        payload: {},
+        context: replyContext,
+      });
+
+      expect(mockNatsRequest).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('buildResponseEnvelope', () => {
+    it('should preserve correlation_id from request event', () => {
+      const requestEvent = createTestEnvelope({
+        id: 'evt_request-001',
+        correlation_id: '660e8400-e29b-41d4-a716-446655440001',
+      });
+      const responseContext: EventContext = {
+        type: 'payment.verification.completed',
+        version: '1.0.0',
+        producer: 'verification-service',
+        companyId: '550e8400-e29b-41d4-a716-446655440000',
+        actorType: ActorType.CLIENT,
+        actorId: 'user-456',
+        correlationId: 'will-be-overridden',
+      };
+
+      const response = service.buildResponseEnvelope({
+        requestEvent,
+        responseContext,
+        responseData: { verified: true },
+      });
+
+      expect(response.correlation_id).toBe('660e8400-e29b-41d4-a716-446655440001');
+    });
+
+    it('should set causation_id to request event id', () => {
+      const requestEvent = createTestEnvelope({ id: 'evt_request-002' });
+      const responseContext: EventContext = {
+        type: 'payment.verification.completed',
+        version: '1.0.0',
+        producer: 'verification-service',
+        companyId: '550e8400-e29b-41d4-a716-446655440000',
+        actorType: ActorType.CLIENT,
+        actorId: 'user-456',
+        correlationId: 'any-value',
+      };
+
+      const response = service.buildResponseEnvelope({
+        requestEvent,
+        responseContext,
+        responseData: { verified: true },
+      });
+
+      expect(response.causation_id).toBe('evt_request-002');
+    });
+
+    it('should populate all envelope fields from responseContext except correlation/causation', () => {
+      const requestEvent = createTestEnvelope({
+        id: 'evt_request-003',
+        correlation_id: 'corr-003',
+      });
+      const responseContext: EventContext = {
+        type: 'payment.verification.completed',
+        version: '2.0.0',
+        producer: 'verification-service',
+        companyId: 'company-uuid',
+        actorType: ActorType.SYSTEM,
+        actorId: 'system',
+        correlationId: 'will-be-overridden',
+      };
+
+      const response = service.buildResponseEnvelope({
+        requestEvent,
+        responseContext,
+        responseData: { status: 'approved' },
+      });
+
+      expect(response.type).toBe('payment.verification.completed');
+      expect(response.version).toBe('2.0.0');
+      expect(response.producer).toBe('verification-service');
+      expect(response.company_id).toBe('company-uuid');
+      expect(response.actor_type).toBe(ActorType.SYSTEM);
+      expect(response.actor_id).toBe('system');
+      expect(response.data).toEqual({ status: 'approved' });
+      expect(response.correlation_id).toBe('corr-003');
+      expect(response.causation_id).toBe('evt_request-003');
     });
   });
 });
