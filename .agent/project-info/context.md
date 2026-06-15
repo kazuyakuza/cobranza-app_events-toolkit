@@ -2,42 +2,37 @@
 
 ## Current Work Focus
 
-**Initializing project infrastructure and documentation.**
+**Implementing request-reply patterns — response event naming conventions.**
 
-The project is in its earliest phase (pre-implementation). Core documentation and conventions are being established before any source code is written.
+The project is actively implementing request-reply communication patterns. Task 5 (Response Event Naming Conventions) has been completed, adding `buildResponseSubject()` helper, `RESPONSE_SUFFIX` constant, `SubjectParseResult` type, and `parseSubjectSegments()` utility to support both the preferred (descriptive past-tense) and alternative (`.response` suffix) response naming conventions. Documentation has been updated in both `event-messaging-convention.md` and `request-reply-patterns.md`.
 
 ## Recent Changes
 
-### 2026-06-12 — Project Info Initialization (in progress)
+### 2026-06-12 — Project Info Initialization
 - `brief.md` defined with full project scope, objectives, technical decisions, and folder structure.
 - `docs/event-messaging-convention.md` created — the definitive event standard for the platform.
-- Task "initialize project info" in progress: creating `product.md`, `context.md`, `architecture.md`, `tech.md`.
+- Task "initialize project info" completed: created `product.md`, `context.md`, `architecture.md`, `tech.md`.
 - Branch `feat/initialize-project-info-and-readme` created.
+
+### 2026-06-14 — Task 5: Response Event Naming Conventions
+- Added `RESPONSE_SUFFIX` constant (`.response`), `SubjectParseResult` type, `parseSubjectSegments()` helper, and `buildResponseSubject()` function in `src/common/utils/subject.builder.ts`.
+- Exported new symbols (`buildResponseSubject`, `RESPONSE_SUFFIX`, `SubjectParseResult`) via barrel files.
+- Added unit tests for `buildResponseSubject()` and `RESPONSE_SUFFIX` (6 test cases).
+- Updated `docs/event-messaging-convention.md` with Section 2.1 documenting both conventions (preferred past-tense and alternative `.response` suffix).
+- Updated `docs/request-reply-patterns.md` with response subject helper section, updated code examples, and API reference additions.
+- Applied code review fixes: Prettier formatting, valid UUIDs in JSDoc examples, package name typo corrections, removed commented-out code from docs.
+- Branch: `feat/request-reply-patterns`.
 
 ### Prior State
 - `brief.md` was defined by the user during project info brief initialization.
 - `docs/event-messaging-convention.md` was provided as the event standard baseline.
 
-## Immediate Next Steps (After This Task)
+## Immediate Next Steps (After Task 5)
 
-1. **Create `package.json`**: Set up NestJS library package with dependencies (`@nestjs/common`, `@nestjs/microservices`, `class-validator`, `class-transformer`, `uuid`, `winston`, `nats`).
-2. **Create `tsconfig.json`**: TypeScript configuration for library output.
-3. **Implement folder structure**: Create directories per `brief.md` section 4:
-   - `src/common/` — constants, envelope, DTOs, utils, errors
-   - `src/producer/` — module, service, decorators
-   - `src/consumer/` — module, services, decorators
-   - `src/request-reply/` — service, types
-   - `src/outbox/` — SQLite outbox service, entity
-   - `src/logging/` — Winston event logger
-4. **Implement `src/index.ts`**: Public API barrel exports.
-5. **Implement common module**: `EventEnvelope`, `ActorType`, `BuildSubjectDto`, `SubjectBuilder`, UUID utils, error classes.
-6. **Implement producer module**: `ProducerService`, `@EmitEvent()` decorator.
-7. **Implement consumer module**: `ConsumerService`, `JetStreamConsumerService`, `@OnEvent()` decorator.
-8. **Implement outbox module**: `SqliteOutboxService`, background processor.
-9. **Implement request-reply service**.
-10. **Implement event logger** with Winston.
-11. **Write unit tests** for each module.
-12. **Update README** with installation and usage instructions.
+1. **Task 6 — Testing & Examples**: Add comprehensive examples in `/docs` for request-reply patterns and update links in the README. Create test cases covering sync request-reply, async request-reply with decorator, outbox + response flows, and timeout/error scenarios.
+2. **Task 7 — Guidelines for Developers**: Add a clear decision tree in `/docs` (linked from README) for choosing between sync and async request-reply patterns, documenting when to use each approach.
+3. **Update README**: Ensure README contains clear, practical examples and references to all documentation files.
+4. **Final verification**: Run full test suite, lint, and typecheck across all modules.
 
 ## Current Blockers
 
