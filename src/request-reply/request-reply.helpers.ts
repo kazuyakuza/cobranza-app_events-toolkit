@@ -5,6 +5,7 @@ import { generateEventId } from '../common/utils/uuid.utils';
 import { nowIso } from '../common/utils/date.utils';
 import { EventLoggerService, EventLogContext, EventErrorLogContext } from '../logging/event-logger.service';
 
+/** Builds a fully-populated {@link EventEnvelope} from domain context and payload. */
 export function buildEnvelope<T>(context: EventContext, payload: T): EventEnvelope<T> {
   return new EventEnvelope<T>({
     id: generateEventId(),
@@ -23,6 +24,7 @@ export function buildEnvelope<T>(context: EventContext, payload: T): EventEnvelo
   });
 }
 
+/** Asserts that `replyTo` is present; throws {@link RequestReplyException} otherwise. */
 export function ensureReplyTo(replyTo: string | undefined, correlationId: string): asserts replyTo is string {
   if (!replyTo) {
     throw new RequestReplyException({
@@ -34,6 +36,7 @@ export function ensureReplyTo(replyTo: string | undefined, correlationId: string
   }
 }
 
+/** Asserts that `replyTo` is set on a request context; throws {@link RequestReplyException} otherwise. */
 export function ensureReplyToSet(replyTo: string | undefined): asserts replyTo is string {
   if (!replyTo) {
     throw new RequestReplyException({
@@ -45,14 +48,17 @@ export function ensureReplyToSet(replyTo: string | undefined): asserts replyTo i
   }
 }
 
+/** Logs that a request event was emitted to the given subject. */
 export function logRequestSent(logger: EventLoggerService, subject: string, envelope: EventEnvelope<unknown>): void {
   logger.logEventEmitted(toLogContext(subject, envelope));
 }
 
+/** Logs that a reply event was received from the given subject. */
 export function logReplyReceived(logger: EventLoggerService, subject: string, envelope: EventEnvelope<unknown>): void {
   logger.logEventConsumed(toLogContext(subject, envelope));
 }
 
+/** Logs an error that occurred during a request-reply exchange. */
 export function logRequestError(
   logger: EventLoggerService,
   subject: string,
@@ -62,6 +68,7 @@ export function logRequestError(
   logger.logEventError(toErrorLogContext(subject, envelope, error));
 }
 
+/** Converts a subject and envelope into an {@link EventLogContext} for structured logging. */
 export function toLogContext(subject: string, envelope: EventEnvelope<unknown>): EventLogContext {
   return {
     eventId: envelope.id,
@@ -72,6 +79,7 @@ export function toLogContext(subject: string, envelope: EventEnvelope<unknown>):
   };
 }
 
+/** Converts a subject, envelope, and error into an {@link EventErrorLogContext} for structured logging. */
 export function toErrorLogContext(
   subject: string,
   envelope: EventEnvelope<unknown>,
@@ -85,6 +93,7 @@ export function toErrorLogContext(
   };
 }
 
+/** Wraps an unknown error into a {@link RequestReplyException}, preserving the original if already typed. */
 export function wrapRequestError(envelope: EventEnvelope<unknown>, error: unknown): RequestReplyException {
   if (error instanceof RequestReplyException) {
     return error;

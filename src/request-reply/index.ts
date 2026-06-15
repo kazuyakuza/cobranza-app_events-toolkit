@@ -1,6 +1,7 @@
 /**
  * @packageDocumentation
- * Request-reply module — synchronous request-reply pattern over NATS.
+ * Request-reply module — synchronous request-reply and async fire-and-forget
+ * patterns over NATS JetStream.
  */
 
 export { RequestReplyService } from './request-reply.service';
