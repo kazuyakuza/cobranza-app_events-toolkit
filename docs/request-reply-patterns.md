@@ -189,17 +189,6 @@ class CreditCheckConsumer {
     await this.requestReply.sendResponse(event.correlation_id, responseEvent);
   }
 }
-
-
-    const responseEvent = this.requestReply.buildResponseEnvelope({
-      requestEvent: event,
-      responseContext,
-      responseData: result,
-    });
-
-    await this.requestReply.sendResponse(event.correlation_id, responseEvent);
-  }
-}
 ```
 
 ### Code example — Response handler (`@OnRequestReply`)
