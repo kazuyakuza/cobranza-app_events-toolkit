@@ -75,7 +75,7 @@ All messages follow a standardized envelope structure. The toolkit provides `Eve
   "company_id": "550e8400-e29b-41d4-a716-446655440000",
   "actor_type": "client",
   "actor_id": "clt_123e4567-e89b-12d3-a456-426614174000",
-  "correlation_id": "req_987fcdeb-51a2-43e8-9c4f-123456789abc",
+  "correlation_id": "987fcdeb-51a2-43e8-9c4f-123456789abc",
   "causation_id": "evt_01JXYZABC987654321098765",
   "trace_id": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
   "reply_to": null,
@@ -253,7 +253,7 @@ class PaymentController {
 #### Option 2 — Direct service injection
 
 ```typescript
-import { ProducerService, SubjectBuilder } from '@cobranza-apps/events-toolkit';
+import { createEvent, ProducerService, SubjectBuilder } from '@cobranza-apps/events-toolkit';
 
 class PaymentService {
   constructor(
@@ -270,7 +270,7 @@ class PaymentService {
       version: '1'
     });
 
-    const event = new PaymentProofUploadedEvent(data, context);
+    const event = createEvent(data, context);
     await this.producerService.publish(subject, event);
   }
 }
@@ -382,7 +382,7 @@ Non-blocking: publish a request with `reply_to`, receive the response in a decor
 // ── Requester: send async request ──
 import {
   RequestReplyService, SubjectBuilder, EventContext,
-  ActorType, generateUuidV7,
+  ActorType,
 } from '@cobranza-apps/events-toolkit';
 
 class DebtService {
@@ -404,7 +404,7 @@ class DebtService {
       companyId,
       actorType: ActorType.SYSTEM,
       actorId: 'debt-service',
-      correlationId: generateUuidV7(),
+      correlationId: '987fcdeb-51a2-43e8-9c4f-123456789abc',
       replyTo: replySubject,
     };
 
@@ -469,7 +469,7 @@ For transactional safety, the Outbox module persists events before publishing. I
 For detailed configuration, see [`docs/outbox-configuration.md`](docs/outbox-configuration.md).
 
 ```typescript
-import { OutboxService, SubjectBuilder } from '@cobranza-apps/events-toolkit';
+import { createEvent, OutboxService, SubjectBuilder } from '@cobranza-apps/events-toolkit';
 
 class PaymentService {
   constructor(
@@ -485,7 +485,7 @@ class PaymentService {
       action: 'uploaded',
       version: '1',
     });
-    const event = new PaymentProofUploadedEvent(data, context);
+    const event = createEvent(data, context);
     // Persisted to outbox, published by background processor
     await this.outboxService.saveToOutbox(event, subject);
   }
@@ -521,8 +521,8 @@ For async request-reply patterns, use `sendRequestThroughOutbox` to persist the 
 
 ```typescript
 import {
-  OutboxService, SubjectBuilder, EventContext,
-  ActorType, generateUuidV7,
+  createEvent, OutboxService, SubjectBuilder, EventContext,
+  ActorType,
 } from '@cobranza-apps/events-toolkit';
 
 class DebtService {
@@ -539,14 +539,14 @@ class DebtService {
       companyId,
       actorType: ActorType.SYSTEM,
       actorId: 'debt-service',
-      correlationId: generateUuidV7(),
+      correlationId: '987fcdeb-51a2-43e8-9c4f-123456789abc',
       replyTo: this.subjectBuilder.build({
         companyId, domain: 'credit', entity: 'check',
         action: 'requested.response', version: '1',
       }),
     };
 
-    const event = new CreditCheckRequestedEvent({ clientId }, context);
+    const event = createEvent({ clientId }, context);
     await this.outboxService.sendRequestThroughOutbox(
       event,
       this.subjectBuilder.build({
@@ -591,7 +591,7 @@ const eventContext: EventContext = {
   companyId: '550e8400-e29b-41d4-a716-446655440000',
   actorType: ActorType.CLIENT,
   actorId: 'clt_123e4567-e89b-12d3-a456-426614174000',
-  correlationId: 'req_987fcdeb-51a2-43e8-9c4f-123456789abc',
+  correlationId: '987fcdeb-51a2-43e8-9c4f-123456789abc',
 };
 
 const event = createEvent(paymentData, eventContext);
@@ -611,8 +611,15 @@ src/
 │   ├── dto/                    # BuildSubjectDto
 │   ├── utils/                  # SubjectBuilder, EventFactory, uuid.utils, date utils
 │   └── errors/                 # EventConsumerException
-├── producer/                   # ProducerModule, ProducerService, @EmitEvent()
-├── consumer/                   # ConsumerModule, JetStreamConsumerService, @OnEvent()
+├── producer/
+│   ├── decorators/             # @EmitEvent(), EmitEventInterceptor
+│   ├── producer.module.ts
+│   └── producer.service.ts
+├── consumer/
+│   ├── decorators/             # @OnEvent(), @OnRequestReply(), explorers
+│   ├── consumer.module.ts
+│   ├── consumer.service.ts
+│   └── jetstream-consumer.service.ts
 ├── request-reply/              # RequestReplyService
 ├── outbox/                     # OutboxModule, OutboxService, SqliteOutboxRepository, PostgresOutboxRepository
 └── logging/                    # EventLoggerService (Winston)

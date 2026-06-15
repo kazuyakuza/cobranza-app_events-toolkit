@@ -52,6 +52,7 @@ For full outbox setup details, see [Outbox Configuration](outbox-configuration.m
 ### Sync Pattern
 
 - **Default**: 5000 ms (`RequestReplyConfig.defaultTimeoutMs`)
+- **Configuration**: Provide via `RequestReplyModule.forRoot({ defaultTimeoutMs: 5000 })` when importing the module.
 - **Recommended per-scenario**:
   - Simple lookups (fetch by ID): 3000–5000 ms
   - Lightweight processing: 5000–10000 ms
@@ -84,7 +85,7 @@ For detailed implementation pattern, see [Request-Reply Patterns §7](request-re
 
 ## Correlation ID Best Practices
 
-1. **Generate once per transaction chain**: Originating service creates `correlation_id` via `generateUuidV7()`.
+1. **Generate once per transaction chain**: Originating service creates `correlation_id` as a UUID v4 (current validation requires UUID v4; update `@IsUUID('4')` in source to accept UUIDv7 if that is the intended format).
 2. **Preserve across boundaries**: `buildResponseEnvelope()` automatically preserves `correlation_id` from the request event.
 3. **Never regenerate mid-chain**: If service B receives a request with `correlation_id`, the response MUST carry the same `correlation_id`.
 4. **Combine with `causation_id`**: Set `causation_id` to the request event's `id` to trace causality.
@@ -125,13 +126,13 @@ For detailed implementation pattern, see [Request-Reply Patterns §7](request-re
 3. **Response subjects — alternative**: Use `buildResponseSubject()` to append `.response` suffix when no distinct outcome verb exists.
 4. **Never reuse a fire-and-forget subject** for request-reply — request subjects should clearly indicate a response is expected.
 5. **`reply_to` always set by the requester**: Never set `reply_to` in fire-and-forget events. Only set it for async request-reply patterns.
-6. **Correlation ID**: Always generate via `generateUuidV7()` and propagate through the full chain.
+6. **Correlation ID**: Always generate as a UUID v4 and propagate through the full chain.
 7. **Type field**: `type` in the envelope must match `domain.entity.action` (e.g., `credit.check.requested`, `credit.check.completed`).
 8. **Subject Builder**: Always use `SubjectBuilder.build()` or `buildSubject()` — never concatenate subject strings.
 9. **Naming checklist** (for AI agents creating new request-reply flows):
    - [ ] Request subject follows `company.{id}.{domain}.{entity}.{action}.v{version}`
    - [ ] Response subject uses past-tense action OR `.response` suffix
-   - [ ] `correlation_id` generated as UUIDv7 and preserved in response
+   - [ ] `correlation_id` generated as UUID v4 and preserved in response
    - [ ] `type` field matches `domain.entity.action` in both request and response
    - [ ] `reply_to` set only on async request side, not on fire-and-forget events
    - [ ] Both request and response data classes have `class-validator` decorators

@@ -57,14 +57,16 @@ class PaymentProofUploadedEvent extends EventEnvelope<PaymentProofUploadedData> 
 ### 3. Construct with context
 
 ```typescript
-const event = new PaymentProofUploadedEvent(data, {
+import { createEvent } from '@cobranza-apps/events-toolkit';
+
+const event = createEvent(data, {
   type: 'payment.proof.uploaded',
   version: '1.0.0',
   producer: 'payment-service',
   companyId: '550e8400-e29b-41d4-a716-446655440000',
   actorType: ActorType.CLIENT,
   actorId: 'clt_123e4567-e89b-12d3-a456-426614174000',
-  correlationId: 'req_987fcdeb-51a2-43e8-9c4f-123456789abc',
+  correlationId: '987fcdeb-51a2-43e8-9c4f-123456789abc',
 });
 ```
 
@@ -104,7 +106,7 @@ class PaymentController {
 ### Option 2 — Direct service injection
 
 ```typescript
-import { ProducerService, SubjectBuilder } from '@cobranza-apps/events-toolkit';
+import { createEvent, ProducerService, SubjectBuilder } from '@cobranza-apps/events-toolkit';
 
 class PaymentService {
   constructor(
@@ -120,7 +122,7 @@ class PaymentService {
       action: 'uploaded',
       version: '1',
     });
-    const event = new PaymentProofUploadedEvent(data, context);
+    const event = createEvent(data, context);
     await this.producerService.publish(subject, event);
   }
 }
@@ -163,7 +165,7 @@ async onProofUploaded(event: EventEnvelope<PaymentProofUploadedData>): Promise<v
 The outbox provides transactional safety — events are persisted before publishing:
 
 ```typescript
-import { OutboxService, SubjectBuilder } from '@cobranza-apps/events-toolkit';
+import { createEvent, OutboxService, SubjectBuilder } from '@cobranza-apps/events-toolkit';
 
 class PaymentService {
   constructor(
@@ -179,7 +181,7 @@ class PaymentService {
       action: 'uploaded',
       version: '1',
     });
-    const event = new PaymentProofUploadedEvent(data, context);
+    const event = createEvent(data, context);
     await this.outboxService.saveToOutbox(event, subject);
   }
 }
@@ -200,7 +202,7 @@ For the full decision-making guide, see [`request-reply-guidelines.md`](request-
 
 1. Always use `SubjectBuilder.build()` or `buildSubject()` for request subjects — never concatenate strings.
 2. Response subjects: prefer descriptive past-tense action (e.g., `calculated`). Use `buildResponseSubject()` only when no distinct outcome verb exists.
-3. Generate `correlation_id` with `generateUuidV7()` once per transaction chain. Preserve it in responses via `buildResponseEnvelope()`.
+3. Generate `correlation_id` as a UUID v4 once per transaction chain. Preserve it in responses via `buildResponseEnvelope()`.
 4. Set `reply_to` only for async request-reply. Never set it for fire-and-forget events.
 5. All request-reply handlers MUST be idempotent. Use `correlation_id` for deduplication.
 6. For async request-reply with durability requirements, use `sendRequestThroughOutbox()` — do not use `saveToOutbox()` for request-reply events.
@@ -211,7 +213,7 @@ For the full decision-making guide, see [`request-reply-guidelines.md`](request-
 
 - [ ] Request subject: `company.{id}.{domain}.{entity}.{action}.v{version}`
 - [ ] Response subject: descriptive past-tense OR `.response` suffix
-- [ ] `correlation_id`: UUIDv7, generated once, preserved across chain
+- [ ] `correlation_id`: UUID v4, generated once, preserved across chain
 - [ ] `type`: matches `domain.entity.action` in request and response envelopes
 - [ ] `reply_to`: set on request only, not on fire-and-forget
 - [ ] Data classes: `class-validator` decorators on every field
