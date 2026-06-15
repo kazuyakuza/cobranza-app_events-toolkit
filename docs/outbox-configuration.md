@@ -179,6 +179,88 @@ class PaymentService {
 }
 ```
 
+## Request-Reply with the Outbox
+
+The Outbox module works transparently with request-reply events. When a request event includes `reply_to`, the outbox processor preserves it through the entire publish-retry-DLQ pipeline.
+
+### When to use the Outbox with Request-Reply
+
+| Pattern | Outbox for Request? | Outbox for Response? |
+| ------- | ------------------- | -------------------- |
+| Sync (`request()`) | ❌ No — uses NATS built-in reply | ❌ No — NATS handles the reply inbox |
+| Async (`sendRequest()`) | ✅ Yes — saves request to outbox, processor publishes with `reply_to` intact | ⚠️ Only if handler has side effects that need transactional safety |
+
+### Async Request Through Outbox
+
+Use `sendRequestThroughOutbox` for async request-reply flows where the request must survive service restarts:
+
+```typescript
+import { OutboxService, SubjectBuilder, EventContext, ActorType, generateUuidV7 } from '@cobranza-apps/events-toolkit';
+
+class DebtService {
+  constructor(
+    private readonly outboxService: OutboxService,
+    private readonly subjectBuilder: SubjectBuilder,
+  ) {}
+
+  async requestCreditCheck(clientId: string, companyId: string): Promise<void> {
+    const requestSubject = this.subjectBuilder.build({
+      companyId, domain: 'credit', entity: 'check', action: 'requested', version: '1',
+    });
+
+    const replySubject = this.subjectBuilder.build({
+      companyId, domain: 'credit', entity: 'check', action: 'requested.response', version: '1',
+    });
+
+    const context: EventContext = {
+      type: 'credit.check.requested',
+      version: '1.0.0',
+      producer: 'debt-service',
+      companyId,
+      actorType: ActorType.SYSTEM,
+      actorId: 'debt-service',
+      correlationId: generateUuidV7(),
+      replyTo: replySubject,
+    };
+
+    const event = new CreditCheckRequestedEvent({ clientId }, context);
+
+    // Outbox ensures the request is published even if NATS is temporarily down
+    await this.outboxService.sendRequestThroughOutbox(event, requestSubject);
+  }
+}
+```
+
+### Response Handling
+
+Response handlers typically do **not** need the outbox pattern unless they perform other side effects that require transactional safety. Use `RequestReplyService.sendResponse()` or `ProducerService.publish()` directly:
+
+```typescript
+@OnEvent({ domain: 'credit', entity: 'check', action: 'requested' })
+async onCreditCheckRequested(event: EventEnvelope<CreditCheckRequestedData>): Promise<void> {
+  if (!this.requestReply.isRequestReplyMessage(event)) { return; }
+
+  const result = await this.performCheck(event.data);
+  const responseEvent = this.requestReply.buildResponseEnvelope({
+    requestEvent: event,
+    responseContext: { /* ... */ },
+    responseData: result,
+  });
+
+  // Direct publish — no outbox needed for responses
+  await this.requestReply.sendResponse(event.correlation_id, responseEvent);
+}
+```
+
+### Why `sendRequestThroughOutbox` instead of `saveToOutbox`?
+
+- `sendRequestThroughOutbox` validates that `reply_to` is set before saving. Calling `saveToOutbox` with an event missing `reply_to` would result in a fire-and-forget event, silently breaking the request-reply flow.
+- `sendRequestThroughOutbox` is self-documenting: the method name clearly communicates that the event is part of a request-reply exchange.
+
+### DLQ Preservation
+
+If a request-reply event exceeds `maxRetries` and is routed to the Dead Letter Queue, its `reply_to` field is preserved in the DLQ envelope. This allows DLQ monitoring systems to trace the original request context and understand which request flow was affected.
+
 ## Migration from 0.x API
 
 | Old API                             | New API                                         |

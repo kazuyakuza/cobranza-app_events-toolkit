@@ -1,5 +1,12 @@
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
-import { createTestEntry, createOutboxMocks, createService, resetMocks, OutboxMocks } from './outbox.service.fixture';
+import {
+  createTestEnvelope,
+  createTestEntry,
+  createOutboxMocks,
+  createService,
+  resetMocks,
+  OutboxMocks,
+} from './outbox.service.fixture';
 import { OutboxService } from './outbox.service';
 
 describe('OutboxService', () => {
@@ -80,6 +87,27 @@ describe('OutboxService', () => {
       await jest.advanceTimersByTimeAsync(5000);
 
       expect(mocks.logger.logOutboxDlq).toHaveBeenCalled();
+      jest.useRealTimers();
+    });
+
+    it('preserves reply_to in the DLQ envelope when original event has reply_to', async () => {
+      const envelopeWithReplyTo = Object.assign(createTestEnvelope(), {
+        reply_to: 'company.550e8400...credit.check.requested.response.v1',
+      });
+      const entryWithReplyTo = createTestEntry({
+        eventData: JSON.stringify(envelopeWithReplyTo),
+        attempts: 3,
+      });
+      mocks.repository.getPending.mockResolvedValue([entryWithReplyTo]);
+      mocks.producerService.publish.mockRejectedValueOnce(new Error('fail')).mockResolvedValueOnce(undefined);
+
+      jest.useFakeTimers();
+      service.startProcessor();
+      await jest.advanceTimersByTimeAsync(5000);
+
+      const dlqCall = mocks.producerService.publish.mock.calls[1];
+      const dlqEnvelope = dlqCall[1] as EventEnvelope<unknown>;
+      expect(dlqEnvelope.reply_to).toBe('company.550e8400...credit.check.requested.response.v1');
       jest.useRealTimers();
     });
   });

@@ -14,6 +14,7 @@ import {
   buildDlqPayload,
   createDlqEnvelope,
 } from './outbox.utils';
+import { ensureReplyToPresent } from './outbox-request-reply.helpers';
 
 const DEFAULTS: Required<OutboxServiceOptions> = {
   enabled: true,
@@ -55,6 +56,12 @@ export class OutboxService implements OnModuleDestroy {
   async saveToOutbox(event: EventEnvelope<unknown>, subject: string): Promise<void> {
     await this.repository.save({ event, subject });
     this.logOutboxSaved(event, subject);
+  }
+
+  /** Persists a request-reply event to the outbox after validating `reply_to` is present. */
+  async sendRequestThroughOutbox(event: EventEnvelope<unknown>, subject: string): Promise<void> {
+    ensureReplyToPresent(event);
+    await this.saveToOutbox(event, subject);
   }
 
   /** Starts the background processor that polls for pending outbox events. */

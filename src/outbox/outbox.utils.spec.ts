@@ -185,5 +185,20 @@ describe('outbox.utils', () => {
       const resultTime = new Date(result.produced_at).getTime();
       expect(resultTime).toBeGreaterThanOrEqual(beforeTime);
     });
+
+    it('preserves reply_to from the original envelope', () => {
+      const source = createTestEnvelope();
+      source.reply_to = 'company.123.response.v1';
+      const dlqPayload = { originalSubject: 'test', attempts: 1 };
+      const result = createDlqEnvelope(source, dlqPayload);
+      expect(result.reply_to).toBe('company.123.response.v1');
+    });
+
+    it('omits reply_to when original envelope does not have it', () => {
+      const source = createTestEnvelope();
+      const dlqPayload = { originalSubject: 'test', attempts: 1 };
+      const result = createDlqEnvelope(source, dlqPayload);
+      expect(result.reply_to).toBeUndefined();
+    });
   });
 });

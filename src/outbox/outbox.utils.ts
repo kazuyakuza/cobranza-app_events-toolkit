@@ -55,6 +55,7 @@ export function createDlqEnvelope(
     correlation_id: envelope.correlation_id,
     causation_id: envelope.causation_id,
     trace_id: envelope.trace_id,
+    reply_to: envelope.reply_to,
     data: dlqPayload,
   });
 }

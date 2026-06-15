@@ -513,6 +513,51 @@ OutboxModule.forRoot({
 })
 ```
 
+#### Request-Reply Through the Outbox
+
+For async request-reply patterns, use `sendRequestThroughOutbox` to persist the request event with `reply_to` intact:
+
+```typescript
+import {
+  OutboxService, SubjectBuilder, EventContext,
+  ActorType, generateUuidV7,
+} from '@cobranza-apps/events-toolkit';
+
+class DebtService {
+  constructor(
+    private readonly outboxService: OutboxService,
+    private readonly subjectBuilder: SubjectBuilder,
+  ) {}
+
+  async requestCreditCheck(clientId: string, companyId: string): Promise<void> {
+    const context: EventContext = {
+      type: 'credit.check.requested',
+      version: '1.0.0',
+      producer: 'debt-service',
+      companyId,
+      actorType: ActorType.SYSTEM,
+      actorId: 'debt-service',
+      correlationId: generateUuidV7(),
+      replyTo: this.subjectBuilder.build({
+        companyId, domain: 'credit', entity: 'check',
+        action: 'requested.response', version: '1',
+      }),
+    };
+
+    const event = new CreditCheckRequestedEvent({ clientId }, context);
+    await this.outboxService.sendRequestThroughOutbox(
+      event,
+      this.subjectBuilder.build({
+        companyId, domain: 'credit', entity: 'check',
+        action: 'requested', version: '1',
+      }),
+    );
+  }
+}
+```
+
+See [Request-Reply Patterns](docs/request-reply-patterns.md) for full async pattern documentation and [Outbox Configuration](docs/outbox-configuration.md) for request-reply outbox guidance.
+
 ### Subject Builder
 
 The `SubjectBuilder` is the single entry point for subject generation:

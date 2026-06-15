@@ -18,3 +18,4 @@ export { OutboxService } from './outbox.service';
 export { OutboxServiceDeps, OUTBOX_SERVICE_DEPS_TOKEN } from './outbox-service-deps.interface';
 export { OutboxServiceOptions, OUTBOX_SERVICE_OPTIONS_TOKEN } from './outbox-service-options.interface';
 export { buildDlqSubject } from './outbox.utils';
+export { OutboxRequestReplyException, OutboxRequestReplyExceptionOptions } from './outbox-request-reply.exception';
