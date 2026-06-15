@@ -1,10 +1,14 @@
+import { EventLoggerService } from '../logging/event-logger.service';
 import { JetStreamClient, NatsConnection } from 'nats';
 import { DiscoveryModule } from '@nestjs/core';
 import { ConsumerModule, CONSUMER_MODULE_OPTIONS } from './consumer.module';
 import { JETSTREAM_CONSUMER_DEPS_TOKEN } from './jetstream-consumer-deps.interface';
+import { REQUEST_REPLY_CONSUMER_DEPS_TOKEN } from './request-reply-consumer-deps.interface';
 import { ConsumerService } from './consumer.service';
 import { JetStreamConsumerService } from './jetstream-consumer.service';
 import { OnEventExplorer } from './decorators/on-event.explorer';
+import { OnRequestReplyExplorer } from './decorators/on-request-reply.explorer';
+import { RequestReplyConsumerService } from './request-reply-consumer.service';
 
 describe('ConsumerModule', () => {
   const mockJetStream = { publish: jest.fn(), subscribe: jest.fn() } as unknown as JetStreamClient;
@@ -20,6 +24,8 @@ describe('ConsumerModule', () => {
     expect(dynamicModule.exports).toContain(ConsumerService);
     expect(dynamicModule.exports).toContain(JetStreamConsumerService);
     expect(dynamicModule.exports).toContain(OnEventExplorer);
+    expect(dynamicModule.exports).toContain(RequestReplyConsumerService);
+    expect(dynamicModule.exports).toContain(OnRequestReplyExplorer);
     expect(dynamicModule.imports).toContain(DiscoveryModule);
   });
 
@@ -30,6 +36,8 @@ describe('ConsumerModule', () => {
     expect(dynamicModule.exports).toContain(ConsumerService);
     expect(dynamicModule.exports).toContain(JetStreamConsumerService);
     expect(dynamicModule.exports).toContain(OnEventExplorer);
+    expect(dynamicModule.exports).toContain(RequestReplyConsumerService);
+    expect(dynamicModule.exports).toContain(OnRequestReplyExplorer);
   });
 
   it('should throw if neither connection nor jetStream is provided', () => {
@@ -51,6 +59,27 @@ describe('ConsumerModule', () => {
     expect(depsProvider).toBeDefined();
   });
 
+  it('should provide RequestReplyConsumerService and OnRequestReplyExplorer via forRoot', () => {
+    const dynamicModule = ConsumerModule.forRoot({
+      jetStream: mockJetStream,
+    });
+    expect(dynamicModule.providers).toContain(RequestReplyConsumerService);
+    expect(dynamicModule.providers).toContain(OnRequestReplyExplorer);
+  });
+
+  it('should pass responseSubjectPattern to request reply consumer deps via forRoot', () => {
+    const dynamicModule = ConsumerModule.forRoot({
+      jetStream: mockJetStream,
+      responseSubjectPattern: 'custom.response.v1',
+    });
+
+    const depsProvider = dynamicModule.providers?.find(
+      (p) => 'provide' in p && p.provide === REQUEST_REPLY_CONSUMER_DEPS_TOKEN,
+    ) as { provide: string; useFactory: (...args: unknown[]) => unknown; inject: unknown[] };
+    expect(depsProvider).toBeDefined();
+    expect(depsProvider.inject).toContain(EventLoggerService);
+  });
+
   it('should resolve JetStream from async factory via forRootAsync', async () => {
     const dynamicModule = ConsumerModule.forRootAsync({
       useFactory: async () => ({ jetStream: mockJetStream }),
@@ -69,6 +98,14 @@ describe('ConsumerModule', () => {
       useFactory: async () => ({ jetStream: mockJetStream }),
     });
     expect(dynamicModule.imports).toContain(DiscoveryModule);
+  });
+
+  it('should provide RequestReplyConsumerService and OnRequestReplyExplorer via forRootAsync', () => {
+    const dynamicModule = ConsumerModule.forRootAsync({
+      useFactory: async () => ({ jetStream: mockJetStream }),
+    });
+    expect(dynamicModule.exports).toContain(RequestReplyConsumerService);
+    expect(dynamicModule.exports).toContain(OnRequestReplyExplorer);
   });
 
   it('should invoke useFactory only once in forRootAsync', async () => {

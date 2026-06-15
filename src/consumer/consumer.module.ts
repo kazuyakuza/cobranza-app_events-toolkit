@@ -7,6 +7,10 @@ import { JetStreamConsumerService } from './jetstream-consumer.service';
 import { JETSTREAM_CONSUMER_DEPS_TOKEN } from './jetstream-consumer-deps.interface';
 import { OnEventExplorer } from './decorators/on-event.explorer';
 import { ON_EVENT_EXPLORER_DEPS_TOKEN } from './decorators/on-event-explorer-deps.interface';
+import { OnRequestReplyExplorer } from './decorators/on-request-reply.explorer';
+import { ON_REQUEST_REPLY_EXPLORER_DEPS_TOKEN } from './decorators/on-request-reply-explorer-deps.interface';
+import { RequestReplyConsumerService } from './request-reply-consumer.service';
+import { REQUEST_REPLY_CONSUMER_DEPS_TOKEN } from './request-reply-consumer-deps.interface';
 
 export const CONSUMER_MODULE_OPTIONS = 'CONSUMER_MODULE_OPTIONS';
 const DISCOVERY_REFLECTOR_PAIR = 'DISCOVERY_REFLECTOR_PAIR' as unknown as Type<unknown>;
@@ -33,6 +37,8 @@ export interface ConsumerModuleOptions {
   connection?: NatsConnection;
   jetStream?: JetStreamClient;
   dlqSubjectBuilder?: (subject: string) => string;
+  /** NATS subject pattern for request-reply response messages. Defaults to `company.*.response.v1`. */
+  responseSubjectPattern?: string;
 }
 
 /** Asynchronous options for {@link ConsumerModule.forRootAsync}. */
@@ -80,6 +86,27 @@ export class ConsumerModule {
       inject: [ConsumerService, EventLoggerService],
     };
 
+    const requestReplyExplorerDepsProvider: Provider = {
+      provide: ON_REQUEST_REPLY_EXPLORER_DEPS_TOKEN,
+      useFactory: (pair: DiscoveryReflectorPair, rrConsumerService: RequestReplyConsumerService) => ({
+        discovery: pair.discovery,
+        reflector: pair.reflector,
+        requestReplyConsumerService: rrConsumerService,
+      }),
+      inject: [DISCOVERY_REFLECTOR_PAIR, RequestReplyConsumerService],
+    };
+
+    const requestReplyConsumerDepsProvider: Provider = {
+      provide: REQUEST_REPLY_CONSUMER_DEPS_TOKEN,
+      useFactory: (logger: EventLoggerService) => ({
+        jetStream,
+        logger,
+        responseSubjectPattern: options.responseSubjectPattern,
+        dlqSubjectBuilder: options.dlqSubjectBuilder,
+      }),
+      inject: [EventLoggerService],
+    };
+
     return {
       module: ConsumerModule,
       global: true,
@@ -88,11 +115,21 @@ export class ConsumerModule {
         discoveryPairProvider,
         explorerDepsProvider,
         consumerDepsProvider,
+        requestReplyExplorerDepsProvider,
+        requestReplyConsumerDepsProvider,
         ConsumerService,
         JetStreamConsumerService,
         OnEventExplorer,
+        RequestReplyConsumerService,
+        OnRequestReplyExplorer,
       ],
-      exports: [ConsumerService, JetStreamConsumerService, OnEventExplorer],
+      exports: [
+        ConsumerService,
+        JetStreamConsumerService,
+        OnEventExplorer,
+        RequestReplyConsumerService,
+        OnRequestReplyExplorer,
+      ],
     };
   }
 
@@ -145,6 +182,27 @@ export class ConsumerModule {
       inject: [RESOLVED_CONNECTION_TOKEN, CONSUMER_SERVICES_PAIR],
     };
 
+    const requestReplyExplorerDepsProvider: Provider = {
+      provide: ON_REQUEST_REPLY_EXPLORER_DEPS_TOKEN,
+      useFactory: (pair: DiscoveryReflectorPair, rrConsumerService: RequestReplyConsumerService) => ({
+        discovery: pair.discovery,
+        reflector: pair.reflector,
+        requestReplyConsumerService: rrConsumerService,
+      }),
+      inject: [DISCOVERY_REFLECTOR_PAIR, RequestReplyConsumerService],
+    };
+
+    const requestReplyConsumerDepsProvider: Provider = {
+      provide: REQUEST_REPLY_CONSUMER_DEPS_TOKEN,
+      useFactory: (connection: ResolvedConnection, logger: EventLoggerService) => ({
+        jetStream: connection.jetStream,
+        logger,
+        responseSubjectPattern: undefined,
+        dlqSubjectBuilder: connection.dlqSubjectBuilder,
+      }),
+      inject: [RESOLVED_CONNECTION_TOKEN, EventLoggerService],
+    };
+
     return {
       module: ConsumerModule,
       global: true,
@@ -153,14 +211,24 @@ export class ConsumerModule {
         optionsProvider,
         discoveryPairProvider,
         explorerDepsProvider,
+        requestReplyExplorerDepsProvider,
+        requestReplyConsumerDepsProvider,
         resolvedConnectionProvider,
         consumerServicesProvider,
         consumerDepsProvider,
         ConsumerService,
         JetStreamConsumerService,
         OnEventExplorer,
+        RequestReplyConsumerService,
+        OnRequestReplyExplorer,
       ],
-      exports: [ConsumerService, JetStreamConsumerService, OnEventExplorer],
+      exports: [
+        ConsumerService,
+        JetStreamConsumerService,
+        OnEventExplorer,
+        RequestReplyConsumerService,
+        OnRequestReplyExplorer,
+      ],
     };
   }
 }
