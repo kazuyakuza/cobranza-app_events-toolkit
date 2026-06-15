@@ -48,3 +48,32 @@ export interface RequestReplyDeps {
   /** Service configuration with applied defaults. */
   config: RequestReplyConfig;
 }
+
+import type { EventContext } from '../common/envelope/event-context.interface';
+import type { EventEnvelope } from '../common/envelope/event-envelope.class';
+
+/** Options for the {@link RequestReplyService.sendRequest} fire-and-forget method. */
+export interface SendRequestOptions<T> {
+  /** NATS subject to publish the request event to. */
+  subject: string;
+  /** Domain-specific business payload for the request event. */
+  payload: T;
+  /** Metadata context for the event envelope. Must include replyTo for async responses. */
+  context: EventContext;
+}
+
+/** Result of a fire-and-forget request, carrying the correlation tracking identifier. */
+export interface SendRequestResult {
+  /** correlation_id of the sent request, used to correlate async responses. */
+  correlationId: string;
+}
+
+/** Options for {@link RequestReplyService.buildResponseEnvelope}. */
+export interface BuildResponseEnvelopeOptions<R> {
+  /** Original request event whose correlation_id and id are preserved in the response. */
+  requestEvent: EventEnvelope<unknown>;
+  /** Context for the response event. correlationId and causationId are overridden from requestEvent. */
+  responseContext: EventContext;
+  /** Domain-specific business payload for the response event. */
+  responseData: R;
+}

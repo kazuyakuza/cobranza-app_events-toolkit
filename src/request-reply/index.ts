@@ -13,4 +13,7 @@ export {
   REQUEST_REPLY_CONFIG_TOKEN,
   REQUEST_REPLY_DEPS_TOKEN,
   resolveRequestReplyConfig,
+  SendRequestOptions,
+  SendRequestResult,
+  BuildResponseEnvelopeOptions,
 } from './request-reply.types';

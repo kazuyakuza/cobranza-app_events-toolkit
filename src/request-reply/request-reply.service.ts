@@ -13,6 +13,9 @@ import {
   RequestReplyRequestOptions,
   RequestReplyResponse,
   REQUEST_REPLY_DEPS_TOKEN,
+  SendRequestOptions,
+  SendRequestResult,
+  BuildResponseEnvelopeOptions,
 } from './request-reply.types';
 
 /**
@@ -45,7 +48,7 @@ export class RequestReplyService {
   async request<T, R>(
     subject: string,
     payload: T,
-    options: RequestReplyRequestOptions & { context: EventContext },
+    options: RequestReplyRequestOptions & { context: EventContext; },
   ): Promise<RequestReplyResponse<R>> {
     const { context, ...requestOptions } = options;
     const envelope = this.buildEnvelope(context, payload);
@@ -81,6 +84,39 @@ export class RequestReplyService {
     return typeof event.reply_to === 'string' && event.reply_to.length > 0;
   }
 
+  /**
+   * Publishes a fire-and-forget request event with a reply_to subject.
+   *
+   * Builds an envelope from the provided context and payload, publishes
+   * it via {@link ProducerService}, and returns the correlationId
+   * for the caller to track async responses.
+   *
+   * @typeParam T - Request payload type.
+   */
+  async sendRequest<T>(options: SendRequestOptions<T>): Promise<SendRequestResult> {
+    this.ensureReplyToSet(options.context.replyTo);
+    const envelope = this.buildEnvelope(options.context, options.payload);
+    await this.producerService.publish(options.subject, envelope);
+    return { correlationId: envelope.correlation_id };
+  }
+
+  /**
+   * Builds a response envelope preserving correlation and causation from a request event.
+   *
+   * Overrides responseContext.correlationId with requestEvent.correlation_id
+   * and sets causationId to requestEvent.id, then delegates to {@link buildEnvelope}.
+   *
+   * @typeParam R - Response payload type.
+   */
+  buildResponseEnvelope<R>(options: BuildResponseEnvelopeOptions<R>): EventEnvelope<R> {
+    const preservedContext: EventContext = {
+      ...options.responseContext,
+      correlationId: options.requestEvent.correlation_id,
+      causationId: options.requestEvent.id,
+    };
+    return this.buildEnvelope(preservedContext, options.responseData);
+  }
+
   private buildEnvelope<T>(context: EventContext, payload: T): EventEnvelope<T> {
     return new EventEnvelope<T>({
       id: generateEventId(),
@@ -106,6 +142,17 @@ export class RequestReplyService {
         eventId: 'unknown',
         eventType: 'unknown',
         correlationId,
+      });
+    }
+  }
+
+  private ensureReplyToSet(replyTo: string | undefined): asserts replyTo is string {
+    if (!replyTo) {
+      throw new RequestReplyException({
+        message: 'sendRequest requires reply_to in context',
+        eventId: 'unknown',
+        eventType: 'unknown',
+        correlationId: 'unknown',
       });
     }
   }
