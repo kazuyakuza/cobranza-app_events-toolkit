@@ -159,4 +159,41 @@ describe('request', () => {
       expect(ex.eventId).toBe('evt_mock-request-uuid');
     }
   });
+
+  describe('error wrapping', () => {
+    it('should re-throw existing RequestReplyException without double-wrapping', async () => {
+      const originalException = new RequestReplyException({
+        message: 'Original timeout error',
+        eventId: 'evt_original',
+        eventType: 'test.event',
+        correlationId: sampleContext.correlationId,
+      });
+      mockNatsRequest.mockRejectedValue(originalException);
+      await expect(service.request('test.subject', {}, { context: sampleContext })).rejects.toBe(originalException);
+    });
+    it('should create RequestReplyException from non-Error thrown value (string)', async () => {
+      mockNatsRequest.mockRejectedValue('connection lost');
+      await expect(service.request('test.subject', {}, { context: sampleContext })).rejects.toMatchObject({
+        message: 'connection lost',
+      });
+    });
+    it('should wrap native Error in RequestReplyException with cause', async () => {
+      const nativeError = new Error('NATS connection refused');
+      mockNatsRequest.mockRejectedValue(nativeError);
+      await expect(service.request('test.subject', {}, { context: sampleContext })).rejects.toMatchObject({
+        message: 'NATS connection refused',
+        cause: nativeError,
+      });
+    });
+  });
+  it('should handle multiple sequential requests on the same service instance', async () => {
+    const reply1 = new TextEncoder().encode(JSON.stringify(createTestEnvelope({ id: 'evt_seq_1', data: { step: 1 } })));
+    const reply2 = new TextEncoder().encode(JSON.stringify(createTestEnvelope({ id: 'evt_seq_2', data: { step: 2 } })));
+    mockNatsRequest.mockResolvedValueOnce({ data: reply1 }).mockResolvedValueOnce({ data: reply2 });
+    const r1 = await service.request('test.subject.1', { seq: 1 }, { context: sampleContext });
+    const r2 = await service.request('test.subject.2', { seq: 2 }, { context: sampleContext });
+    expect(r1.data).toEqual({ step: 1 });
+    expect(r2.data).toEqual({ step: 2 });
+    expect(mockNatsRequest).toHaveBeenCalledTimes(2);
+  });
 });

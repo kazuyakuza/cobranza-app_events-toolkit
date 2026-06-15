@@ -339,6 +339,8 @@ The toolkit supports two request-reply patterns. For the full guide, see [Reques
 
 #### Sync — `request()`
 
+> **Full examples:** See [Sync Request-Reply Example](docs/examples/sync-request-reply.example.ts) and [Async Request-Reply Example](docs/examples/async-request-reply.example.ts) for complete, runnable code samples.
+
 Blocks until a response arrives or a timeout expires:
 
 ```typescript
@@ -675,6 +677,7 @@ docker run -p 4222:4222 nats:latest -js
 - [Outbox Configuration](docs/outbox-configuration.md) — SQLite vs Postgres setup, service options, and migration guide
 - [AI Agent Guidelines](docs/ai-agent-guidelines.md) — Step-by-step event creation, naming, and common mistakes
 - [Request-Reply Patterns](docs/request-reply-patterns.md) — Sync vs async patterns, correlation, timeouts, and error handling
+- [Request-Reply Examples](docs/examples/) — Complete code examples for sync and async patterns
 - [Architecture](.agent/project-info/architecture.md) — Module design and data flows
 - [Tech Stack](.agent/project-info/tech.md) — Technology choices and development setup
 - [Product Overview](.agent/project-info/product.md) — Problem definition and goals
