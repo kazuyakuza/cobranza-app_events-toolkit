@@ -87,8 +87,8 @@ Assign to architect sub-agent (`subagent_type: "architect"`).
 
 - Identify task ambiguities; analyze project status; research required techs, frameworks, libs, dependencies, and/or APIs.
 - Generate implementation plan:
-  1. Think high-level approach to implement 1 TODO task, including steps for: git handling, code writing, console cmds (if required), test build (if exists), code review, unit test (if testing suite exists), docs updates.
-  2. Use approach to define extensive implementation plan with tiny, detailed steps; include clear file names/paths, structure, code snippets, terminal cmd details, etc.
+  1. Think high-level approach to implement the TODO task, including steps for: git handling, code writing, console cmds (if required), test build (if exists), code review, unit test (if testing suite exists), docs updates.
+  2. Use the high-level approach to define an extensive and complete implementation plan, composed by very tiny and very detailed steps; include clear file names/paths, structure, code snippets, terminal cmd details, etc.
   3. [CRITICAL] Save to `.kilo/plans/<YYYYMMDD>-<plan-name>.md`.
   4. Compare to original task; redo if incorrect. Otherwise, return plan path.
 - **Plan Agent present plan to user for approval**.
@@ -101,7 +101,7 @@ Assign to architect sub-agent (`subagent_type: "architect"`).
 
 Assign to implementer sub-agent (`subagent_type: "implementer"`).
 
-- Follow detailed steps from the implementation plan; check plan between steps.
+- Follow steps from the implementation plan; check plan between steps.
 - IMPORTANT: commit w/meaningful messages.
 
 #### 4.3. Code Review
@@ -122,7 +122,7 @@ Assign to docs-specialist sub-agent (`subagent_type: "docs-specialist"`).
 
 #### 4.5. Verification
 
-Assign to implementer sub-agent (`subagent_type: "implementer"`).
+Assign to architect sub-agent (`subagent_type: "architect"`).
 
 - Check implementation plan adherence; commit unstaged files.
 
@@ -184,7 +184,7 @@ Each entry is a separate `task` tool invocation with the appropriate `subagent_t
 - Task 1: 4.2 Implementation => implementer
 - Task 1: 4.3 Code Review => code-reviewer; 4.3-fix => implementer
 - Task 1: 4.4 Documentation => docs-specialist
-- Task 1: 4.5 Verification => implementer
+- Task 1: 4.5 Verification => architect
 - Task 1: 4.6 Task Completion => implementer
 - (repeat 4.1–4.6 for each remaining task)
 - Step 5: TODO File Completion => implementer
