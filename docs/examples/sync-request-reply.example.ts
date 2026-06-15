@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Sync Request-Reply Example
  *

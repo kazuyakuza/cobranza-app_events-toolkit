@@ -62,7 +62,6 @@ describe('request', () => {
     expect(result.data).toEqual({ verified: true });
     expect(result.raw).toBe(encodedResponse);
   });
-
   it('should use custom timeout when provided', async () => {
     mockNatsRequest.mockResolvedValue({
       data: new TextEncoder().encode(JSON.stringify(replyEnvelope)),
@@ -73,7 +72,6 @@ describe('request', () => {
     const opts = mockNatsRequest.mock.calls[0][2];
     expect(opts.timeout).toBe(10000);
   });
-
   it('should use config default timeout when timeoutMs is not provided', async () => {
     mockNatsRequest.mockResolvedValue({
       data: new TextEncoder().encode(JSON.stringify(replyEnvelope)),
@@ -98,7 +96,6 @@ describe('request', () => {
     expect(parsed.produced_at).toBe('2026-06-13T19:00:00.000Z');
     expect(parsed.correlation_id).toBe(sampleContext.correlationId);
   });
-
   it('should log request sent and reply received', async () => {
     mockNatsRequest.mockResolvedValue({
       data: new TextEncoder().encode(JSON.stringify(replyEnvelope)),
@@ -109,7 +106,6 @@ describe('request', () => {
     expect(mockLogEmitted).toHaveBeenCalledTimes(1);
     expect(mockLogConsumed).toHaveBeenCalledTimes(1);
   });
-
   it('should log reply received with response envelope context', async () => {
     mockNatsRequest.mockResolvedValue({
       data: new TextEncoder().encode(JSON.stringify(replyEnvelope)),
@@ -122,7 +118,6 @@ describe('request', () => {
     expect(consumedCtx.eventType).toBe(replyEnvelope.type);
     expect(consumedCtx.correlationId).toBe(replyEnvelope.correlation_id);
   });
-
   it('should throw RequestReplyException and log error on NATS timeout', async () => {
     const natsError = new Error('Request timed out');
     mockNatsRequest.mockRejectedValue(natsError);

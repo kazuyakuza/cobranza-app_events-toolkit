@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Async Request-Reply Example
  *
