@@ -187,6 +187,36 @@ class PaymentService {
 
 For outbox backend configuration (SQLite vs Postgres), see [`outbox-configuration.md`](outbox-configuration.md).
 
+## Request-Reply Guidelines
+
+For the full decision-making guide, see [`request-reply-guidelines.md`](request-reply-guidelines.md).
+
+### Quick Decision: Sync vs Async
+
+- **Use `request()`** when the caller needs the result immediately and the responder can reply within seconds.
+- **Use `sendRequest()` + `@OnRequestReply`** when the operation is long-running, the caller should not block, or the response involves multiple services.
+
+### Rules for AI Agents
+
+1. Always use `SubjectBuilder.build()` or `buildSubject()` for request subjects — never concatenate strings.
+2. Response subjects: prefer descriptive past-tense action (e.g., `calculated`). Use `buildResponseSubject()` only when no distinct outcome verb exists.
+3. Generate `correlation_id` with `generateUuidV7()` once per transaction chain. Preserve it in responses via `buildResponseEnvelope()`.
+4. Set `reply_to` only for async request-reply. Never set it for fire-and-forget events.
+5. All request-reply handlers MUST be idempotent. Use `correlation_id` for deduplication.
+6. For async request-reply with durability requirements, use `sendRequestThroughOutbox()` — do not use `saveToOutbox()` for request-reply events.
+7. Sync pattern: catch `RequestReplyException` for timeout/error handling. Override timeout with `timeoutMs`.
+8. Async pattern: implement application-level timeout (SAGA, deadline event, or DB tracking). Never leave requests without a timeout.
+
+### Naming Checklist for Request-Reply Events
+
+- [ ] Request subject: `company.{id}.{domain}.{entity}.{action}.v{version}`
+- [ ] Response subject: descriptive past-tense OR `.response` suffix
+- [ ] `correlation_id`: UUIDv7, generated once, preserved across chain
+- [ ] `type`: matches `domain.entity.action` in request and response envelopes
+- [ ] `reply_to`: set on request only, not on fire-and-forget
+- [ ] Data classes: `class-validator` decorators on every field
+- [ ] Response handler: `@OnRequestReply` or `@OnEvent` with correct subject
+
 ## Validation Checklist
 
 Before submitting event-related code, verify:

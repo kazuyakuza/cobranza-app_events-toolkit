@@ -335,7 +335,7 @@ logger.logEventEmitted({
 
 ### Request-Reply Pattern
 
-The toolkit supports two request-reply patterns. For the full guide, see [Request-Reply Patterns](docs/request-reply-patterns.md).
+The toolkit supports two request-reply patterns. For the full guide, see [Request-Reply Patterns](docs/request-reply-patterns.md). For guidance on choosing between sync and async patterns, see [Request-Reply Guidelines](docs/request-reply-guidelines.md).
 
 #### Sync — `request()`
 
@@ -677,6 +677,7 @@ docker run -p 4222:4222 nats:latest -js
 - [Outbox Configuration](docs/outbox-configuration.md) — SQLite vs Postgres setup, service options, and migration guide
 - [AI Agent Guidelines](docs/ai-agent-guidelines.md) — Step-by-step event creation, naming, and common mistakes
 - [Request-Reply Patterns](docs/request-reply-patterns.md) — Sync vs async patterns, correlation, timeouts, and error handling
+- [Request-Reply Guidelines](docs/request-reply-guidelines.md) — Decision tree, timeout recommendations, and best practices for choosing request-reply patterns
 - [Request-Reply Examples](docs/examples/) — Complete code examples for sync and async patterns
 - [Architecture](.agent/project-info/architecture.md) — Module design and data flows
 - [Tech Stack](.agent/project-info/tech.md) — Technology choices and development setup
