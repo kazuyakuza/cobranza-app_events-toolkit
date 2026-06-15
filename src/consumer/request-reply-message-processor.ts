@@ -23,29 +23,18 @@ export interface MessageProcessorDeps {
   /** Dispatches a validated event envelope to the matching registered handler. */
   dispatch: (options: DispatchOptions) => Promise<void>;
 }
-
-/**
- * Handles the NATS message processing pipeline for request-reply responses.
- *
- * Responsibilities:
- * - Parsing and validating incoming JSON messages
- * - Dispatching to registered handlers
- * - ACK/NACK management
- * - Dead Letter Queue routing on validation or handler errors
- */
+/** Handles the NATS message processing pipeline for request-reply responses. */
 export class RequestReplyMessageProcessor {
   private readonly jetStream: { publish: (subject: string, data: Uint8Array) => Promise<unknown>; };
   private readonly logger: EventLoggerService;
   private readonly dlqSubjectBuilder: (subject: string) => string;
   private readonly dispatch: (options: DispatchOptions) => Promise<void>;
-
   constructor(deps: MessageProcessorDeps) {
     this.jetStream = deps.jetStream;
     this.logger = deps.logger;
     this.dlqSubjectBuilder = deps.dlqSubjectBuilder;
     this.dispatch = deps.dispatch;
   }
-
   /** Entry point: processes a single NATS JetStream message. */
   async processMessage(msg: JsMsg, subject: string): Promise<void> {
     let plain: Record<string, unknown> | undefined;
@@ -66,7 +55,6 @@ export class RequestReplyMessageProcessor {
       await this.handleError({ error, msg, subject, originalPayload: plain });
     }
   }
-
   private parseMessageData(msg: JsMsg): Record<string, unknown> {
     const text = new TextDecoder().decode(msg.data);
     let parsed: unknown;
