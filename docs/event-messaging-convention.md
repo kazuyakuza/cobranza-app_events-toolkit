@@ -76,11 +76,11 @@ Append `.response` to the request's action segment. This is useful for programma
 To build an alternative response subject, use `buildResponseSubject()`:
 
 ```ts
-import { buildResponseSubject } from '@cobranza-app/events-toolkit';
+import { buildResponseSubject } from '@cobranza-apps/events-toolkit';
 
-const requestSubject = 'company.abc.debt.schedule.calculate.v1';
+const requestSubject = 'company.550e8400e29b41d4a716446655440000.debt.schedule.calculate.v1';
 const responseSubject = buildResponseSubject(requestSubject);
-// => 'company.abc.debt.schedule.calculate.response.v1'
+// => 'company.550e8400e29b41d4a716446655440000.debt.schedule.calculate.response.v1'
 ```
 
 **Trade-offs**:

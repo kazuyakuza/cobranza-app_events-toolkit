@@ -12,7 +12,11 @@ import { RequestReplyConsumerService } from './request-reply-consumer.service';
 
 describe('ConsumerModule', () => {
   const mockJetStream = { publish: jest.fn(), subscribe: jest.fn() } as unknown as JetStreamClient;
-  const mockLogger = { logEventConsumed: jest.fn(), logEventError: jest.fn(), logEventDlq: jest.fn() } as unknown as EventLoggerService;
+  const mockLogger = {
+    logEventConsumed: jest.fn(),
+    logEventError: jest.fn(),
+    logEventDlq: jest.fn(),
+  } as unknown as EventLoggerService;
 
   it('should resolve JetStream from connection via forRoot', () => {
     const mockConnection: Partial<NatsConnection> & { jetstream: jest.Mock } = {
@@ -145,11 +149,9 @@ describe('ConsumerModule', () => {
     };
     expect(depsProvider).toBeDefined();
 
-    const result = depsProvider.useFactory(
-      { jetStream: mockJetStream },
-      mockLogger,
-      { responseSubjectPattern: 'async.response.v1' },
-    ) as Record<string, unknown>;
+    const result = depsProvider.useFactory({ jetStream: mockJetStream }, mockLogger, {
+      responseSubjectPattern: 'async.response.v1',
+    }) as Record<string, unknown>;
     expect(result.responseSubjectPattern).toBe('async.response.v1');
   });
 });

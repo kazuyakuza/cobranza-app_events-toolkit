@@ -4,18 +4,14 @@ import { validateSync } from 'class-validator';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { EventConsumerException } from '../common/errors/event-consumer.exception';
 import { encodeEvent } from '../common/utils/serialization.utils';
-import {
-  EventLoggerService,
-  EventLogContext,
-  EventErrorLogContext,
-} from '../logging/event-logger.service';
+import { EventLoggerService, EventLogContext, EventErrorLogContext } from '../logging/event-logger.service';
 import { DispatchOptions } from './dispatch-options.interface';
 import { envelopeToContext, ValidationErrorOptions, DlqRoutingOptions } from './subscribe-options.interface';
 
 /** Dependencies required by {@link RequestReplyMessageProcessor}. */
 export interface MessageProcessorDeps {
   /** NATS JetStream client used to publish messages to the Dead Letter Queue. */
-  jetStream: { publish: (subject: string, data: Uint8Array) => Promise<unknown>; };
+  jetStream: { publish: (subject: string, data: Uint8Array) => Promise<unknown> };
   /** Logger for structured event logging (consumed, errors, DLQ). */
   logger: EventLoggerService;
   /** Builds the DLQ subject from the original message subject. */
@@ -25,7 +21,7 @@ export interface MessageProcessorDeps {
 }
 /** Handles the NATS message processing pipeline for request-reply responses. */
 export class RequestReplyMessageProcessor {
-  private readonly jetStream: { publish: (subject: string, data: Uint8Array) => Promise<unknown>; };
+  private readonly jetStream: { publish: (subject: string, data: Uint8Array) => Promise<unknown> };
   private readonly logger: EventLoggerService;
   private readonly dlqSubjectBuilder: (subject: string) => string;
   private readonly dispatch: (options: DispatchOptions) => Promise<void>;
@@ -166,10 +162,7 @@ export class RequestReplyMessageProcessor {
     });
   }
 
-  private exceptionToErrorContext(
-    exception: EventConsumerException,
-    subject: string,
-  ): EventErrorLogContext {
+  private exceptionToErrorContext(exception: EventConsumerException, subject: string): EventErrorLogContext {
     return {
       eventId: exception.eventId,
       eventType: exception.eventType,

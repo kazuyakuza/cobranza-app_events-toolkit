@@ -6,10 +6,7 @@ import { defaultDlqSubjectBuilder } from './subscribe-options.interface';
 import { EventConsumerException } from '../common/errors/event-consumer.exception';
 import { ActorType } from '../common/envelope/actor-type.enum';
 import { EventLoggerService } from '../logging/event-logger.service';
-import {
-  RequestReplyMessageProcessor,
-  MessageProcessorDeps,
-} from './request-reply-message-processor';
+import { RequestReplyMessageProcessor, MessageProcessorDeps } from './request-reply-message-processor';
 
 describe('RequestReplyConsumerService', () => {
   let service: RequestReplyConsumerService;
@@ -194,9 +191,7 @@ describe('RequestReplyMessageProcessor', () => {
 
   function createJsMsg(overrides: Partial<Record<string, unknown>> = {}): JsMsg {
     return {
-      data: new TextEncoder().encode(
-        JSON.stringify(createValidEnvelopeData(overrides)),
-      ),
+      data: new TextEncoder().encode(JSON.stringify(createValidEnvelopeData(overrides))),
       subject: 'company.tenant-1.response.v1',
       ack: jest.fn(),
       nak: jest.fn(),
@@ -249,10 +244,7 @@ describe('RequestReplyMessageProcessor', () => {
     await processor.processMessage(msg, 'company.tenant-1.response.v1');
 
     expect(mockLogger.logEventDlq).toHaveBeenCalled();
-    expect(jetStream.publish).toHaveBeenCalledWith(
-      'dlq.company.tenant-1.response.v1',
-      expect.any(Uint8Array),
-    );
+    expect(jetStream.publish).toHaveBeenCalledWith('dlq.company.tenant-1.response.v1', expect.any(Uint8Array));
     expect(msg.ack).toHaveBeenCalledTimes(1);
   });
 
@@ -283,9 +275,7 @@ describe('RequestReplyMessageProcessor', () => {
     });
     const msg = createJsMsg();
 
-    await expect(
-      processor.processMessage(msg, 'company.tenant-1.response.v1'),
-    ).resolves.toBeUndefined();
+    await expect(processor.processMessage(msg, 'company.tenant-1.response.v1')).resolves.toBeUndefined();
 
     expect(msg.ack).toHaveBeenCalledTimes(1);
     expect(mockLogger.logEventError).toHaveBeenCalled();
@@ -307,9 +297,7 @@ describe('RequestReplyMessageProcessor', () => {
   });
 });
 
-function createValidEnvelopeData(
-  overrides: Partial<Record<string, unknown>> = {},
-): Record<string, unknown> {
+function createValidEnvelopeData(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
   return {
     id: 'evt_550e8400-e29b-41d4-a716-446655440000',
     type: 'payment.proof.uploaded',

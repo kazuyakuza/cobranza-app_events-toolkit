@@ -101,6 +101,10 @@ class PaymentService {
 
 ### Code example — Requester side
 
+#### Alternative Convention — `.response` Suffix
+
+Uses `buildResponseSubject()` to programmatically derive the reply subject.
+
 ```typescript
 import { RequestReplyService, SubjectBuilder, buildResponseSubject, EventContext, ActorType, generateUuidV7 } from '@cobranza-apps/events-toolkit';
 
@@ -119,18 +123,62 @@ class DebtService {
       version: '1',
     });
 
-    // Alternative convention — buildResponseSubject():
     // Produces: company.{id}.credit.check.requested.response.v1
     const replySubject = buildResponseSubject(requestSubject);
 
-    // Preferred convention — past-tense action:
-    // const replySubject = buildSubject({
-    //   companyId,
-    //   domain: 'credit',
-    //   entity: 'check',
-    //   action: 'calculated',  // past-tense outcome
-    //   version: '1',
-    // });
+    const context: EventContext = {
+      type: 'credit.check.requested',
+      version: '1.0.0',
+      producer: 'debt-service',
+      companyId,
+      actorType: ActorType.SYSTEM,
+      actorId: 'debt-service',
+      correlationId: generateUuidV7(),
+      replyTo: replySubject,
+    };
+
+    const payload = new CreditCheckRequestedData({ clientId });
+    const result = await this.requestReply.sendRequest({
+      subject: requestSubject,
+      payload,
+      context,
+    });
+
+    return result.correlationId;
+  }
+}
+```
+
+#### Preferred Convention — Descriptive Past-Tense Action
+
+Uses a distinct past-tense action to describe the **outcome** of the request. This treats the response as a first-class event.
+
+```typescript
+import { RequestReplyService, SubjectBuilder, buildSubject, EventContext, ActorType, generateUuidV7 } from '@cobranza-apps/events-toolkit';
+
+class DebtService {
+  constructor(
+    private readonly requestReply: RequestReplyService,
+    private readonly subjectBuilder: SubjectBuilder,
+  ) {}
+
+  async requestCreditCheck(clientId: string, companyId: string): Promise<string> {
+    const requestSubject = this.subjectBuilder.build({
+      companyId,
+      domain: 'credit',
+      entity: 'check',
+      action: 'requested',
+      version: '1',
+    });
+
+    // Produces: company.{id}.credit.check.calculated.v1
+    const replySubject = buildSubject({
+      companyId,
+      domain: 'credit',
+      entity: 'check',
+      action: 'calculated',
+      version: '1',
+    });
 
     const context: EventContext = {
       type: 'credit.check.requested',
@@ -217,7 +265,7 @@ The toolkit provides two approaches for constructing response subjects:
 **Preferred approach — Descriptive past-tense action:**
 
 ```typescript
-import { buildSubject } from '@cobranza-app/events-toolkit';
+import { buildSubject } from '@cobranza-apps/events-toolkit';
 
 const responseSubject = buildSubject({
   companyId: event.company_id,
@@ -232,7 +280,7 @@ const responseSubject = buildSubject({
 **Alternative approach — `.response` suffix via `buildResponseSubject`:**
 
 ```typescript
-import { buildResponseSubject } from '@cobranza-app/events-toolkit';
+import { buildResponseSubject } from '@cobranza-apps/events-toolkit';
 
 const responseSubject = buildResponseSubject(
   'company.550e8400e29b41d4a716446655440000.credit.check.requested.v1',

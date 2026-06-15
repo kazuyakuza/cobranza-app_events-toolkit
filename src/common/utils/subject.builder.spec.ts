@@ -1,12 +1,7 @@
 import { validateSync } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 import { BuildSubjectDto } from '../dto/build-subject.dto';
-import {
-  SubjectBuilder,
-  buildSubject,
-  buildResponseSubject,
-  RESPONSE_SUFFIX,
-} from './subject.builder';
+import { SubjectBuilder, buildSubject, buildResponseSubject, RESPONSE_SUFFIX } from './subject.builder';
 
 describe('SubjectBuilder', () => {
   describe('BuildSubjectDto validation', () => {
@@ -147,36 +142,25 @@ describe('SubjectBuilder', () => {
 
   describe('buildResponseSubject()', () => {
     it('appends .response before version segment', () => {
-      const requestSubject =
-        'company.550e8400e29b41d4a716446655440000.payment.proof.uploaded.v1';
+      const requestSubject = 'company.550e8400e29b41d4a716446655440000.payment.proof.uploaded.v1';
       const responseSubject = buildResponseSubject(requestSubject);
-      expect(responseSubject).toBe(
-        'company.550e8400e29b41d4a716446655440000.payment.proof.uploaded.response.v1',
-      );
+      expect(responseSubject).toBe('company.550e8400e29b41d4a716446655440000.payment.proof.uploaded.response.v1');
     });
 
     it('handles multi-part actions correctly', () => {
-      const requestSubject =
-        'company.550e8400e29b41d4a716446655440000.credit.check.requested.v2';
+      const requestSubject = 'company.550e8400e29b41d4a716446655440000.credit.check.requested.v2';
       const responseSubject = buildResponseSubject(requestSubject);
-      expect(responseSubject).toBe(
-        'company.550e8400e29b41d4a716446655440000.credit.check.requested.response.v2',
-      );
+      expect(responseSubject).toBe('company.550e8400e29b41d4a716446655440000.credit.check.requested.response.v2');
     });
 
     it('preserves the version number', () => {
-      const requestSubject =
-        'company.aaaaaaaa00000000bbbbbbbbcccccccc.debt.schedule.generated.v3';
+      const requestSubject = 'company.aaaaaaaa00000000bbbbbbbbcccccccc.debt.schedule.generated.v3';
       const responseSubject = buildResponseSubject(requestSubject);
-      expect(responseSubject).toBe(
-        'company.aaaaaaaa00000000bbbbbbbbcccccccc.debt.schedule.generated.response.v3',
-      );
+      expect(responseSubject).toBe('company.aaaaaaaa00000000bbbbbbbbcccccccc.debt.schedule.generated.response.v3');
     });
 
     it('throws Error for subject without version segment', () => {
-      expect(() =>
-        buildResponseSubject('company.abc.debt.schedule.calculate'),
-      ).toThrow(/invalid subject format/i);
+      expect(() => buildResponseSubject('company.abc.debt.schedule.calculate')).toThrow(/invalid subject format/i);
     });
 
     it('throws Error for empty string', () => {
@@ -184,9 +168,7 @@ describe('SubjectBuilder', () => {
     });
 
     it('throws Error for malformed subject', () => {
-      expect(() =>
-        buildResponseSubject('not-a-valid-subject'),
-      ).toThrow(/invalid subject format/i);
+      expect(() => buildResponseSubject('not-a-valid-subject')).toThrow(/invalid subject format/i);
     });
   });
 

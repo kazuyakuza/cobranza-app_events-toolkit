@@ -118,8 +118,8 @@ function parseSubjectSegments(subject: string): SubjectParseResult {
  *
  * @example
  * ```ts
- * buildResponseSubject('company.abc.debt.schedule.calculate.v1');
- * // => 'company.abc.debt.schedule.calculate.response.v1'
+ * buildResponseSubject('company.550e8400e29b41d4a716446655440000.debt.schedule.calculate.v1');
+ * // => 'company.550e8400e29b41d4a716446655440000.debt.schedule.calculate.response.v1'
  * ```
  */
 export function buildResponseSubject(requestSubject: string): string {
