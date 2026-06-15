@@ -19,7 +19,7 @@ NATS + JetStream event handling library for the Cobranza App microservices platf
 - **Subject Builder**: Single entry point for all NATS subject generation following the convention
 - **Producer Module**: `@EmitEvent()` decorator and `ProducerService` for fire-and-forget publishing
 - **Consumer Module**: `@OnEvent()` decorator with automatic validation, error handling, and DLQ routing
-- **Request-Reply**: `RequestReplyService` for async request to response patterns
+- **Request-Reply**: `RequestReplyService` for sync (`request()`) and async (`sendRequest()` + `@OnRequestReply`) request-reply patterns
 - **Outbox Module**: Persistent outbox with SQLite or PostgreSQL backends, background processor for transactional safety
 - **Event Logger**: Winston-based structured logging with trace and correlation IDs
 
@@ -335,6 +335,12 @@ logger.logEventEmitted({
 
 ### Request-Reply Pattern
 
+The toolkit supports two request-reply patterns. For the full guide, see [Request-Reply Patterns](docs/request-reply-patterns.md).
+
+#### Sync — `request()`
+
+Blocks until a response arrives or a timeout expires:
+
 ```typescript
 import { RequestReplyService, SubjectBuilder, EventContext } from '@cobranza-apps/events-toolkit';
 
@@ -344,7 +350,7 @@ class PaymentService {
     private readonly subjectBuilder: SubjectBuilder
   ) {}
 
-  async requestPaymentProof(companyId: string, paymentId: string, context: EventContext): Promise<ProofResponse> {
+  async requestProofStatus(companyId: string, paymentId: string, context: EventContext): Promise<ProofResponse> {
     const subject = this.subjectBuilder.build({
       companyId,
       domain: 'payment',
@@ -353,15 +359,94 @@ class PaymentService {
       version: '1'
     });
 
-    const payload = new PaymentProofRequestedData({ paymentId });
+    const payload = new ProofRequestedData({ paymentId });
 
-    const response = await this.requestReply.request<PaymentProofRequestedData, ProofResponse>(
+    const response = await this.requestReply.request<ProofRequestedData, ProofResponse>(
       subject,
       payload,
       { context, timeoutMs: 10000 }
     );
 
     return response.data;
+  }
+}
+```
+
+#### Async — `sendRequest()` + `@OnRequestReply`
+
+Non-blocking: publish a request with `reply_to`, receive the response in a decorated handler:
+
+```typescript
+// ── Requester: send async request ──
+import {
+  RequestReplyService, SubjectBuilder, EventContext,
+  ActorType, generateUuidV7,
+} from '@cobranza-apps/events-toolkit';
+
+class DebtService {
+  constructor(
+    private readonly requestReply: RequestReplyService,
+    private readonly subjectBuilder: SubjectBuilder,
+  ) {}
+
+  async requestCreditCheck(clientId: string, companyId: string): Promise<string> {
+    const replySubject = this.subjectBuilder.build({
+      companyId, domain: 'credit', entity: 'check',
+      action: 'requested.response', version: '1',
+    });
+
+    const context: EventContext = {
+      type: 'credit.check.requested',
+      version: '1.0.0',
+      producer: 'debt-service',
+      companyId,
+      actorType: ActorType.SYSTEM,
+      actorId: 'debt-service',
+      correlationId: generateUuidV7(),
+      replyTo: replySubject,
+    };
+
+    const result = await this.requestReply.sendRequest({
+      subject: this.subjectBuilder.build({
+        companyId, domain: 'credit', entity: 'check',
+        action: 'requested', version: '1',
+      }),
+      payload: new CreditCheckRequestedData({ clientId }),
+      context,
+    });
+
+    return result.correlationId;
+  }
+}
+
+// ── Responder: handle request, send response ──
+class CreditCheckConsumer {
+  constructor(private readonly requestReply: RequestReplyService) {}
+
+  @OnEvent({ domain: 'credit', entity: 'check', action: 'requested' })
+  async onCreditCheckRequested(event: EventEnvelope<CreditCheckRequestedData>): Promise<void> {
+    if (!this.requestReply.isRequestReplyMessage(event)) { return; }
+
+    const responseEvent = this.requestReply.buildResponseEnvelope({
+      requestEvent: event,
+      responseContext: {
+        type: 'credit.check.completed', version: '1.0.0',
+        producer: 'credit-service', companyId: event.company_id,
+        actorType: ActorType.SYSTEM, actorId: 'credit-service',
+        correlationId: event.correlation_id,
+      },
+      responseData: await this.performCheck(event.data),
+    });
+
+    await this.requestReply.sendResponse(event.correlation_id, responseEvent);
+  }
+}
+
+// ── Requester: handle async response ──
+class DebtServiceResponseHandler {
+  @OnRequestReply({ eventType: 'credit.check.completed' })
+  async handleCreditCheckResponse(event: EventEnvelope<CreditCheckResultData>): Promise<void> {
+    await this.processCreditResult(event.data, event.correlation_id);
   }
 }
 ```
@@ -540,6 +625,7 @@ docker run -p 4222:4222 nats:latest -js
 - [Event & Messaging Convention](docs/event-messaging-convention.md) — Full event standard specification
 - [Outbox Configuration](docs/outbox-configuration.md) — SQLite vs Postgres setup, service options, and migration guide
 - [AI Agent Guidelines](docs/ai-agent-guidelines.md) — Step-by-step event creation, naming, and common mistakes
+- [Request-Reply Patterns](docs/request-reply-patterns.md) — Sync vs async patterns, correlation, timeouts, and error handling
 - [Architecture](.agent/project-info/architecture.md) — Module design and data flows
 - [Tech Stack](.agent/project-info/tech.md) — Technology choices and development setup
 - [Product Overview](.agent/project-info/product.md) — Problem definition and goals

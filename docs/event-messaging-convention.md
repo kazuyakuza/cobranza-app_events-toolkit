@@ -104,11 +104,43 @@ All messages published to JetStream **must** follow this JSON structure:
 - Use `id` + `correlation_id` combination to detect and ignore duplicates.
 - Leverage JetStream `dedupe_window` when appropriate.
 
-### 4.2 Request → Async Response Pattern
+### 4.2 Request-Reply Patterns
 
-1. Publisher includes `reply_to` in the envelope.
-2. Consumer processes and publishes response to the `reply_to` subject.
+The toolkit supports two request-reply patterns over NATS JetStream:
+
+#### Sync Request-Reply (`request()`)
+
+- The caller sends a request and **blocks** until a response arrives or a timeout expires.
+- Uses NATS built-in request-reply mechanism.
+- Best for short-lived, simple flows where the response is needed immediately.
+- Configure timeout via `RequestReplyConfig.defaultTimeoutMs` (default: 5000 ms) or per-call `timeoutMs`.
+
+**Subject convention:**
+
+- Request subject: `company.{company_id}.{domain}.{entity}.{action}.v{version}`
+- NATS automatically creates a temporary inbox for the reply.
+
+#### Async Request-Reply (`sendRequest()` + `@OnRequestReply`)
+
+- The caller sends a request with a `reply_to` subject and **does not block**.
+- The responder processes the request and publishes a response to the `reply_to` subject.
+- The caller receives the response via `@OnRequestReply()` handler when it arrives.
+
+**Response naming convention:**
+
+Use `action: '{original_action}.response'` in `BuildSubjectDto` to produce response subjects:
+
+- Request: `company.{company_id}.{domain}.{entity}.{action}.v{version}`
+- Response: `company.{company_id}.{domain}.{entity}.{action}.response.v{version}`
+
+**Flow:**
+
+1. Publisher includes `reply_to` in the event envelope.
+2. Consumer processes and publishes a response to the `reply_to` subject.
 3. Response envelope follows the same structure, with `type` ending in `.response` or `.completed`.
+4. The `correlation_id` is preserved across request and response for traceability.
+
+For detailed examples, correlation ID management, timeout handling, and idempotency requirements, see [Request-Reply Patterns](request-reply-patterns.md).
 
 ### 4.3 Dead Letter Queue (DLQ)
 
