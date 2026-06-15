@@ -22,9 +22,7 @@ interface HandlerTarget {
  */
 @Injectable()
 export class OnRequestReplyExplorer implements OnModuleInit {
-  constructor(
-    @Inject(ON_REQUEST_REPLY_EXPLORER_DEPS_TOKEN) private readonly deps: OnRequestReplyExplorerDeps,
-  ) {}
+  constructor(@Inject(ON_REQUEST_REPLY_EXPLORER_DEPS_TOKEN) private readonly deps: OnRequestReplyExplorerDeps) {}
 
   /** NestJS lifecycle hook — triggers handler discovery and registration at startup. */
   onModuleInit(): void {

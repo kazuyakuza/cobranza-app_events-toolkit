@@ -1,10 +1,15 @@
 import { Test } from '@nestjs/testing';
+import { JsMsg } from 'nats';
 import { RequestReplyConsumerService } from './request-reply-consumer.service';
 import { REQUEST_REPLY_CONSUMER_DEPS_TOKEN } from './request-reply-consumer-deps.interface';
 import { defaultDlqSubjectBuilder } from './subscribe-options.interface';
 import { EventConsumerException } from '../common/errors/event-consumer.exception';
 import { ActorType } from '../common/envelope/actor-type.enum';
 import { EventLoggerService } from '../logging/event-logger.service';
+import {
+  RequestReplyMessageProcessor,
+  MessageProcessorDeps,
+} from './request-reply-message-processor';
 
 describe('RequestReplyConsumerService', () => {
   let service: RequestReplyConsumerService;
@@ -159,7 +164,170 @@ describe('RequestReplyConsumerService', () => {
   });
 });
 
-function createTestEvent(overrides: Partial<Record<string, unknown>> = {}): import('../common/envelope/event-envelope.class').EventEnvelope<unknown> {
+describe('RequestReplyMessageProcessor', () => {
+  let jetStream: { publish: jest.Mock };
+  let mockLogger: {
+    logEventConsumed: jest.Mock;
+    logEventError: jest.Mock;
+    logEventDlq: jest.Mock;
+  };
+  let dispatch: jest.Mock;
+  let processor: RequestReplyMessageProcessor;
+
+  beforeEach(() => {
+    jetStream = { publish: jest.fn().mockResolvedValue({}) };
+    mockLogger = {
+      logEventConsumed: jest.fn(),
+      logEventError: jest.fn(),
+      logEventDlq: jest.fn(),
+    };
+    dispatch = jest.fn().mockResolvedValue(undefined);
+
+    const deps: MessageProcessorDeps = {
+      jetStream,
+      logger: mockLogger as unknown as EventLoggerService,
+      dlqSubjectBuilder: defaultDlqSubjectBuilder,
+      dispatch,
+    };
+    processor = new RequestReplyMessageProcessor(deps);
+  });
+
+  function createJsMsg(overrides: Partial<Record<string, unknown>> = {}): JsMsg {
+    return {
+      data: new TextEncoder().encode(
+        JSON.stringify(createValidEnvelopeData(overrides)),
+      ),
+      subject: 'company.tenant-1.response.v1',
+      ack: jest.fn(),
+      nak: jest.fn(),
+      ...overrides,
+    } as unknown as JsMsg;
+  }
+
+  it('should ack and log consumed on successful message processing', async () => {
+    const msg = createJsMsg();
+    await processor.processMessage(msg, 'company.tenant-1.response.v1');
+
+    expect(msg.ack).toHaveBeenCalledTimes(1);
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(mockLogger.logEventConsumed).toHaveBeenCalledTimes(1);
+  });
+
+  it('should nak on invalid JSON payload', async () => {
+    const msg = {
+      data: new TextEncoder().encode('not json'),
+      subject: 'company.tenant-1.response.v1',
+      ack: jest.fn(),
+      nak: jest.fn(),
+    } as unknown as JsMsg;
+
+    await processor.processMessage(msg, 'company.tenant-1.response.v1');
+
+    expect(msg.ack).not.toHaveBeenCalled();
+    expect(msg.nak).toHaveBeenCalledTimes(1);
+    expect(mockLogger.logEventError).toHaveBeenCalled();
+    expect(mockLogger.logEventDlq).not.toHaveBeenCalled();
+  });
+
+  it('should nak on non-object JSON payload', async () => {
+    const msg = {
+      data: new TextEncoder().encode('"just-a-string"'),
+      subject: 'company.tenant-1.response.v1',
+      ack: jest.fn(),
+      nak: jest.fn(),
+    } as unknown as JsMsg;
+
+    await processor.processMessage(msg, 'company.tenant-1.response.v1');
+
+    expect(msg.ack).not.toHaveBeenCalled();
+    expect(msg.nak).toHaveBeenCalledTimes(1);
+    expect(mockLogger.logEventError).toHaveBeenCalled();
+  });
+
+  it('should route validation failures to DLQ and ack the original message', async () => {
+    const msg = createJsMsg({ id: 'invalid-id' });
+    await processor.processMessage(msg, 'company.tenant-1.response.v1');
+
+    expect(mockLogger.logEventDlq).toHaveBeenCalled();
+    expect(jetStream.publish).toHaveBeenCalledWith(
+      'dlq.company.tenant-1.response.v1',
+      expect.any(Uint8Array),
+    );
+    expect(msg.ack).toHaveBeenCalledTimes(1);
+  });
+
+  it('should nak on unexpected handler error and log error', async () => {
+    dispatch.mockRejectedValue(new Error('unexpected error'));
+    const msg = createJsMsg();
+
+    await processor.processMessage(msg, 'company.tenant-1.response.v1');
+
+    expect(msg.nak).toHaveBeenCalledTimes(1);
+    expect(msg.ack).not.toHaveBeenCalled();
+    expect(mockLogger.logEventError).toHaveBeenCalled();
+  });
+
+  it('should nak and log error when DLQ publish fails', async () => {
+    jetStream.publish.mockRejectedValue(new Error('publish failed'));
+    const msg = createJsMsg({ id: 'invalid-id' });
+
+    await processor.processMessage(msg, 'company.tenant-1.response.v1');
+
+    expect(msg.nak).toHaveBeenCalledTimes(1);
+    expect(mockLogger.logEventError).toHaveBeenCalled();
+  });
+
+  it('should not crash when logEventConsumed throws', async () => {
+    mockLogger.logEventConsumed.mockImplementation(() => {
+      throw new Error('log error');
+    });
+    const msg = createJsMsg();
+
+    await expect(
+      processor.processMessage(msg, 'company.tenant-1.response.v1'),
+    ).resolves.toBeUndefined();
+
+    expect(msg.ack).toHaveBeenCalledTimes(1);
+    expect(mockLogger.logEventError).toHaveBeenCalled();
+  });
+
+  it('should propagate EventConsumerException from dispatch to DLQ', async () => {
+    const consumerError = new EventConsumerException({
+      message: 'Handler not found',
+      eventId: 'evt_test-123',
+      eventType: 'payment.proof.uploaded',
+    });
+    dispatch.mockRejectedValue(consumerError);
+    const msg = createJsMsg();
+
+    await processor.processMessage(msg, 'company.tenant-1.response.v1');
+
+    expect(mockLogger.logEventDlq).toHaveBeenCalled();
+    expect(msg.ack).toHaveBeenCalledTimes(1);
+  });
+});
+
+function createValidEnvelopeData(
+  overrides: Partial<Record<string, unknown>> = {},
+): Record<string, unknown> {
+  return {
+    id: 'evt_550e8400-e29b-41d4-a716-446655440000',
+    type: 'payment.proof.uploaded',
+    version: '1.0.0',
+    produced_at: '2026-06-14T00:00:00.000Z',
+    producer: 'test-service',
+    company_id: '550e8400-e29b-41d4-a716-446655440000',
+    actor_type: ActorType.CLIENT,
+    actor_id: 'user-123',
+    correlation_id: '660e8400-e29b-41d4-a716-446655440001',
+    data: { amount: 100 },
+    ...overrides,
+  };
+}
+
+function createTestEvent(
+  overrides: Partial<Record<string, unknown>> = {},
+): import('../common/envelope/event-envelope.class').EventEnvelope<unknown> {
   const { EventEnvelope } = jest.requireActual('../common/envelope/event-envelope.class');
   return new EventEnvelope({
     id: 'evt_test-123',

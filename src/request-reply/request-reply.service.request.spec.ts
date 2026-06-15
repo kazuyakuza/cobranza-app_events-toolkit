@@ -2,12 +2,7 @@ import { Test } from '@nestjs/testing';
 import { RequestReplyService } from './request-reply.service';
 import { REQUEST_REPLY_DEPS_TOKEN } from './request-reply.types';
 import { RequestReplyException } from '../common/errors/request-reply.exception';
-import {
-  sampleContext,
-  defaultConfig,
-  createDeps,
-  createTestEnvelope,
-} from './__tests__/request-reply-test.utils';
+import { sampleContext, defaultConfig, createDeps, createTestEnvelope } from './__tests__/request-reply-test.utils';
 
 jest.mock('../common/utils/uuid.utils', () => ({
   generateEventId: jest.fn(() => 'evt_mock-request-uuid'),
@@ -38,7 +33,10 @@ describe('request', () => {
 
     const module = await Test.createTestingModule({
       providers: [
-        { provide: REQUEST_REPLY_DEPS_TOKEN, useValue: createDeps(mockNatsRequest, mockPublish, mockLogEmitted, mockLogConsumed, mockLogError, config) },
+        {
+          provide: REQUEST_REPLY_DEPS_TOKEN,
+          useValue: createDeps(mockNatsRequest, mockPublish, mockLogEmitted, mockLogConsumed, mockLogError, config),
+        },
         RequestReplyService,
       ],
     }).compile();

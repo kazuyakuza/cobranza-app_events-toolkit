@@ -13,10 +13,7 @@ describe('OnRequestReply', () => {
       handleResponse(): void {}
     }
 
-    const metadata = Reflect.getMetadata(
-      ON_REQUEST_REPLY_METADATA,
-      TestConsumer.prototype.handleResponse,
-    );
+    const metadata = Reflect.getMetadata(ON_REQUEST_REPLY_METADATA, TestConsumer.prototype.handleResponse);
     expect(metadata).toEqual(options);
   });
 
@@ -30,10 +27,7 @@ describe('OnRequestReply', () => {
       handleProcessed(): void {}
     }
 
-    const metadata = Reflect.getMetadata(
-      ON_REQUEST_REPLY_METADATA,
-      TestConsumer.prototype.handleProcessed,
-    );
+    const metadata = Reflect.getMetadata(ON_REQUEST_REPLY_METADATA, TestConsumer.prototype.handleProcessed);
     expect(metadata).toEqual(options);
     expect(metadata.companyId).toBeUndefined();
   });
@@ -55,14 +49,8 @@ describe('OnRequestReply', () => {
       handleScheduleCreated(): void {}
     }
 
-    const metadata1 = Reflect.getMetadata(
-      ON_REQUEST_REPLY_METADATA,
-      TestConsumer.prototype.handleProofUploaded,
-    );
-    const metadata2 = Reflect.getMetadata(
-      ON_REQUEST_REPLY_METADATA,
-      TestConsumer.prototype.handleScheduleCreated,
-    );
+    const metadata1 = Reflect.getMetadata(ON_REQUEST_REPLY_METADATA, TestConsumer.prototype.handleProofUploaded);
+    const metadata2 = Reflect.getMetadata(ON_REQUEST_REPLY_METADATA, TestConsumer.prototype.handleScheduleCreated);
 
     expect(metadata1).toEqual(options1);
     expect(metadata2).toEqual(options2);

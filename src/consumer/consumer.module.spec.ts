@@ -12,6 +12,7 @@ import { RequestReplyConsumerService } from './request-reply-consumer.service';
 
 describe('ConsumerModule', () => {
   const mockJetStream = { publish: jest.fn(), subscribe: jest.fn() } as unknown as JetStreamClient;
+  const mockLogger = { logEventConsumed: jest.fn(), logEventError: jest.fn(), logEventDlq: jest.fn() } as unknown as EventLoggerService;
 
   it('should resolve JetStream from connection via forRoot', () => {
     const mockConnection: Partial<NatsConnection> & { jetstream: jest.Mock } = {
@@ -67,7 +68,7 @@ describe('ConsumerModule', () => {
     expect(dynamicModule.providers).toContain(OnRequestReplyExplorer);
   });
 
-  it('should pass responseSubjectPattern to request reply consumer deps via forRoot', () => {
+  it('should forward responseSubjectPattern to request reply consumer deps via forRoot', () => {
     const dynamicModule = ConsumerModule.forRoot({
       jetStream: mockJetStream,
       responseSubjectPattern: 'custom.response.v1',
@@ -78,6 +79,9 @@ describe('ConsumerModule', () => {
     ) as { provide: string; useFactory: (...args: unknown[]) => unknown; inject: unknown[] };
     expect(depsProvider).toBeDefined();
     expect(depsProvider.inject).toContain(EventLoggerService);
+
+    const result = depsProvider.useFactory(mockLogger) as Record<string, unknown>;
+    expect(result.responseSubjectPattern).toBe('custom.response.v1');
   });
 
   it('should resolve JetStream from async factory via forRootAsync', async () => {
@@ -122,5 +126,30 @@ describe('ConsumerModule', () => {
     ) as { useFactory: () => Promise<unknown> };
     await optionsProvider.useFactory();
     expect(factoryCallCount).toBe(1);
+  });
+
+  it('should forward responseSubjectPattern via forRootAsync deps factory', () => {
+    const dynamicModule = ConsumerModule.forRootAsync({
+      useFactory: async () => ({
+        jetStream: mockJetStream,
+        responseSubjectPattern: 'async.response.v1',
+      }),
+    });
+
+    const depsProvider = dynamicModule.providers?.find(
+      (p) => 'provide' in p && p.provide === REQUEST_REPLY_CONSUMER_DEPS_TOKEN,
+    ) as {
+      provide: string;
+      useFactory: (...args: unknown[]) => unknown;
+      inject: unknown[];
+    };
+    expect(depsProvider).toBeDefined();
+
+    const result = depsProvider.useFactory(
+      { jetStream: mockJetStream },
+      mockLogger,
+      { responseSubjectPattern: 'async.response.v1' },
+    ) as Record<string, unknown>;
+    expect(result.responseSubjectPattern).toBe('async.response.v1');
   });
 });

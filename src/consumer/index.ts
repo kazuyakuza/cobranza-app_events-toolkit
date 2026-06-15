@@ -22,7 +22,11 @@ export {
   envelopeToContext,
 } from './subscribe-options.interface';
 export { JetStreamConsumerDeps, JETSTREAM_CONSUMER_DEPS_TOKEN } from './jetstream-consumer-deps.interface';
-export { OnRequestReply, ON_REQUEST_REPLY_METADATA, OnRequestReplyOptions } from './decorators/on-request-reply.decorator';
+export {
+  OnRequestReply,
+  ON_REQUEST_REPLY_METADATA,
+  OnRequestReplyOptions,
+} from './decorators/on-request-reply.decorator';
 export { OnRequestReplyExplorer } from './decorators/on-request-reply.explorer';
 export {
   ON_REQUEST_REPLY_EXPLORER_DEPS_TOKEN,

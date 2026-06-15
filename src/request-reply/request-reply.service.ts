@@ -54,7 +54,7 @@ export class RequestReplyService {
   async request<T, R>(
     subject: string,
     payload: T,
-    options: RequestReplyRequestOptions & { context: EventContext; },
+    options: RequestReplyRequestOptions & { context: EventContext },
   ): Promise<RequestReplyResponse<R>> {
     const { context, ...requestOptions } = options;
     const envelope = buildEnvelope(context, payload);

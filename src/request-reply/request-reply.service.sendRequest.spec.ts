@@ -4,11 +4,7 @@ import { EventContext } from '../common/envelope/event-context.interface';
 import { REQUEST_REPLY_DEPS_TOKEN } from './request-reply.types';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { RequestReplyException } from '../common/errors/request-reply.exception';
-import {
-  sampleContext,
-  defaultConfig,
-  createDeps,
-} from './__tests__/request-reply-test.utils';
+import { sampleContext, defaultConfig, createDeps } from './__tests__/request-reply-test.utils';
 
 jest.mock('../common/utils/uuid.utils', () => ({
   generateEventId: jest.fn(() => 'evt_mock-request-uuid'),
@@ -42,7 +38,10 @@ describe('sendRequest', () => {
 
     const module = await Test.createTestingModule({
       providers: [
-        { provide: REQUEST_REPLY_DEPS_TOKEN, useValue: createDeps(mockNatsRequest, mockPublish, mockLogEmitted, mockLogConsumed, mockLogError, config) },
+        {
+          provide: REQUEST_REPLY_DEPS_TOKEN,
+          useValue: createDeps(mockNatsRequest, mockPublish, mockLogEmitted, mockLogConsumed, mockLogError, config),
+        },
         RequestReplyService,
       ],
     }).compile();
