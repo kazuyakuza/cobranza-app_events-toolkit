@@ -52,7 +52,7 @@ For full outbox setup details, see [Outbox Configuration](outbox-configuration.m
 ### Sync Pattern
 
 - **Default**: 5000 ms (`RequestReplyConfig.defaultTimeoutMs`)
-- **Configuration**: Provide via `RequestReplyModule.forRoot({ defaultTimeoutMs: 5000 })` when importing the module.
+- **Configuration**: Provide `REQUEST_REPLY_CONFIG_TOKEN` in your module providers (e.g., `{ provide: REQUEST_REPLY_CONFIG_TOKEN, useValue: { defaultTimeoutMs: 5000 } }`).
 - **Recommended per-scenario**:
   - Simple lookups (fetch by ID): 3000–5000 ms
   - Lightweight processing: 5000–10000 ms

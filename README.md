@@ -337,9 +337,9 @@ logger.logEventEmitted({
 
 The toolkit supports two request-reply patterns. For the full guide, see [Request-Reply Patterns](docs/request-reply-patterns.md). For guidance on choosing between sync and async patterns, see [Request-Reply Guidelines](docs/request-reply-guidelines.md).
 
-#### Sync — `request()`
-
 > **Full examples:** See [Sync Request-Reply Example](docs/examples/sync-request-reply.example.ts) and [Async Request-Reply Example](docs/examples/async-request-reply.example.ts) for complete, runnable code samples.
+
+#### Sync — `request()`
 
 Blocks until a response arrives or a timeout expires:
 

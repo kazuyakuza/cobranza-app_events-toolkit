@@ -252,7 +252,7 @@ Before submitting event-related code, verify:
 | ID | `generateEventId`, `generateUuidV7` |
 | Producer | `ProducerModule`, `ProducerService`, `@EmitEvent()` |
 | Consumer | `ConsumerModule`, `@OnEvent()`, `EventConsumerException` |
-| Request-Reply | `RequestReplyService` |
+| Request-Reply | `RequestReplyService`, `@OnRequestReply()` |
 | Outbox | `OutboxModule`, `OutboxService`, `OutboxModuleOptions`, `EntityManagerLike` |
 | Unified | `EventsToolkitModule`, `EventsToolkitModuleOptions` |
 | Logging | `EventLoggerService` |
