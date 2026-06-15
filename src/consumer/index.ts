@@ -1,6 +1,7 @@
 /**
  * @packageDocumentation
- * Consumer module — JetStream event consumption, decorators, and subscription configuration.
+ * Consumer module — JetStream event consumption, request-reply response handling,
+ * decorators, and subscription configuration.
  */
 
 export { ConsumerService, EventHandler } from './consumer.service';
