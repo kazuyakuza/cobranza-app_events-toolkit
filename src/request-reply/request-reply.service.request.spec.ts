@@ -173,6 +173,9 @@ describe('request', () => {
     });
     it('should create RequestReplyException from non-Error thrown value (string)', async () => {
       mockNatsRequest.mockRejectedValue('connection lost');
+      await expect(service.request('test.subject', {}, { context: sampleContext })).rejects.toBeInstanceOf(
+        RequestReplyException,
+      );
       await expect(service.request('test.subject', {}, { context: sampleContext })).rejects.toMatchObject({
         message: 'connection lost',
       });
@@ -180,6 +183,9 @@ describe('request', () => {
     it('should wrap native Error in RequestReplyException with cause', async () => {
       const nativeError = new Error('NATS connection refused');
       mockNatsRequest.mockRejectedValue(nativeError);
+      await expect(service.request('test.subject', {}, { context: sampleContext })).rejects.toBeInstanceOf(
+        RequestReplyException,
+      );
       await expect(service.request('test.subject', {}, { context: sampleContext })).rejects.toMatchObject({
         message: 'NATS connection refused',
         cause: nativeError,

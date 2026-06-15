@@ -5,11 +5,7 @@
  *   - Requester side: sendRequest() with reply_to
  *   - Responder side: @OnEvent() + buildResponseEnvelope() + sendResponse()
  *   - Response handler: @OnRequestReply() decorator
- *
- * This pattern is non-blocking: the requester publishes a request and
- * continues processing. The response arrives later via a separate handler.
  */
-
 import {
   RequestReplyService,
   SubjectBuilder,
@@ -17,9 +13,6 @@ import {
   EventEnvelope,
   ActorType,
   generateUuidV7,
-  buildSubject,
-  buildResponseSubject,
-  ResponseSuffix,
   OnRequestReply,
   RequestReplyException,
 } from '@cobranza-apps/events-toolkit';
@@ -47,9 +40,13 @@ class CreditCheckResultData {
   approved: boolean;
 }
 
-// ═════════════════════════════════════════════════════════════════════
-// 1. Requester — sends async request with reply_to
-// ═════════════════════════════════════════════════════════════════════
+interface RequestCreditCheckParams {
+  clientId: string;
+  fullName: string;
+  companyId: string;
+}
+
+// ── 1. Requester ────────────────────────────────────────────────────
 
 class DebtService {
   constructor(
@@ -58,11 +55,10 @@ class DebtService {
   ) {}
 
   async requestCreditCheck(
-    clientId: string,
-    fullName: string,
-    companyId: string,
+    params: RequestCreditCheckParams,
   ): Promise<string> {
-    // Preferred: use a descriptive past-tense response subject
+    const { clientId, fullName, companyId } = params;
+
     const replySubject = this.subjectBuilder.build({
       companyId,
       domain: 'credit',
@@ -70,17 +66,6 @@ class DebtService {
       action: 'completed',
       version: '1',
     });
-
-    // Alternative: use the .response suffix via buildResponseSubject helper
-    // const replySubject = buildResponseSubject({
-    //   companyId,
-    //   domain: 'credit',
-    //   entity: 'check',
-    //   action: 'requested',
-    //   version: '1',
-    // });
-    // Or using the helper:
-    // const replySubject = buildResponseSubject(buildSubject({ ... }));
 
     const context: EventContext = {
       type: 'credit.check.requested',
@@ -115,9 +100,7 @@ class DebtService {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════
-// 2. Responder — receives request and sends response
-// ═════════════════════════════════════════════════════════════════════
+// ── 2. Responder ────────────────────────────────────────────────────
 
 class CreditCheckConsumer {
   constructor(private readonly requestReply: RequestReplyService) {}
@@ -126,7 +109,6 @@ class CreditCheckConsumer {
   async onCreditCheckRequested(
     event: EventEnvelope<CreditCheckRequestedData>,
   ): Promise<void> {
-    // Ignore events that are not request-reply messages
     if (!this.requestReply.isRequestReplyMessage(event)) {
       return;
     }
@@ -165,9 +147,7 @@ class CreditCheckConsumer {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════
-// 3. Response handler — receives async response via @OnRequestReply
-// ═════════════════════════════════════════════════════════════════════
+// ── 3. Response Handler ─────────────────────────────────────────────
 
 class DebtServiceResponseHandler {
   @OnRequestReply({ eventType: 'credit.check.completed' })
@@ -180,26 +160,3 @@ class DebtServiceResponseHandler {
     );
   }
 }
-
-// ═════════════════════════════════════════════════════════════════════
-// Module Wiring Example
-// ═════════════════════════════════════════════════════════════════════
-//
-// import { Module } from '@nestjs/common';
-// import { ConsumerModule } from '@cobranza-apps/events-toolkit';
-// import { connect } from 'nats';
-//
-// @Module({
-//   imports: [
-//     ConsumerModule.forRoot({
-//       connection: await connect({ servers: ['nats://localhost:4222'] }),
-//       responseSubjectPattern: 'company.*.credit.check.completed.v1',
-//     }),
-//   ],
-//   providers: [
-//     DebtService,
-//     CreditCheckConsumer,
-//     DebtServiceResponseHandler,
-//   ],
-// })
-// export class CreditModule {}

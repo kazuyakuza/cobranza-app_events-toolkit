@@ -42,6 +42,12 @@ class VerificationResultData {
   verifiedAt: string;
 }
 
+interface RequestVerificationStatusParams {
+  companyId: string;
+  paymentId: string;
+  documentHash: string;
+}
+
 // ── Service ─────────────────────────────────────────────────────────
 
 class VerificationService {
@@ -51,10 +57,9 @@ class VerificationService {
   ) {}
 
   async requestVerificationStatus(
-    companyId: string,
-    paymentId: string,
-    documentHash: string,
+    params: RequestVerificationStatusParams,
   ): Promise<VerificationResultData> {
+    const { companyId, paymentId, documentHash } = params;
     const subject = this.subjectBuilder.build({
       companyId,
       domain: 'verification',

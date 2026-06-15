@@ -73,6 +73,11 @@ describe('OutboxService — request-reply processor flow', () => {
     resetMocks(mocks);
   });
 
+  afterEach(() => {
+    service.stopProcessor();
+    jest.useRealTimers();
+  });
+
   it('publishes request-reply event with reply_to intact from processor', async () => {
     const envelope = createTestEnvelope();
     envelope.reply_to = 'company.550e8400...credit.check.completed.v1';
@@ -90,7 +95,6 @@ describe('OutboxService — request-reply processor flow', () => {
     expect(mocks.producerService.publish).toHaveBeenCalledTimes(1);
     const [, publishedEnvelope] = mocks.producerService.publish.mock.calls[0];
     expect(publishedEnvelope.reply_to).toBe('company.550e8400...credit.check.completed.v1');
-    jest.useRealTimers();
   });
 
   it('preserves reply_to through serialization round-trip', async () => {
@@ -102,9 +106,6 @@ describe('OutboxService — request-reply processor flow', () => {
       eventData: JSON.stringify(envelope),
     });
 
-    const parsed = JSON.parse(entry.eventData);
-    expect(parsed.reply_to).toBe(originalReplyTo);
-
     mocks.repository.getPending.mockResolvedValue([entry]);
     mocks.producerService.publish.mockResolvedValue(undefined);
 
@@ -114,7 +115,6 @@ describe('OutboxService — request-reply processor flow', () => {
 
     const [, publishedEnvelope] = mocks.producerService.publish.mock.calls[0];
     expect(publishedEnvelope.reply_to).toBe(originalReplyTo);
-    jest.useRealTimers();
   });
 
   it('sendRequestThroughOutbox followed by processor publish with reply_to intact', async () => {
@@ -144,6 +144,5 @@ describe('OutboxService — request-reply processor flow', () => {
         reply_to: 'company.550e8400...credit.check.completed.v1',
       }),
     );
-    jest.useRealTimers();
   });
 });
