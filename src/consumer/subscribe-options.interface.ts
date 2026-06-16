@@ -2,13 +2,14 @@ import { JsMsg, ConsumerOptsBuilder, ConsumerOpts } from 'nats';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { EventContext } from '../common/envelope/event-context.interface';
 import { EventHandler } from './consumer.service';
+import { buildDlqSubject } from '../common/utils/subject.builder';
 
 /** Consumer subscription options accepted by {@link SubscribeOptions}. */
 export type ConsumerSubscribeOpts = ConsumerOptsBuilder | Partial<ConsumerOpts>;
 
-/** Builds a DLQ subject by prepending `dlq.` to the original subject. */
+/** Builds a DLQ subject by delegating to the centralized {@link buildDlqSubject}. */
 export function defaultDlqSubjectBuilder(subject: string): string {
-  return `dlq.${subject}`;
+  return buildDlqSubject(subject);
 }
 
 /** Extracts {@link EventContext} fields from a validated {@link EventEnvelope}. */

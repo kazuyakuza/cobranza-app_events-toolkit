@@ -55,6 +55,9 @@ export function buildSubject(dto: BuildSubjectDto): string {
 /** Suffix appended to the action segment when deriving response subjects. */
 export const RESPONSE_SUFFIX = '.response';
 
+/** Prefix prepended to subjects when deriving Dead Letter Queue (DLQ) subjects. */
+export const DLQ_SUBJECT_PREFIX = 'dlq.';
+
 /** Parsed components of a NATS subject following the event-messaging convention. */
 export interface SubjectParseResult {
   /** Company UUID (dashless) extracted from the subject. */
@@ -126,4 +129,32 @@ export function buildResponseSubject(requestSubject: string): string {
   const parsed = parseSubjectSegments(requestSubject);
   const responseAction = parsed.action + RESPONSE_SUFFIX;
   return `company.${parsed.companyId}.${parsed.domain}.${parsed.entity}.${responseAction}.v${parsed.version}`;
+}
+
+/**
+ * Builds a Dead Letter Queue (DLQ) subject by prepending {@link DLQ_SUBJECT_PREFIX}
+ * to the original subject.
+ *
+ * Follows the convention defined in Section 4.3 of the event-messaging convention:
+ * - Original: `company.{id}.{domain}.{entity}.{action}.v{version}`
+ * - DLQ:      `dlq.company.{id}.{domain}.{entity}.{action}.v{version}`
+ *
+ * Works with any subject string, including wildcard patterns used in subscriptions.
+ *
+ * @param originalSubject - The original NATS subject (or pattern) to derive the DLQ subject from.
+ * @returns DLQ subject string with `dlq.` prefix.
+ *
+ * @example
+ * ```ts
+ * buildDlqSubject('company.550e8400e29b41d4a716446655440000.payment.proof.uploaded.v1');
+ * // => 'dlq.company.550e8400e29b41d4a716446655440000.payment.proof.uploaded.v1'
+ *
+ * buildDlqSubject('company.*.payment.proof.uploaded.v1');
+ * // => 'dlq.company.*.payment.proof.uploaded.v1'
+ * ```
+ *
+ * @see docs/event-messaging-convention.md — Section 4.3 (Dead Letter Queue)
+ */
+export function buildDlqSubject(originalSubject: string): string {
+  return `${DLQ_SUBJECT_PREFIX}${originalSubject}`;
 }

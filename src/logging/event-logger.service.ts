@@ -143,6 +143,10 @@ export interface EventErrorLogContext extends EventLogContext {
   error: string;
   /** Stack trace of the underlying error. Optional. */
   stack?: string;
+  /** Human-readable reason for DLQ routing. Optional. */
+  dlqReason?: string;
+  /** Number of delivery attempts before routing to DLQ. Optional. */
+  retryCount?: number;
 }
 
 /** Metadata context for outbox event log entries. */

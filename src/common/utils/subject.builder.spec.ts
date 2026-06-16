@@ -1,7 +1,14 @@
 import { validateSync } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 import { BuildSubjectDto } from '../dto/build-subject.dto';
-import { SubjectBuilder, buildSubject, buildResponseSubject, RESPONSE_SUFFIX } from './subject.builder';
+import {
+  SubjectBuilder,
+  buildSubject,
+  buildResponseSubject,
+  RESPONSE_SUFFIX,
+  buildDlqSubject,
+  DLQ_SUBJECT_PREFIX,
+} from './subject.builder';
 
 describe('SubjectBuilder', () => {
   describe('BuildSubjectDto validation', () => {
@@ -175,6 +182,34 @@ describe('SubjectBuilder', () => {
   describe('RESPONSE_SUFFIX', () => {
     it('equals .response', () => {
       expect(RESPONSE_SUFFIX).toBe('.response');
+    });
+  });
+
+  describe('buildDlqSubject()', () => {
+    it('prefixes a standard subject with dlq.', () => {
+      const subject = 'company.550e8400e29b41d4a716446655440000.payment.proof.uploaded.v1';
+      expect(buildDlqSubject(subject)).toBe('dlq.company.550e8400e29b41d4a716446655440000.payment.proof.uploaded.v1');
+    });
+
+    it('prefixes a wildcard subscription subject with dlq.', () => {
+      const subject = 'company.*.payment.proof.uploaded.v1';
+      expect(buildDlqSubject(subject)).toBe('dlq.company.*.payment.proof.uploaded.v1');
+    });
+
+    it('prefixes any arbitrary string with dlq.', () => {
+      expect(buildDlqSubject('test.subject')).toBe('dlq.test.subject');
+    });
+
+    it('produces double dlq. when input already has dlq. prefix', () => {
+      expect(buildDlqSubject('dlq.company.abc.payment.proof.uploaded.v1')).toBe(
+        'dlq.dlq.company.abc.payment.proof.uploaded.v1',
+      );
+    });
+  });
+
+  describe('DLQ_SUBJECT_PREFIX', () => {
+    it('equals dlq.', () => {
+      expect(DLQ_SUBJECT_PREFIX).toBe('dlq.');
     });
   });
 });

@@ -194,8 +194,100 @@ For detailed examples, correlation ID management, timeout handling, and idempote
 
 ### 4.3 Dead Letter Queue (DLQ)
 
-- Recommended subject pattern: `dlq.company.{company_id}.{domain}.{entity}.{action}.v{version}`
-- Consumers should forward failed messages (after max retries) to the DLQ.
+Failed messages that cannot be processed are forwarded to a Dead Letter Queue subject for inspection and reprocessing.
+
+**Subject pattern:** `dlq.company.{company_id}.{domain}.{entity}.{action}.v{version}`
+
+Built programmatically using `buildDlqSubject()`:
+
+```ts
+import { buildDlqSubject } from '@cobranza-apps/events-toolkit';
+
+const dlqSubject = buildDlqSubject('company.550e8400e29b41d4a716446655440000.payment.proof.uploaded.v1');
+// => 'dlq.company.550e8400e29b41d4a716446655440000.payment.proof.uploaded.v1'
+```
+
+Works with wildcard subscription patterns too:
+
+```ts
+buildDlqSubject('company.*.payment.proof.uploaded.v1');
+// => 'dlq.company.*.payment.proof.uploaded.v1'
+```
+
+**Automatic DLQ routing:** When a consumer throws `EventConsumerException`, `JetStreamConsumerService` automatically routes the message to the DLQ subject. This is the recommended pattern for business validation errors that should not be retried.
+
+**Manual DLQ routing:** For cases where you need explicit control, use `moveToDlq()`:
+
+```ts
+await this.consumerService.moveToDlq({
+  message: jsMsg,
+  reason: 'Custom validation failure',
+  subject: originalSubject, // optional, defaults to message.subject
+  originalPayload: payload, // optional
+});
+```
+
+**EventConsumerException metadata:**
+
+Optional fields on `EventConsumerException` enrich the DLQ payload for observability:
+
+- `dlqReason`: Human-readable reason for DLQ routing (distinct from error message).
+- `originalSubject`: Original NATS subject the message was consumed from.
+- `retryCount`: Number of delivery attempts before routing to DLQ.
+
+```ts
+throw new EventConsumerException({
+  message: 'Business rule violation',
+  eventId: envelope.id,
+  eventType: envelope.type,
+  dlqReason: 'Invalid payment amount',
+  originalSubject: subject,
+  retryCount: 3,
+});
+```
+
+**DLQ payload structure:**
+
+```json
+{
+  "originalSubject": "company.550e8400e29b41d4a716446655440000.payment.proof.uploaded.v1",
+  "originalPayload": { ... },
+  "error": {
+    "name": "EventConsumerException",
+    "message": "Business rule violation",
+    "eventId": "evt_123",
+    "eventType": "payment.proof.uploaded",
+    "correlationId": "req_456",
+    "stack": "...",
+    "dlqReason": "Invalid payment amount",
+    "retryCount": 3
+  },
+  "failedAt": "2026-06-16T14:30:00.000Z"
+}
+```
+
+**Stream retention policy recommendation:**
+
+DLQ streams should use longer retention than event streams to ensure failed messages are not lost:
+
+| Stream Type | Retention | Max Age | Max_Msgs Per Subject |
+|-------------|-----------|---------|---------------------|
+| Event Stream | Limits | 7 days | 10,000 |
+| DLQ Stream | Limits | 30 days | 100,000 |
+
+Recommended JetStream stream configuration for DLQ:
+
+```ts
+await nc.jetStreamManager.streams.add({
+  name: 'DLQ',
+  subjects: ['dlq.>'],
+  retention: 'limits',
+  max_age: 30 * 24 * 60 * 60 * 1_000_000_000, // 30 days in nanoseconds
+  max_msgs_per_subject: 100_000,
+  storage: 'file',
+  dedupe_window: 2 * 60 * 1_000_000_000, // 2 minutes in nanoseconds
+});
+```
 
 ### 4.4 Additional Recommendations
 

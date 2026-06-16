@@ -6,6 +6,9 @@
  * message to the corresponding DLQ subject:
  *   dlq.company.{company_id}.{domain}.{entity}.{action}.v{version}
  *
+ * Optional metadata fields (`dlqReason`, `originalSubject`, `retryCount`)
+ * are included in the DLQ payload for observability and debugging.
+ *
  * @see docs/event-messaging-convention.md — Section 4.3 (Dead Letter Queue)
  */
 export class EventConsumerException extends Error {
@@ -21,10 +24,19 @@ export class EventConsumerException extends Error {
   /** The underlying error that caused the failure. Optional. */
   readonly cause?: Error;
 
+  /** Human-readable reason for DLQ routing. Optional; provides context beyond the error message. */
+  readonly dlqReason?: string;
+
+  /** Original NATS subject the message was consumed from. Optional; populated by the consumer service. */
+  readonly originalSubject?: string;
+
+  /** Number of delivery attempts before routing to DLQ. Optional. */
+  readonly retryCount?: number;
+
   /**
    * Creates an EventConsumerException with DLQ routing context.
    *
-   * @param options - Exception options including event metadata and the underlying cause.
+   * @param options - Exception options including event metadata, the underlying cause, and optional DLQ metadata.
    */
   constructor(options: EventConsumerExceptionOptions) {
     super(options.message);
@@ -33,6 +45,9 @@ export class EventConsumerException extends Error {
     this.eventType = options.eventType;
     this.correlationId = options.correlationId;
     this.cause = options.cause;
+    this.dlqReason = options.dlqReason;
+    this.originalSubject = options.originalSubject;
+    this.retryCount = options.retryCount;
 
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, EventConsumerException);
@@ -52,4 +67,10 @@ export interface EventConsumerExceptionOptions {
   correlationId?: string;
   /** The underlying error that caused the failure. Optional. */
   cause?: Error;
+  /** Human-readable reason for DLQ routing. Optional. */
+  dlqReason?: string;
+  /** Original NATS subject the message was consumed from. Optional. */
+  originalSubject?: string;
+  /** Number of delivery attempts before routing to DLQ. Optional. */
+  retryCount?: number;
 }

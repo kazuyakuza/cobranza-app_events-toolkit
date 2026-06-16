@@ -171,6 +171,50 @@ describe('JetStreamConsumerService', () => {
       expect(dlqPayload.originalPayload).toEqual(validData);
       expect(dlqPayload.error.message).toBe('Business rule violation');
     });
+
+    it('should include dlqReason and retryCount in DLQ payload when provided on EventConsumerException', async () => {
+      const consumerException = new EventConsumerException({
+        message: 'Business rule violation',
+        eventId: 'evt_test-123',
+        eventType: 'payment.proof.uploaded',
+        correlationId: '660e8400-e29b-41d4-a716-446655440001',
+        dlqReason: 'Invalid payment amount',
+        originalSubject: 'company.550e8400.payment.proof.uploaded.v1',
+        retryCount: 3,
+      });
+      const handler = jest.fn().mockRejectedValue(consumerException);
+      consumerService.registerHandler(testSubject, handler);
+
+      const validData = createValidEventJson();
+      const msg = createJsMsg(validData, testSubject);
+      await service.processMessage(msg, testSubject);
+
+      expect(jetStream.publish).toHaveBeenCalledTimes(1);
+      const [, dlqPayloadBytes] = jetStream.publish.mock.calls[0];
+      const dlqPayload = JSON.parse(new TextDecoder().decode(dlqPayloadBytes));
+      expect(dlqPayload.error.dlqReason).toBe('Invalid payment amount');
+      expect(dlqPayload.error.retryCount).toBe(3);
+      expect(dlqPayload.originalSubject).toBe('company.550e8400.payment.proof.uploaded.v1');
+    });
+
+    it('should use consumer subject as originalSubject when exception does not provide one', async () => {
+      const consumerException = new EventConsumerException({
+        message: 'Business rule violation',
+        eventId: 'evt_test-456',
+        eventType: 'payment.proof.uploaded',
+      });
+      const handler = jest.fn().mockRejectedValue(consumerException);
+      consumerService.registerHandler(testSubject, handler);
+
+      const msg = createJsMsg(createValidEventJson(), testSubject);
+      await service.processMessage(msg, testSubject);
+
+      const [, dlqPayloadBytes] = jetStream.publish.mock.calls[0];
+      const dlqPayload = JSON.parse(new TextDecoder().decode(dlqPayloadBytes));
+      expect(dlqPayload.originalSubject).toBe(testSubject);
+      expect(dlqPayload.error.dlqReason).toBeUndefined();
+      expect(dlqPayload.error.retryCount).toBeUndefined();
+    });
   });
 
   describe('processMessage — handler throws generic error', () => {
@@ -267,6 +311,72 @@ describe('JetStreamConsumerService', () => {
 
       expect(consumerService.getHandler(testSubject)).toBe(handler);
       expect(jetStream.subscribe).toHaveBeenCalledWith(testSubject, {});
+    });
+  });
+
+  describe('moveToDlq', () => {
+    it('should publish to DLQ subject and ack the message', async () => {
+      const msg = createJsMsg(createValidEventJson(), testSubject);
+
+      await service.moveToDlq({
+        message: msg,
+        reason: 'Manual DLQ routing',
+      });
+
+      expect(jetStream.publish).toHaveBeenCalledTimes(1);
+      const [dlqSubject, dlqPayloadBytes] = jetStream.publish.mock.calls[0];
+      expect(dlqSubject).toBe(`dlq.${testSubject}`);
+      const dlqPayload = JSON.parse(new TextDecoder().decode(dlqPayloadBytes));
+      expect(dlqPayload.originalSubject).toBe(testSubject);
+      expect(dlqPayload.error.message).toBe('Manual DLQ routing');
+      expect(dlqPayload.error.name).toBe('ManualDLQRouting');
+      expect(dlqPayload.failedAt).toBeDefined();
+
+      expect(msg.ack).toHaveBeenCalledTimes(1);
+      expect(msg.nak).not.toHaveBeenCalled();
+    });
+
+    it('should use custom subject when provided', async () => {
+      const customSubject = 'company.550e8400.custom.entity.action.v1';
+      const msg = createJsMsg(createValidEventJson(), testSubject);
+
+      await service.moveToDlq({
+        message: msg,
+        reason: 'Custom subject route',
+        subject: customSubject,
+      });
+
+      const [dlqSubject] = jetStream.publish.mock.calls[0];
+      expect(dlqSubject).toBe(`dlq.${customSubject}`);
+    });
+
+    it('should include originalPayload when provided', async () => {
+      const msg = createJsMsg(createValidEventJson(), testSubject);
+      const payload = { custom: 'data' };
+
+      await service.moveToDlq({
+        message: msg,
+        reason: 'With payload',
+        originalPayload: payload,
+      });
+
+      const [, dlqPayloadBytes] = jetStream.publish.mock.calls[0];
+      const dlqPayload = JSON.parse(new TextDecoder().decode(dlqPayloadBytes));
+      expect(dlqPayload.originalPayload).toEqual(payload);
+    });
+
+    it('should nack and log error when DLQ publish fails', async () => {
+      jetStream.publish.mockRejectedValue(new Error('DLQ publish failed'));
+      const msg = createJsMsg(createValidEventJson(), testSubject);
+
+      await service.moveToDlq({
+        message: msg,
+        reason: 'Failed publish',
+      });
+
+      expect(msg.nak).toHaveBeenCalledTimes(1);
+      expect(msg.ack).not.toHaveBeenCalled();
+      expect(mockLogger.logEventError).toHaveBeenCalledTimes(1);
     });
   });
 });
