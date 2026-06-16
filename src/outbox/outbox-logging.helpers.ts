@@ -4,6 +4,7 @@ import { OutboxEntry } from './outbox.types';
 import { OutboxErrorContextParams } from './outbox-error-context-params.interface';
 import { parseEnvelope } from './outbox.utils';
 
+/** Logs a structured "outbox saved" message for the given event. */
 export function logOutboxSaved(params: {
   event: EventEnvelope<unknown>;
   subject: string;
@@ -20,6 +21,7 @@ export function logOutboxSaved(params: {
   });
 }
 
+/** Builds a log context object from an outbox entry for success/failure logging. */
 export function toOutboxLogContext(entry: OutboxEntry): OutboxLogContext {
   const envelope = parseEnvelope(entry);
   return {
@@ -32,6 +34,7 @@ export function toOutboxLogContext(entry: OutboxEntry): OutboxLogContext {
   };
 }
 
+/** Builds an error log context from an outbox entry, attempt number, and error. */
 export function toOutboxErrorLogContext(params: OutboxErrorContextParams): OutboxErrorLogContext {
   const { entry, attempt, error } = params;
   const err = error instanceof Error ? error : new Error(String(error));
@@ -43,6 +46,7 @@ export function toOutboxErrorLogContext(params: OutboxErrorContextParams): Outbo
   };
 }
 
+/** Logs a processor-level error when the background poller encounters an unexpected failure. */
 export function logProcessorError(params: { error: unknown; logger: EventLoggerService }): void {
   const { error, logger } = params;
   const err = error instanceof Error ? error : new Error(String(error));
