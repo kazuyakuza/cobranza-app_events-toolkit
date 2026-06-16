@@ -81,14 +81,17 @@ export class OutboxService implements OnModuleDestroy {
   }
 
   /**
-   * Builds an event envelope from payload and context, validates replyTo,
+   * Builds an event envelope from payload and context,
    * and persists it to the outbox for asynchronous request-reply delivery.
    *
-   * Unlike sendRequestThroughOutbox which takes a pre-built envelope,
-   * this method constructs the envelope internally, providing a
-   * higher-level API that mirrors RequestReplyService.sendRequest().
+   * Unlike sendRequestThroughOutbox which takes a pre-built envelope
+   * and validates replyTo at runtime, this method constructs the envelope
+   * internally and relies on TypeScript to enforce replyTo presence
+   * via the AsyncRequestEventContext type.
    *
    * @typeParam T - Request payload type.
+   * @param options - Subject, payload, and context (with required replyTo).
+   * @returns The correlationId of the persisted request event.
    */
   async sendAsyncRequestThroughOutbox<T>(
     options: SendAsyncRequestThroughOutboxOptions<T>,
