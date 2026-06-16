@@ -1,6 +1,7 @@
 import { ActorType } from '../common/envelope/actor-type.enum';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { MockOutboxService } from './mock-outbox.service';
+import { SendAsyncRequestThroughOutboxOptions } from '../outbox/send-async-request-through-outbox-options.interface';
 
 function createTestEnvelope(): EventEnvelope<unknown> {
   return new EventEnvelope({
@@ -63,6 +64,46 @@ describe('MockOutboxService', () => {
     service.clear();
     expect(service.count).toBe(0);
     expect(service.getSavedEvents()).toEqual([]);
+  });
+
+  it('saveInTransaction records event ignoring transaction context', async () => {
+    const envelope = createTestEnvelope();
+    await service.saveInTransaction({
+      event: envelope,
+      subject: 'company.test.tx.payment.v1',
+      transactionContext: { type: 'typeorm-query-runner' },
+    });
+
+    const saved = service.getSavedEvents();
+    expect(saved).toHaveLength(1);
+    expect(saved[0].subject).toBe('company.test.tx.payment.v1');
+    expect(saved[0].event).toBe(envelope);
+  });
+
+  it('sendAsyncRequestThroughOutbox builds envelope and returns correlationId', async () => {
+    const options: SendAsyncRequestThroughOutboxOptions<{ clientId: string }> = {
+      subject: 'company.test.credit.check.requested.v1',
+      payload: { clientId: 'clt-001' },
+      context: {
+        type: 'credit.check.requested',
+        version: '1.0.0',
+        producer: 'test-service',
+        companyId: '550e8400-e29b-41d4-a716-446655440000',
+        actorType: ActorType.SYSTEM,
+        actorId: 'test-actor',
+        correlationId: 'corr-001',
+        replyTo: 'company.test.credit.check.completed.v1',
+      },
+    };
+
+    const result = await service.sendAsyncRequestThroughOutbox(options);
+
+    expect(result.correlationId).toBe('corr-001');
+    const saved = service.getSavedEvents();
+    expect(saved).toHaveLength(1);
+    expect(saved[0].subject).toBe('company.test.credit.check.requested.v1');
+    expect(saved[0].event.correlation_id).toBe('corr-001');
+    expect(saved[0].event.reply_to).toBe('company.test.credit.check.completed.v1');
   });
 
   it('startProcessor and stopProcessor are no-ops', () => {

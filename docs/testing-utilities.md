@@ -113,12 +113,14 @@ Query methods:
 
 ### MockOutboxService
 
-Replaces `OutboxService`. Records events saved to outbox. `startProcessor()` and `stopProcessor()` are no-ops.
+Replaces `OutboxService`. Records events saved to outbox. `startProcessor()` and `stopProcessor()` are no-ops. Transaction context is accepted but ignored (mirrors SQLite behavior).
 
 | Method | Description |
 |--------|-------------|
 | `saveToOutbox(event, subject)` | Records the event with its subject |
+| `saveInTransaction(params)` | Records the event (transaction context ignored) |
 | `sendRequestThroughOutbox(event, subject)` | Records the event (same as `saveToOutbox`) |
+| `sendAsyncRequestThroughOutbox(options)` | Builds envelope from payload+context, records it, returns `{ correlationId }` |
 | `startProcessor()` | No-op |
 | `stopProcessor()` | No-op |
 | `getSavedEvents()` | Returns all recorded `SavedOutboxEvent[]` |
