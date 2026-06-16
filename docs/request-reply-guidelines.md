@@ -40,8 +40,17 @@ For full code examples and API details, see [Request-Reply Patterns](request-rep
 | Pattern | Outbox for Request? | Outbox for Response? | Reason |
 |---------|---------------------|----------------------|--------|
 | Sync `request()` | No | No | NATS handles reply inbox internally |
-| Async `sendRequest()` | Yes (if durability needed) | No | `sendRequestThroughOutbox` preserves `reply_to` |
-| Async `sendRequest()` (fire-and-forget OK) | No | No | If request loss is acceptable |
+| Async `sendRequest()` | Yes — use `sendAsyncRequestThroughOutbox` | Only for side effects | Outbox ensures request delivery |
+| Async `sendRequest()` (fire-and-forget OK) | No | No | Use `RequestReplyService.sendRequest()` directly |
+
+### Using `sendAsyncRequestThroughOutbox`
+
+Prefer `sendAsyncRequestThroughOutbox` over manually building envelopes:
+
+- **TypeScript enforces `replyTo`**: The `AsyncRequestEventContext` type requires `replyTo`, catching errors at compile time.
+- **Automatic envelope construction**: No need to manually call `createEvent` — the method handles it.
+- **Returns `correlationId`**: Useful for tracking async responses.
+- **Same reliability**: Delegates to `saveToOutbox` internally, benefiting from the same retry and DLQ pipeline.
 
 For full outbox setup details, see [Outbox Configuration](outbox-configuration.md).
 

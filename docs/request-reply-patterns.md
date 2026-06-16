@@ -492,7 +492,68 @@ async onCreditCheckRequested(event: EventEnvelope<CreditCheckRequestedData>): Pr
 
 ---
 
-## 9. API Reference
+## 9. Combining Request-Reply with the Outbox
+
+### Sync Request-Reply + Outbox
+
+For synchronous request-reply (`request()`), the outbox is typically **not needed for the request itself** because NATS handles the reply inbox. However, if the response handler triggers side effects that need transactional safety, use the outbox for those side effects:
+
+```typescript
+// Sync request — no outbox needed for the request
+const response = await this.requestReply.request<ReqData, ResData>(
+  subject, payload, { context, timeoutMs: 10000 },
+);
+
+// Side effects triggered by the response — use outbox for reliability
+const sideEffectEvent = createEvent(response.data, sideEffectContext);
+await this.outboxService.saveToOutbox(sideEffectEvent, sideEffectSubject);
+```
+
+### Async Request-Reply + Outbox
+
+For asynchronous request-reply, **route the initial request through the outbox** to guarantee delivery even if the service restarts:
+
+```typescript
+// High-level API — builds envelope automatically
+const result = await this.outboxService.sendAsyncRequestThroughOutbox({
+  subject: requestSubject,
+  payload: { clientId },
+  context: {
+    type: 'credit.check.requested',
+    version: '1.0.0',
+    producer: 'debt-service',
+    companyId,
+    actorType: ActorType.SYSTEM,
+    actorId: 'debt-service',
+    correlationId: generateUuidV7(),
+    replyTo: replySubject,
+  },
+});
+
+// Use result.correlationId to track the async response
+```
+
+Or use the low-level API with a pre-built envelope:
+
+```typescript
+// Low-level API — for cases where you need to build the envelope manually
+const event = createEvent({ clientId }, context);
+await this.outboxService.sendRequestThroughOutbox(event, subject);
+```
+
+### Why sendAsyncRequestThroughOutbox over sendRequestThroughOutbox?
+
+| Aspect | `sendAsyncRequestThroughOutbox` | `sendRequestThroughOutbox` |
+|--------|----------------------------------|---------------------------|
+| Envelope | Built automatically | Pre-built by caller |
+| replyTo validation | TypeScript-enforced via `AsyncRequestEventContext` | Runtime-only via `ensureReplyToPresent()` |
+| API style | High-level (subject + payload + context) | Low-level (envelope + subject) |
+| Use when | You have raw payload and context | You already have an `EventEnvelope` |
+| Returns | `{ correlationId }` for response tracking | `void` |
+
+---
+
+## 10. API Reference
 
 ### `RequestReplyService`
 
@@ -526,7 +587,7 @@ async onCreditCheckRequested(event: EventEnvelope<CreditCheckRequestedData>): Pr
 
 ---
 
-## 10. Related Documentation
+## 11. Related Documentation
 
 - [Event & Messaging Convention](event-messaging-convention.md) — Full convention specification
 - [AI Agent Guidelines](ai-agent-guidelines.md) — Step-by-step event creation guide

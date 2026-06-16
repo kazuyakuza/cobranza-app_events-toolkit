@@ -519,7 +519,11 @@ OutboxModule.forRoot({
 
 #### Request-Reply Through the Outbox
 
-For async request-reply patterns, use `sendRequestThroughOutbox` to persist the request event with `reply_to` intact:
+The outbox module supports async request-reply patterns through two APIs.
+
+##### Low-Level API — `sendRequestThroughOutbox`
+
+For cases where you already have a pre-built envelope, use `sendRequestThroughOutbox`:
 
 ```typescript
 import {
@@ -559,6 +563,58 @@ class DebtService {
   }
 }
 ```
+
+##### High-Level API — `sendAsyncRequestThroughOutbox`
+
+For a simpler API that builds the envelope for you, use `sendAsyncRequestThroughOutbox`:
+
+```typescript
+import {
+  OutboxService, SubjectBuilder, EventContext,
+  ActorType, generateUuidV7,
+} from '@cobranza-apps/events-toolkit';
+
+class DebtService {
+  constructor(
+    private readonly outboxService: OutboxService,
+    private readonly subjectBuilder: SubjectBuilder,
+  ) {}
+
+  async requestCreditCheck(clientId: string, companyId: string): Promise<string> {
+    const requestSubject = this.subjectBuilder.build({
+      companyId, domain: 'credit', entity: 'check', action: 'requested', version: '1',
+    });
+
+    const replySubject = this.subjectBuilder.build({
+      companyId, domain: 'credit', entity: 'check', action: 'completed', version: '1',
+    });
+
+    const result = await this.outboxService.sendAsyncRequestThroughOutbox({
+      subject: requestSubject,
+      payload: { clientId },
+      context: {
+        type: 'credit.check.requested',
+        version: '1.0.0',
+        producer: 'debt-service',
+        companyId,
+        actorType: ActorType.SYSTEM,
+        actorId: 'debt-service',
+        correlationId: generateUuidV7(),
+        replyTo: replySubject,
+      },
+    });
+
+    return result.correlationId;
+  }
+}
+```
+
+##### Recommended Patterns
+
+| Pattern | Approach |
+|---------|----------|
+| **Sync Request-Reply** (`request()`) | Bypass the outbox for the request — you're waiting for the response anyway. Use the outbox only for side effects triggered by the response. |
+| **Async Request-Reply** (`sendRequest()` / `sendAsyncRequestThroughOutbox`) | Route the initial request through the outbox to guarantee delivery, even if the service restarts. Use `sendAsyncRequestThroughOutbox` for the simplest API, or `sendRequestThroughOutbox` if you need to build the envelope manually. |
 
 See [Request-Reply Patterns](docs/request-reply-patterns.md) for full async pattern documentation and [Outbox Configuration](docs/outbox-configuration.md) for request-reply outbox guidance.
 

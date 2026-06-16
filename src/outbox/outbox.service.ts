@@ -14,6 +14,9 @@ import {
   createDlqEnvelope,
 } from './outbox.utils';
 import { ensureReplyToPresent } from './outbox-request-reply.helpers';
+import { createEvent } from '../common/utils/event.factory';
+import { SendAsyncRequestThroughOutboxOptions } from './send-async-request-through-outbox-options.interface';
+import { SendAsyncRequestThroughOutboxResult } from './send-async-request-through-outbox-result.interface';
 import {
   logOutboxSaved,
   toOutboxLogContext,
@@ -75,6 +78,24 @@ export class OutboxService implements OnModuleDestroy {
   async sendRequestThroughOutbox(event: EventEnvelope<unknown>, subject: string): Promise<void> {
     ensureReplyToPresent(event);
     await this.saveToOutbox(event, subject);
+  }
+
+  /**
+   * Builds an event envelope from payload and context, validates replyTo,
+   * and persists it to the outbox for asynchronous request-reply delivery.
+   *
+   * Unlike sendRequestThroughOutbox which takes a pre-built envelope,
+   * this method constructs the envelope internally, providing a
+   * higher-level API that mirrors RequestReplyService.sendRequest().
+   *
+   * @typeParam T - Request payload type.
+   */
+  async sendAsyncRequestThroughOutbox<T>(
+    options: SendAsyncRequestThroughOutboxOptions<T>,
+  ): Promise<SendAsyncRequestThroughOutboxResult> {
+    const envelope = createEvent(options.payload, options.context);
+    await this.saveToOutbox(envelope, options.subject);
+    return { correlationId: envelope.correlation_id };
   }
 
   /** Starts the background processor that polls for pending outbox events. */

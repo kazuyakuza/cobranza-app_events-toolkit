@@ -20,3 +20,6 @@ export { OutboxServiceOptions, OUTBOX_SERVICE_OPTIONS_TOKEN } from './outbox-ser
 export { OutboxRequestReplyException, OutboxRequestReplyExceptionOptions } from './outbox-request-reply.exception';
 export { TransactionContext, TypeormQueryRunnerContext } from './transaction-context.interface';
 export { SaveInTransactionParams } from './save-in-transaction-params.interface';
+export { AsyncRequestEventContext } from './async-request-event-context.interface';
+export { SendAsyncRequestThroughOutboxOptions } from './send-async-request-through-outbox-options.interface';
+export { SendAsyncRequestThroughOutboxResult } from './send-async-request-through-outbox-result.interface';

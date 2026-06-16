@@ -202,10 +202,11 @@ The Outbox module works transparently with request-reply events. When a request 
 
 | Pattern | Outbox for Request? | Outbox for Response? |
 | ------- | ------------------- | -------------------- |
-| Sync (`request()`) | ❌ No — uses NATS built-in reply | ❌ No — NATS handles the reply inbox |
-| Async (`sendRequest()`) | ✅ Yes — saves request to outbox, processor publishes with `reply_to` intact | ⚠️ Only if handler has side effects that need transactional safety |
+| Sync `request()` | ❌ No — uses NATS built-in reply | ❌ No — NATS handles the reply inbox |
+| Async `sendRequest()` | ✅ Yes — use `sendAsyncRequestThroughOutbox` for guaranteed delivery | ⚠️ Only if handler has side effects needing transactional safety |
+| Async `sendRequest()` (fire-and-forget OK) | ❌ No — use `RequestReplyService.sendRequest()` directly | ❌ No |
 
-### Async Request Through Outbox
+### Async Request Through Outbox (Low-Level)
 
 Use `sendRequestThroughOutbox` for async request-reply flows where the request must survive service restarts:
 
@@ -246,6 +247,33 @@ class DebtService {
 }
 ```
 
+### High-Level API — `sendAsyncRequestThroughOutbox`
+
+The `sendAsyncRequestThroughOutbox` method provides a simpler API that builds the envelope internally:
+
+```typescript
+const result = await this.outboxService.sendAsyncRequestThroughOutbox({
+  subject: requestSubject,
+  payload: { clientId },
+  context: {
+    type: 'credit.check.requested',
+    version: '1.0.0',
+    producer: 'debt-service',
+    companyId,
+    actorType: ActorType.SYSTEM,
+    actorId: 'debt-service',
+    correlationId: generateUuidV7(),
+    replyTo: replySubject,
+  },
+});
+
+// Use result.correlationId to track the async response
+```
+
+The `context` parameter requires `replyTo` (enforced by TypeScript via `AsyncRequestEventContext`). This ensures request-reply events always have a response routing subject.
+
+The method returns a `SendAsyncRequestThroughOutboxResult` with the event's `correlationId`, which can be used to correlate the async response when it arrives.
+
 ### Response Handling
 
 Response handlers typically do **not** need the outbox pattern unless they perform other side effects that require transactional safety. Use `RequestReplyService.sendResponse()` or `ProducerService.publish()` directly:
@@ -267,10 +295,11 @@ async onCreditCheckRequested(event: EventEnvelope<CreditCheckRequestedData>): Pr
 }
 ```
 
-### Why `sendRequestThroughOutbox` instead of `saveToOutbox`?
+### Why use `sendAsyncRequestThroughOutbox` or `sendRequestThroughOutbox` instead of `saveToOutbox`?
 
-- `sendRequestThroughOutbox` validates that `reply_to` is set before saving. Calling `saveToOutbox` with an event missing `reply_to` would result in a fire-and-forget event, silently breaking the request-reply flow.
-- `sendRequestThroughOutbox` is self-documenting: the method name clearly communicates that the event is part of a request-reply exchange.
+- Both methods validate that `reply_to` is present either at compile time (`sendAsyncRequestThroughOutbox` via `AsyncRequestEventContext` type) or at runtime (`sendRequestThroughOutbox` via `ensureReplyToPresent()`). Calling `saveToOutbox` with an event missing `reply_to` would result in a fire-and-forget event, silently breaking the request-reply flow.
+- The method names clearly communicate that the event is part of a request-reply exchange.
+- `sendAsyncRequestThroughOutbox` returns `correlationId` for response tracking.
 
 ### DLQ Preservation
 
