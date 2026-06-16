@@ -1,3 +1,4 @@
+import { expect } from '@jest/globals';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { MockProducerService } from './mock-producer.service';
 import { PublishedEvent } from './published-event.interface';
