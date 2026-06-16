@@ -1,6 +1,7 @@
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { Type, DynamicModule, ForwardReference } from '@nestjs/common';
 import { OutboxServiceOptions } from './outbox-service-options.interface';
+import { TransactionContext } from './transaction-context.interface';
 
 /** Injection token for the OutboxRepository provider selected by the module configuration. */
 export const OUTBOX_REPOSITORY_TOKEN = 'OUTBOX_REPOSITORY';
@@ -32,6 +33,8 @@ export interface SaveOutboxEntryParams {
   event: EventEnvelope<unknown>;
   subject: string;
   metadata?: unknown;
+  /** Optional transaction context for inserting the event within an active database transaction. */
+  transactionContext?: TransactionContext;
 }
 
 /** Persistence contract for the outbox module. */

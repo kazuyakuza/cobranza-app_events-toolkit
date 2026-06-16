@@ -3,6 +3,7 @@ import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { OutboxLogContext, OutboxErrorLogContext } from '../logging/event-logger.service';
 import { OutboxEntry } from './outbox.types';
 import { OutboxServiceDeps, OUTBOX_SERVICE_DEPS_TOKEN } from './outbox-service-deps.interface';
+import { SaveInTransactionParams } from './save-in-transaction-params.interface';
 import { OutboxServiceOptions } from './outbox-service-options.interface';
 import { OutboxErrorContextParams } from './outbox-error-context-params.interface';
 import {
@@ -54,6 +55,16 @@ export class OutboxService implements OnModuleDestroy {
   async saveToOutbox(event: EventEnvelope<unknown>, subject: string): Promise<void> {
     await this.repository.save({ event, subject });
     this.logOutboxSaved(event, subject);
+  }
+
+  /** Persists an event to the outbox within an active database transaction. */
+  async saveInTransaction(params: SaveInTransactionParams): Promise<void> {
+    await this.repository.save({
+      event: params.event,
+      subject: params.subject,
+      transactionContext: params.transactionContext,
+    });
+    this.logOutboxSaved(params.event, params.subject);
   }
 
   /** Persists a request-reply event to the outbox after validating `reply_to` is present. */
