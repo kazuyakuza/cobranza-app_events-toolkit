@@ -2,38 +2,70 @@ import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { MockProducerService } from './mock-producer.service';
 import { PublishedEvent } from './published-event.interface';
 
+/** Filter criteria for matching published events in assertions. */
 export interface EventMatchOptions {
+  /** Exact NATS subject to match. */
   subject?: string;
+  /** Event type in dot-notation (e.g. `'payment.proof.uploaded'`). */
   eventType?: string;
+  /** Tenant UUID to match against `company_id`. */
   companyId?: string;
 }
 
+/** Expected envelope field values for `expectEnvelope` assertions. */
 export interface EnvelopeExpectations {
+  /** Expected event type. */
   type?: string;
+  /** Expected schema version. */
   version?: string;
+  /** Expected producing microservice name. */
   producer?: string;
+  /** Expected tenant UUID. */
   company_id?: string;
+  /** Expected actor type. */
   actor_type?: string;
+  /** Expected actor identifier. */
   actor_id?: string;
+  /** Expected correlation ID. */
   correlation_id?: string;
 }
 
+/**
+ * Asserts that at least one event was published to the given NATS subject.
+ * @param producer - The mock producer service to inspect.
+ * @param subject - The exact subject string to match.
+ */
 export function expectEventPublished(producer: MockProducerService, subject: string): void {
   const events = producer.getPublishedEvents();
   const matching = events.filter((e) => e.subject === subject);
   expect(matching.length).toBeGreaterThan(0);
 }
 
+/**
+ * Asserts that no events have been published.
+ * @param producer - The mock producer service to inspect.
+ */
 export function expectNoEventsPublished(producer: MockProducerService): void {
   expect(producer.count).toBe(0);
 }
 
+/**
+ * Asserts that at least one published event matches the given filter criteria.
+ * @param producer - The mock producer service to inspect.
+ * @param options - Filter criteria (subject, eventType, companyId).
+ */
 export function expectEventWithMatch(producer: MockProducerService, options: EventMatchOptions): void {
   const events = producer.getPublishedEvents();
   const matching = filterPublishedEvents(events, options);
   expect(matching.length).toBeGreaterThan(0);
 }
 
+/**
+ * Asserts that an event envelope's fields match the expected values.
+ * Only fields present in `expectations` are checked; omitted fields are ignored.
+ * @param envelope - The event envelope to validate.
+ * @param expectations - Expected field values.
+ */
 export function expectEnvelope(envelope: EventEnvelope<unknown>, expectations: EnvelopeExpectations): void {
   const assertions = buildEnvelopeAssertions(envelope, expectations);
   for (const assertion of assertions) {
