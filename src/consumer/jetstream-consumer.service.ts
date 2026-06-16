@@ -4,9 +4,9 @@ import { plainToInstance } from 'class-transformer';
 import { validateSync } from 'class-validator';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { EventConsumerException } from '../common/errors/event-consumer.exception';
-import { encodeEvent } from '../common/utils/serialization.utils';
-import { EventLoggerService, EventLogContext, EventErrorLogContext } from '../logging/event-logger.service';
+import { EventLoggerService, EventLogContext } from '../logging/event-logger.service';
 import { ConsumerService } from './consumer.service';
+import { ConsumerDlqHandler } from './consumer-dlq.handler';
 import { DispatchOptions } from './dispatch-options.interface';
 import { JetStreamConsumerDeps, JETSTREAM_CONSUMER_DEPS_TOKEN } from './jetstream-consumer-deps.interface';
 import {
@@ -15,7 +15,6 @@ import {
   envelopeToContext,
   ValidationErrorOptions,
   ErrorHandlingOptions,
-  DlqRoutingOptions,
 } from './subscribe-options.interface';
 import { MoveToDlqOptions } from './move-to-dlq-options.interface';
 
@@ -32,12 +31,18 @@ export class JetStreamConsumerService {
   private readonly consumerService: ConsumerService;
   private readonly logger: EventLoggerService;
   private readonly dlqSubjectBuilder: (subject: string) => string;
+  private readonly dlqHandler: ConsumerDlqHandler;
 
   constructor(@Inject(JETSTREAM_CONSUMER_DEPS_TOKEN) deps: JetStreamConsumerDeps) {
     this.jetStream = deps.jetStream;
     this.consumerService = deps.consumerService;
     this.logger = deps.logger;
     this.dlqSubjectBuilder = deps.dlqSubjectBuilder ?? defaultDlqSubjectBuilder;
+    this.dlqHandler = new ConsumerDlqHandler({
+      jetStream: this.jetStream,
+      logger: this.logger,
+      dlqSubjectBuilder: this.dlqSubjectBuilder,
+    });
   }
 
   /**
@@ -70,39 +75,7 @@ export class JetStreamConsumerService {
    * @param options - Message, reason, and optional subject/payload for DLQ routing.
    */
   async moveToDlq(options: MoveToDlqOptions): Promise<void> {
-    const subject = options.subject ?? options.message.subject;
-    const dlqSubject = this.dlqSubjectBuilder(subject);
-    const dlqPayload = this.buildManualDlqPayload(subject, options);
-    await this.publishDlqOrNak(dlqSubject, dlqPayload, options.message, subject);
-  }
-
-  /** Builds a DLQ payload for manual routing via {@link moveToDlq}. */
-  private buildManualDlqPayload(subject: string, options: MoveToDlqOptions): Record<string, unknown> {
-    return {
-      originalSubject: subject,
-      originalPayload: options.originalPayload ?? {},
-      error: {
-        name: 'ManualDLQRouting',
-        message: options.reason,
-      },
-      failedAt: new Date().toISOString(),
-    };
-  }
-
-  /** Publishes a DLQ payload; naks the message if publish fails. */
-  private async publishDlqOrNak(
-    dlqSubject: string,
-    dlqPayload: Record<string, unknown>,
-    msg: JsMsg,
-    originalSubject: string,
-  ): Promise<void> {
-    try {
-      await this.jetStream.publish(dlqSubject, encodeEvent(dlqPayload));
-      msg.ack();
-    } catch (publishError: unknown) {
-      this.logGeneralError(publishError, originalSubject);
-      msg.nak();
-    }
+    return this.dlqHandler.moveToDlq(options);
   }
 
   private async processSubscription(subscription: AsyncIterable<JsMsg>, subject: string): Promise<void> {
@@ -184,7 +157,7 @@ export class JetStreamConsumerService {
 
   private async handleError(options: ErrorHandlingOptions): Promise<void> {
     if (options.error instanceof EventConsumerException) {
-      await this.routeToDlq({
+      await this.dlqHandler.routeToDlq({
         exception: options.error,
         msg: options.msg,
         subject: options.subject,
@@ -196,49 +169,6 @@ export class JetStreamConsumerService {
     this.logGeneralError(options.error, options.subject);
   }
 
-  private async routeToDlq(options: DlqRoutingOptions): Promise<void> {
-    const { exception, msg, subject, originalPayload } = options;
-    const dlqSubject = this.dlqSubjectBuilder(subject);
-    const errorCtx = this.exceptionToErrorContext(exception, subject);
-    this.logger.logEventDlq(errorCtx);
-    const dlqPayload = this.buildExceptionDlqPayload(subject, exception, originalPayload);
-    await this.publishDlqOrNak(dlqSubject, dlqPayload, msg, subject);
-  }
-
-  /** Builds a DLQ payload from an {@link EventConsumerException}, including optional metadata. */
-  private buildExceptionDlqPayload(
-    subject: string,
-    exception: EventConsumerException,
-    originalPayload?: Record<string, unknown>,
-  ): Record<string, unknown> {
-    const errorInfo = this.buildErrorInfo(exception);
-    return {
-      originalSubject: exception.originalSubject ?? subject,
-      originalPayload: originalPayload ?? {},
-      error: errorInfo,
-      failedAt: new Date().toISOString(),
-    };
-  }
-
-  /** Extracts error info from an {@link EventConsumerException}, including optional DLQ metadata. */
-  private buildErrorInfo(exception: EventConsumerException): Record<string, unknown> {
-    const info: Record<string, unknown> = {
-      name: exception.name,
-      message: exception.message,
-      eventId: exception.eventId,
-      eventType: exception.eventType,
-      correlationId: exception.correlationId,
-      stack: exception.stack,
-    };
-    if (exception.dlqReason !== undefined) {
-      info.dlqReason = exception.dlqReason;
-    }
-    if (exception.retryCount !== undefined) {
-      info.retryCount = exception.retryCount;
-    }
-    return info;
-  }
-
   private logGeneralError(error: unknown, subject: string): void {
     const err = error instanceof Error ? error : new Error(String(error));
     this.logger.logEventError({
@@ -248,19 +178,6 @@ export class JetStreamConsumerService {
       error: err.message,
       stack: err.stack,
     });
-  }
-
-  private exceptionToErrorContext(exception: EventConsumerException, subject: string): EventErrorLogContext {
-    return {
-      eventId: exception.eventId,
-      eventType: exception.eventType,
-      subject,
-      correlationId: exception.correlationId,
-      error: exception.message,
-      stack: exception.stack,
-      dlqReason: exception.dlqReason,
-      retryCount: exception.retryCount,
-    };
   }
 
   private toLogContext(subject: string, envelope: EventEnvelope<unknown>): EventLogContext {
