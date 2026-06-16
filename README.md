@@ -515,6 +515,8 @@ OutboxModule.forRoot({
 })
 ```
 
+> **Transactional outbox:** For PostgreSQL + TypeORM services, `saveInTransaction` inserts outbox events within the caller's active database transaction, ensuring atomicity with business writes. See [Transactional Outbox Usage Guide](docs/outbox-transactional-usage.md) for details and examples.
+
 #### Request-Reply Through the Outbox
 
 For async request-reply patterns, use `sendRequestThroughOutbox` to persist the request event with `reply_to` intact:

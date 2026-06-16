@@ -179,6 +179,21 @@ class PaymentService {
 }
 ```
 
+## Transactional Outbox (PostgreSQL + TypeORM)
+
+For microservices that use PostgreSQL with TypeORM (e.g., `ms-db-gateway`), the outbox module supports inserting events within the same transaction as business data. This ensures atomicity: if the business write fails, the outbox entry is rolled back too.
+
+### `saveToOutbox` vs `saveInTransaction`
+
+| Aspect | `saveToOutbox` | `saveInTransaction` |
+|--------|---------------|---------------------|
+| Transaction scope | Independent INSERT | INSERT within caller's transaction |
+| Atomicity | Event persisted even if business logic fails | Rolled back with business logic on failure |
+| Use case | Fire-and-forget, SQLite services | PostgreSQL + TypeORM services |
+| `transactionContext` | Not applicable | Required |
+
+See [Transactional Outbox Usage Guide](outbox-transactional-usage.md) for full examples.
+
 ## Request-Reply with the Outbox
 
 The Outbox module works transparently with request-reply events. When a request event includes `reply_to`, the outbox processor preserves it through the entire publish-retry-DLQ pipeline.
