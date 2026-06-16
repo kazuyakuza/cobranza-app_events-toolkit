@@ -10,7 +10,9 @@ It is **EXTREMELY IMPORTANT** that all AI agents follow this workflow step by st
 
 ### 1. Task Origin
 
-- **Chat**: If a task is shared in chat (unless user indicates a TODO file), create new TODO file in `.agent/todos/<YYYYMMDD>/<YYYYMMDD>-todo-<number>.md` with the request.
+- **Chat**: When user share in chat
+  - a TODO file, proceed.
+  - a task, create new TODO file in `.agent/todos/<YYYYMMDD>/<YYYYMMDD>-todo-<number>.md` with the request.
 - **TODO File**: Primary source is `.agent/todos` directory; process files in chronological/numerical order; skip files with `-DONE` suffix.
 - **TODO File Format**:
   - **Line Items**: Each line is a task.
