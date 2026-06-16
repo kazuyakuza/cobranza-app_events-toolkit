@@ -59,20 +59,22 @@ class DebtService {
       version: '1',
     });
 
+    const context: AsyncRequestEventContext = {
+      type: 'credit.check.requested',
+      version: '1.0.0',
+      producer: 'debt-service',
+      companyId,
+      actorType: ActorType.SYSTEM,
+      actorId: 'debt-service',
+      correlationId: generateUuidV7(),
+      replyTo: replySubject,
+    };
+
     // sendAsyncRequestThroughOutbox builds the envelope and validates replyTo
     const result = await this.outboxService.sendAsyncRequestThroughOutbox({
       subject: requestSubject,
       payload: { clientId, fullName },
-      context: {
-        type: 'credit.check.requested',
-        version: '1.0.0',
-        producer: 'debt-service',
-        companyId,
-        actorType: ActorType.SYSTEM,
-        actorId: 'debt-service',
-        correlationId: generateUuidV7(),
-        replyTo: replySubject,
-      },
+      context,
     });
 
     return result.correlationId;
@@ -81,7 +83,7 @@ class DebtService {
 
 // ── 2. Low-level API (pre-built envelope) ───────────────────────────
 
-import { createEvent, EventEnvelope } from '@cobranza-apps/events-toolkit';
+import { createEvent } from '@cobranza-apps/events-toolkit';
 
 class DebtServiceLowLevel {
   constructor(
@@ -108,7 +110,7 @@ class DebtServiceLowLevel {
       version: '1',
     });
 
-    const context = {
+    const context: AsyncRequestEventContext = {
       type: 'credit.check.requested',
       version: '1.0.0',
       producer: 'debt-service',

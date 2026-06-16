@@ -211,7 +211,7 @@ The Outbox module works transparently with request-reply events. When a request 
 Use `sendRequestThroughOutbox` for async request-reply flows where the request must survive service restarts:
 
 ```typescript
-import { OutboxService, SubjectBuilder, EventContext, ActorType, generateUuidV7 } from '@cobranza-apps/events-toolkit';
+import { OutboxService, SubjectBuilder, EventContext, ActorType, generateUuidV7, createEvent } from '@cobranza-apps/events-toolkit';
 
 class DebtService {
   constructor(
@@ -239,7 +239,7 @@ class DebtService {
       replyTo: replySubject,
     };
 
-    const event = new CreditCheckRequestedEvent({ clientId }, context);
+    const event = createEvent({ clientId }, context);
 
     // Outbox ensures the request is published even if NATS is temporarily down
     await this.outboxService.sendRequestThroughOutbox(event, requestSubject);
