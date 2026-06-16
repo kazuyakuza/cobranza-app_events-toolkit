@@ -33,6 +33,13 @@ export class JetStreamConsumerService {
   private readonly dlqSubjectBuilder: (subject: string) => string;
   private readonly dlqHandler: ConsumerDlqHandler;
 
+  /**
+   * Creates a JetStreamConsumerService with the required module dependencies.
+   *
+   * Initializes the internal {@link ConsumerDlqHandler} for DLQ routing.
+   *
+   * @param deps - JetStream client, consumer service, event logger, and optional DLQ subject builder.
+   */
   constructor(@Inject(JETSTREAM_CONSUMER_DEPS_TOKEN) deps: JetStreamConsumerDeps) {
     this.jetStream = deps.jetStream;
     this.consumerService = deps.consumerService;

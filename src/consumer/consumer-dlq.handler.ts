@@ -33,6 +33,11 @@ export class ConsumerDlqHandler {
   private readonly logger: EventLoggerService;
   private readonly dlqSubjectBuilder: (subject: string) => string;
 
+  /**
+   * Creates a ConsumerDlqHandler with the required JetStream, logger, and subject-builder dependencies.
+   *
+   * @param deps - JetStream client, event logger, and DLQ subject builder function.
+   */
   constructor(deps: ConsumerDlqHandlerDeps) {
     this.jetStream = deps.jetStream;
     this.logger = deps.logger;
@@ -113,6 +118,7 @@ export class ConsumerDlqHandler {
     return info;
   }
 
+  /** Logs a general (non-exception) error that occurred during DLQ publish. */
   private logGeneralError(error: unknown, subject: string): void {
     const err = error instanceof Error ? error : new Error(String(error));
     this.logger.logEventError({
@@ -124,6 +130,7 @@ export class ConsumerDlqHandler {
     });
   }
 
+  /** Converts an {@link EventConsumerException} into a structured log context for error/DLQ logging. */
   private exceptionToErrorContext(exception: EventConsumerException, subject: string): EventErrorLogContext {
     return {
       eventId: exception.eventId,
