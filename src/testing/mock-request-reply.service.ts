@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { EventContext } from '../common/envelope/event-context.interface';
+import { generateEventId } from '../common/utils/uuid.utils';
+import { nowIso } from '../common/utils/date.utils';
 import {
   RequestReplyRequestOptions,
   RequestReplyResponse,
@@ -47,6 +49,10 @@ export class MockRequestReplyService {
   }
 
   isRequestReplyMessage(event: EventEnvelope<unknown>): boolean {
+    return this.hasNonEmptyReplyTo(event);
+  }
+
+  private hasNonEmptyReplyTo(event: EventEnvelope<unknown>): boolean {
     return typeof event.reply_to === 'string' && event.reply_to.length > 0;
   }
 
@@ -62,8 +68,8 @@ export class MockRequestReplyService {
       causationId: options.requestEvent.id,
     };
     return new EventEnvelope<R>({
-      id: 'evt_mock-response-id',
-      produced_at: new Date().toISOString(),
+      id: generateEventId(),
+      produced_at: nowIso(),
       type: preservedContext.type,
       version: preservedContext.version,
       producer: preservedContext.producer,

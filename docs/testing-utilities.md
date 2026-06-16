@@ -134,7 +134,7 @@ Replaces `RequestReplyService`. Records request/response calls and returns confi
 | `getSendRequestCalls()` | Returns recorded `SendRequestOptions[]` |
 | `clear()` | Resets all calls and restores default mock response |
 
-## Assertion Helplers
+## Assertion Helpers
 
 Import from `@cobranza-apps/events-toolkit`:
 
@@ -233,6 +233,7 @@ import { Test } from '@nestjs/testing';
 import {
   EventsToolkitTestModule,
   MockConsumerService,
+  ActorType,
 } from '@cobranza-apps/events-toolkit';
 import { EventEnvelope } from '@cobranza-apps/events-toolkit';
 
@@ -258,7 +259,7 @@ describe('NotificationHandler', () => {
       produced_at: new Date().toISOString(),
       producer: 'payment-service',
       company_id: '550e8400-e29b-41d4-a716-446655440000',
-      actor_type: 'system' as any,
+      actor_type: ActorType.SYSTEM,
       actor_id: 'system',
       correlation_id: '660e8400-e29b-41d4-a716-446655440001',
       data: { amount: 250 },
