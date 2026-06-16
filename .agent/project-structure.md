@@ -15,6 +15,7 @@
 - request-reply/ - RequestReplyService and type definitions (barrel: index.ts)
 - outbox/ - OutboxModule, SqliteOutboxRepository, PostgresOutboxRepository, shared types (barrel: index.ts)
 - logging/ - EventLoggerService (Winston-based) (barrel: index.ts)
+- testing/ - Mock services, test module, and assertion helpers for unit-testing (barrel: index.ts)
 
 # Other folders
 

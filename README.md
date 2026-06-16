@@ -676,6 +676,41 @@ npm run format      # Prettier
 docker run -p 4222:4222 nats:latest -js
 ```
 
+### Testing Utilities
+
+The toolkit provides mock services, a NestJS test module, and Jest assertion helpers for unit-testing microservices that depend on events-toolkit — no NATS connection required.
+
+```typescript
+import { Test } from '@nestjs/testing';
+import {
+  EventsToolkitTestModule,
+  MockProducerService,
+  expectEventPublished,
+} from '@cobranza-apps/events-toolkit';
+
+describe('PaymentService', () => {
+  let service: PaymentService;
+  let mockProducer: MockProducerService;
+
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      imports: [EventsToolkitTestModule.forRoot()],
+      providers: [PaymentService],
+    }).compile();
+
+    service = module.get(PaymentService);
+    mockProducer = module.get(MockProducerService);
+  });
+
+  it('should publish an event', async () => {
+    await service.uploadProof({ companyId: '...', amount: 250 });
+    expectEventPublished(mockProducer, 'company.550e.payment.proof.uploaded.v1');
+  });
+});
+```
+
+Full documentation: [`docs/testing-utilities.md`](docs/testing-utilities.md)
+
 ---
 
 ## Related Documentation

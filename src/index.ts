@@ -31,3 +31,6 @@ export {
   EventsToolkitLoggingOptions,
   EventsToolkitConsumerOptions,
 } from './events-toolkit-options.interface';
+
+// ── Testing ──
+export * from './testing';
