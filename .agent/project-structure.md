@@ -13,7 +13,7 @@
 - consumer/ - ConsumerModule, ConsumerService, JetStreamConsumerService, RequestReplyConsumerService, provider factories, and message processor (barrel: index.ts)
 - consumer/decorators/ - @OnEvent() and @OnRequestReply() decorators, explorers
 - request-reply/ - RequestReplyService and type definitions (barrel: index.ts)
-- outbox/ - OutboxModule, SqliteOutboxRepository, PostgresOutboxRepository, shared types (barrel: index.ts)
+- outbox/ - OutboxModule, SqliteOutboxRepository, PostgresOutboxRepository, transaction context types, shared types (barrel: index.ts)
 - logging/ - EventLoggerService (Winston-based) (barrel: index.ts)
 - testing/ - Mock services, test module, and assertion helpers for unit-testing (barrel: index.ts)
 

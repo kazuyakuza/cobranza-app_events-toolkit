@@ -14,6 +14,17 @@ The project is actively implementing request-reply communication patterns. Task 
 - Task "initialize project info" completed: created `product.md`, `context.md`, `architecture.md`, `tech.md`.
 - Branch `feat/initialize-project-info-and-readme` created.
 
+### 2026-06-16 — Task 2: Transactional Outbox Hook
+- Added `TransactionContext` and `TypeormQueryRunnerContext` interfaces for discriminated transaction context support.
+- Added `SaveInTransactionParams` interface to encapsulate event, subject, and transaction context (max-2-params rule).
+- Extended `SaveOutboxEntryParams` with optional `transactionContext` field.
+- Added `resolveQueryExecutor()` private method to `PostgresOutboxRepository` for routing INSERT queries to the transaction context's `queryRunner` when provided.
+- Added `saveInTransaction()` method to `OutboxService` for persisting events within an active database transaction.
+- Exported new types (`TransactionContext`, `TypeormQueryRunnerContext`, `SaveInTransactionParams`) via barrel file.
+- Created `docs/outbox-transactional-usage.md` with full usage guide, TypeORM example, and comparison table.
+- Updated `docs/outbox-configuration.md` with transactional outbox section.
+- Branch: `feat/transactional-outbox`.
+
 ### 2026-06-14 — Task 5: Response Event Naming Conventions
 - Added `RESPONSE_SUFFIX` constant (`.response`), `SubjectParseResult` type, `parseSubjectSegments()` helper, and `buildResponseSubject()` function in `src/common/utils/subject.builder.ts`.
 - Exported new symbols (`buildResponseSubject`, `RESPONSE_SUFFIX`, `SubjectParseResult`) via barrel files.
