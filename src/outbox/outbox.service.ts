@@ -1,11 +1,9 @@
 import { Injectable, Inject, OnModuleDestroy } from '@nestjs/common';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
-import { OutboxLogContext, OutboxErrorLogContext } from '../logging/event-logger.service';
 import { OutboxEntry } from './outbox.types';
 import { OutboxServiceDeps, OUTBOX_SERVICE_DEPS_TOKEN } from './outbox-service-deps.interface';
 import { SaveInTransactionParams } from './save-in-transaction-params.interface';
 import { OutboxServiceOptions } from './outbox-service-options.interface';
-import { OutboxErrorContextParams } from './outbox-error-context-params.interface';
 import {
   buildDlqSubject,
   parseEnvelope,
@@ -16,6 +14,12 @@ import {
   createDlqEnvelope,
 } from './outbox.utils';
 import { ensureReplyToPresent } from './outbox-request-reply.helpers';
+import {
+  logOutboxSaved,
+  toOutboxLogContext,
+  toOutboxErrorLogContext,
+  logProcessorError,
+} from './outbox-logging.helpers';
 
 const DEFAULTS: Required<OutboxServiceOptions> = {
   enabled: true,
@@ -54,7 +58,7 @@ export class OutboxService implements OnModuleDestroy {
   /** Persists an event envelope to the outbox for asynchronous delivery. */
   async saveToOutbox(event: EventEnvelope<unknown>, subject: string): Promise<void> {
     await this.repository.save({ event, subject });
-    this.logOutboxSaved(event, subject);
+    logOutboxSaved({ event, subject, logger: this.logger });
   }
 
   /** Persists an event to the outbox within an active database transaction. */
@@ -64,7 +68,7 @@ export class OutboxService implements OnModuleDestroy {
       subject: params.subject,
       transactionContext: params.transactionContext,
     });
-    this.logOutboxSaved(params.event, params.subject);
+    logOutboxSaved({ event: params.event, subject: params.subject, logger: this.logger });
   }
 
   /** Persists a request-reply event to the outbox after validating `reply_to` is present. */
@@ -79,7 +83,7 @@ export class OutboxService implements OnModuleDestroy {
       return;
     }
     this.processorIntervalId = setInterval(() => {
-      this.processPendingEvents().catch((error: unknown) => this.logProcessorError(error));
+      this.processPendingEvents().catch((error: unknown) => logProcessorError({ error, logger: this.logger }));
     }, this.options.processorIntervalMs);
   }
 
@@ -134,13 +138,13 @@ export class OutboxService implements OnModuleDestroy {
 
   private async onPublishSuccess(entry: OutboxEntry): Promise<void> {
     await this.repository.markAsSent(entry.id);
-    this.logger.logOutboxProcessed(this.toOutboxLogContext(entry));
+    this.logger.logOutboxProcessed(toOutboxLogContext(entry));
   }
 
   private async onPublishError(entry: OutboxEntry, error: unknown): Promise<void> {
     const nextAttempt = entry.attempts + 1;
     await this.repository.markAsFailed(entry.id, extractErrorMessage(error));
-    this.logger.logOutboxFailed(this.toOutboxErrorLogContext({ entry, attempt: nextAttempt, error }));
+    this.logger.logOutboxFailed(toOutboxErrorLogContext({ entry, attempt: nextAttempt, error }));
     if (this.shouldRouteToDlq(nextAttempt)) {
       await this.routeToDlq(entry, error);
       return;
@@ -153,7 +157,7 @@ export class OutboxService implements OnModuleDestroy {
     const dlqEnvelope = createDlqEnvelope(parseEnvelope(entry), buildDlqPayload(entry, lastError));
     await this.producerService.publish(dlqSubject, dlqEnvelope);
     await this.repository.markAsSent(entry.id);
-    this.logger.logOutboxDlq(this.toOutboxErrorLogContext({ entry, attempt: entry.attempts + 1, error: lastError }));
+    this.logger.logOutboxDlq(toOutboxErrorLogContext({ entry, attempt: entry.attempts + 1, error: lastError }));
   }
 
   private shouldRouteToDlq(nextAttempt: number): boolean {
@@ -162,50 +166,5 @@ export class OutboxService implements OnModuleDestroy {
 
   private hasProcessorStarted(): boolean {
     return this.processorIntervalId !== null;
-  }
-
-  private logOutboxSaved(event: EventEnvelope<unknown>, subject: string): void {
-    this.logger.logOutboxSaved({
-      eventId: event.id,
-      eventType: event.type,
-      subject,
-      attempt: 0,
-      correlationId: event.correlation_id,
-      traceId: event.trace_id,
-    });
-  }
-
-  private toOutboxLogContext(entry: OutboxEntry): OutboxLogContext {
-    const envelope = parseEnvelope(entry);
-    return {
-      eventId: entry.id,
-      eventType: envelope.type,
-      subject: entry.subject,
-      attempt: entry.attempts + 1,
-      correlationId: envelope.correlation_id,
-      traceId: envelope.trace_id,
-    };
-  }
-
-  private toOutboxErrorLogContext(params: OutboxErrorContextParams): OutboxErrorLogContext {
-    const { entry, attempt, error } = params;
-    const err = error instanceof Error ? error : new Error(String(error));
-    return {
-      ...this.toOutboxLogContext(entry),
-      attempt,
-      error: err.message,
-      stack: err.stack,
-    };
-  }
-
-  private logProcessorError(error: unknown): void {
-    const err = error instanceof Error ? error : new Error(String(error));
-    this.logger.logEventError({
-      eventId: 'unknown',
-      eventType: 'unknown',
-      subject: 'outbox-processor',
-      error: err.message,
-      stack: err.stack,
-    });
   }
 }
