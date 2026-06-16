@@ -6,6 +6,21 @@ This guide provides step-by-step instructions for creating and consuming events 
 
 For the full convention specification, see [`event-messaging-convention.md`](event-messaging-convention.md).
 
+## Table of Contents
+
+- [Quick Reference: Convention Rules](#quick-reference-convention-rules)
+- [Step-by-Step: Creating a New Event Class](#step-by-step-creating-a-new-event-class)
+- [Step-by-Step: Naming New Events](#step-by-step-naming-new-events)
+- [Step-by-Step: Publishing Events](#step-by-step-publishing-events)
+- [Step-by-Step: Consuming Events](#step-by-step-consuming-events)
+- [Step-by-Step: Using the Outbox](#step-by-step-using-the-outbox)
+- [Request-Reply Guidelines](#request-reply-guidelines)
+- [Correlation & Causation Best Practices](#correlation--causation-best-practices)
+- [When to Throw EventConsumerException](#when-to-throw-eventconsumerexception)
+- [Validation Checklist](#validation-checklist)
+- [Common Mistakes](#common-mistakes)
+- [Public API Quick Reference](#public-api-quick-reference)
+
 ## Quick Reference: Convention Rules
 
 | Rule | Detail |
@@ -202,7 +217,7 @@ For the full decision-making guide, see [`request-reply-guidelines.md`](request-
 
 1. Always use `SubjectBuilder.build()` or `buildSubject()` for request subjects — never concatenate strings.
 2. Response subjects: prefer descriptive past-tense action (e.g., `calculated`). Use `buildResponseSubject()` only when no distinct outcome verb exists.
-3. Generate `correlation_id` as a UUID v4 once per transaction chain. Preserve it in responses via `buildResponseEnvelope()`.
+3. Generate `correlation_id` using `generateUuidV7()` once per transaction chain. Preserve it in responses via `buildResponseEnvelope()`. Note: the `@IsUUID('4')` validator accepts both UUIDv4 and UUIDv7 strings.
 4. Set `reply_to` only for async request-reply. Never set it for fire-and-forget events.
 5. All request-reply handlers MUST be idempotent. Use `correlation_id` for deduplication.
 6. For async request-reply with durability requirements, use `sendRequestThroughOutbox()` — do not use `saveToOutbox()` for request-reply events.
@@ -213,11 +228,99 @@ For the full decision-making guide, see [`request-reply-guidelines.md`](request-
 
 - [ ] Request subject: `company.{id}.{domain}.{entity}.{action}.v{version}`
 - [ ] Response subject: descriptive past-tense OR `.response` suffix
-- [ ] `correlation_id`: UUID v4, generated once, preserved across chain
+- [ ] `correlation_id`: Use `generateUuidV7()`, generated once, preserved across chain
 - [ ] `type`: matches `domain.entity.action` in request and response envelopes
 - [ ] `reply_to`: set on request only, not on fire-and-forget
 - [ ] Data classes: `class-validator` decorators on every field
 - [ ] Response handler: `@OnRequestReply` or `@OnEvent` with correct subject
+
+## Correlation & Causation Best Practices
+
+### What is `correlation_id`?
+
+`correlation_id` links all events that belong to the same transaction chain. It is **generated once** by the originating service and **propagated unchanged** through every subsequent event in the chain.
+
+### What is `causation_id`?
+
+`causation_id` identifies the specific event that **caused** the current event. Set `causation_id` to the `id` of the triggering event to trace cause-and-effect relationships.
+
+### Rules
+
+1. **Generate `correlation_id` once per chain**: The service that initiates a transaction creates the `correlation_id` using `generateUuidV7()`. All downstream events carry the same `correlation_id`.
+2. **Set `causation_id` to the parent event's `id`**: When service B receives event A and publishes event B as a result, event B's `causation_id` = event A's `id`.
+3. **Never regenerate `correlation_id` mid-chain**: Regenerating breaks traceability. If service C receives an event with `correlation_id`, the response MUST preserve it.
+4. **Use both for debugging**: `correlation_id` traces the full chain; `causation_id` traces the immediate parent. Together they form a directed acyclic graph (DAG) of event causality.
+
+### Example
+
+```typescript
+// Service A — originating event
+const context: EventContext = {
+  correlationId: generateUuidV7(),  // Generated once
+  causationId: undefined,             // No parent — this is the root
+  // ...
+};
+
+// Service B — receives A's event, publishes new event
+const newContext: EventContext = {
+  correlationId: eventA.correlation_id,  // Preserved from the chain
+  causationId: eventA.id,                 // Points to the event that caused this one
+  // ...
+};
+```
+
+### Anti-Patterns
+
+| Anti-Pattern | Why It's Wrong | Fix |
+|-------------|---------------|-----|
+| Generating a new `correlation_id` for each service hop | Breaks chain traceability | Preserve the original `correlation_id` |
+| Leaving `causation_id` empty in chained events | Loses parent-child relationship | Set to the triggering event's `id` |
+| Using `correlation_id` as `causation_id` | Confuses chain identity with causality | `correlation_id` = chain; `causation_id` = parent event |
+| Skipping `correlation_id` in request-reply responses | Breaks request-response correlation | `buildResponseEnvelope()` preserves it automatically |
+
+## When to Throw EventConsumerException
+
+### Decision Guide
+
+```
+1. Is the message permanently unprocessable (business rule violation)?
+   ├─ Yes → Throw EventConsumerException → routes to DLQ
+   └─ No  → 2. Is it a transient failure (network, external service down)?
+              ├─ Yes → Let NATS redeliver (throw a generic Error or let it bubble)
+              └─ No  → 3. Is it a validation error from malformed input?
+                         ├─ Yes (malicious/invalid) → Throw EventConsumerException
+                         └─ No  → Log and acknowledge (don't throw)
+```
+
+### When to Throw
+
+- **Business rule violation**: The event data violates a domain invariant (e.g., `amount <= 0`, `status` is invalid for the operation).
+- **Permanently invalid data**: The event payload is malformed in a way that retries won't fix.
+- **Unauthorized operation**: The actor type/ID doesn't have permission for the action.
+
+### When NOT to Throw
+
+- **Transient network failure**: Let NATS redeliver. The consumer will retry.
+- **External service temporarily unavailable**: Don't route to DLQ; let NATS retry.
+- **Expected business state**: If the event is valid but the handler decides to skip it (e.g., already processed), simply acknowledge without throwing.
+
+### Metadata Enrichment
+
+Use `EventConsumerException` with metadata fields for better DLQ observability:
+
+```typescript
+throw new EventConsumerException({
+  message: 'Payment amount must be positive',
+  eventId: event.id,
+  eventType: event.type,
+  correlationId: event.correlation_id,
+  dlqReason: 'Invalid payment amount',          // Human-readable DLQ reason
+  originalSubject: subject,                        // Original NATS subject
+  retryCount: 3,                                   // Number of delivery attempts
+});
+```
+
+These fields appear in the DLQ payload for monitoring and alerting systems.
 
 ## Validation Checklist
 

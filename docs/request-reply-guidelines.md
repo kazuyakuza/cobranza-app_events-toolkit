@@ -94,7 +94,7 @@ For detailed implementation pattern, see [Request-Reply Patterns §7](request-re
 
 ## Correlation ID Best Practices
 
-1. **Generate once per transaction chain**: Originating service creates `correlation_id` as a UUID v4 (current validation requires UUID v4; update `@IsUUID('4')` in source to accept UUIDv7 if that is the intended format).
+1. **Generate once per transaction chain**: The originating service creates a `correlation_id` using `generateUuidV7()`. Note: the `@IsUUID('4')` validator accepts both UUIDv4 and UUIDv7 strings, so this is compatible.
 2. **Preserve across boundaries**: `buildResponseEnvelope()` automatically preserves `correlation_id` from the request event.
 3. **Never regenerate mid-chain**: If service B receives a request with `correlation_id`, the response MUST carry the same `correlation_id`.
 4. **Combine with `causation_id`**: Set `causation_id` to the request event's `id` to trace causality.
@@ -128,6 +128,48 @@ For detailed implementation pattern, see [Request-Reply Patterns §7](request-re
 
 ---
 
+## Performance & Reliability Trade-Offs
+
+### Latency Characteristics
+
+| Pattern | Typical Latency | Best-Case | Worst-Case |
+|---------|----------------|-----------|------------|
+| Sync `request()` | 2× network RTT + processing time | ~5–50 ms | Timeout (5s default) |
+| Async `sendRequest()` | Single network RTT (request publication) | ~1–10 ms | Outbox publish time (~5 ms) |
+
+Under the sync pattern, the caller blocks for the full round-trip. Under async, the caller receives the `correlationId` immediately and processes the response when it arrives.
+
+### Throughput Under Load
+
+| Pattern | Caller Blocking | Memory per Request | Scalability |
+|---------|----------------|-------------------|-------------|
+| Sync `request()` | Yes — thread blocked | Minimal (NATS inbox) | Degrades under high concurrency; each request ties up a handler |
+| Async `sendRequest()` | No — fire-and-forget | Minimal | Scales horizontally; no thread pool contention |
+
+For high-throughput scenarios (>100 req/s per service), prefer async patterns.
+
+### Failure Modes & Recovery
+
+| Failure Mode | Sync Recovery | Async Recovery |
+|-------------|---------------|----------------|
+| Responder down | `RequestReplyException` → caller decides: retry or fail | Outbox retries with backoff (if using outbox) |
+| Network partition | Timeout → exception | NATS reconnects; outbox re-publishes |
+| Responder slow | Caller times out | No caller block; response arrives when ready |
+| Duplicate delivery | Idempotent handler must deduplicate | Idempotent handler must deduplicate |
+| Message lost | NATS JetStream guarantees delivery | Outbox guarantees at-least-once publish |
+
+### Combining with the Outbox for Reliability
+
+| Pattern | Outbox for Request? | Outbox for Side Effects? | Reliability Level |
+|---------|---------------------|--------------------------|-------------------|
+| Sync `request()` | No | Yes | Medium (request not guaranteed, side effects guaranteed) |
+| Async `sendRequest()` via outbox | Yes | Yes | High (both request and side effects guaranteed) |
+| Async `sendRequest()` direct | No | Yes | Medium (request not guaranteed, side effects guaranteed) |
+
+**Recommendation**: For async request-reply requiring guaranteed delivery, always use `sendAsyncRequestThroughOutbox`. For sync request-reply, the outbox is not needed for the request itself, but use it for any side effects triggered by the response.
+
+---
+
 ## AI Agent Rules for Naming New Request-Reply Events
 
 1. **Request subjects**: Follow standard convention `company.{id}.{domain}.{entity}.{action}.v{version}` — use past-tense action for the request intent (e.g., `requested`, `submitted`, `queried`).
@@ -135,13 +177,13 @@ For detailed implementation pattern, see [Request-Reply Patterns §7](request-re
 3. **Response subjects — alternative**: Use `buildResponseSubject()` to append `.response` suffix when no distinct outcome verb exists.
 4. **Never reuse a fire-and-forget subject** for request-reply — request subjects should clearly indicate a response is expected.
 5. **`reply_to` always set by the requester**: Never set `reply_to` in fire-and-forget events. Only set it for async request-reply patterns.
-6. **Correlation ID**: Always generate as a UUID v4 and propagate through the full chain.
+6. **Correlation ID**: Always generate using `generateUuidV7()` and propagate through the full chain.
 7. **Type field**: `type` in the envelope must match `domain.entity.action` (e.g., `credit.check.requested`, `credit.check.completed`).
 8. **Subject Builder**: Always use `SubjectBuilder.build()` or `buildSubject()` — never concatenate subject strings.
 9. **Naming checklist** (for AI agents creating new request-reply flows):
    - [ ] Request subject follows `company.{id}.{domain}.{entity}.{action}.v{version}`
    - [ ] Response subject uses past-tense action OR `.response` suffix
-   - [ ] `correlation_id` generated as UUID v4 and preserved in response
+   - [ ] `correlation_id`: Use `generateUuidV7()`, generated once, preserved across chain
    - [ ] `type` field matches `domain.entity.action` in both request and response
    - [ ] `reply_to` set only on async request side, not on fire-and-forget events
    - [ ] Both request and response data classes have `class-validator` decorators

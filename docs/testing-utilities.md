@@ -8,6 +8,14 @@ The testing utilities replace real NATS JetStream-dependent services with in-mem
 
 All mocks are registered via `EventsToolkitTestModule.forRoot()`, a NestJS `DynamicModule` that uses `useExisting` to alias mock services as their real service tokens.
 
+## Table of Contents
+
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Mock Services](#mock-services)
+- [Assertion Helpers](#assertion-helpers)
+- [Examples](#examples)
+
 ## Installation
 
 Import `EventsToolkitTestModule` in your `Test.createTestingModule()` setup:

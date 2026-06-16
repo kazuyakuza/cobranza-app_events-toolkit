@@ -2,6 +2,14 @@
 
 NATS + JetStream Event Standard v1.0
 
+## Table of Contents
+
+- [1. Purpose](#1-purpose)
+- [2. Subject Naming Convention](#2-subject-naming-convention-natsjetstream)
+- [3. Event Envelope (Payload Structure)](#3-event-envelope-payload-structure)
+- [4. Good Practices](#4-good-practices)
+- [5. Actor Types](#5-actor-types-enum)
+
 ## 1. Purpose
 
 This document defines the standard for **event naming**, **message envelope**, and **messaging patterns** used across all microservices in the Cobranza App platform.

@@ -31,6 +31,18 @@ NATS + JetStream event handling library for the Cobranza App microservices platf
 
 ---
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Installation](#installation)
+- [Core Concepts](#core-concepts)
+- [Usage](#usage)
+- [Architecture](#architecture)
+- [Guidelines for AI Agents](#guidelines-for-ai-agents)
+- [Development](#development)
+- [Related Documentation](#related-documentation)
+- [License](#license)
+
 ## Installation
 
 ```bash
@@ -459,6 +471,8 @@ class DebtServiceResponseHandler {
 
 ### Outbox Pattern
 
+For a decision-making guide on when to use the outbox, which backend to choose, and transactional vs normal persistence, see [Outbox Usage Guidelines](docs/outbox-usage-guidelines.md).
+
 For transactional safety, the Outbox module persists events before publishing. It supports two backends:
 
 | Backend  | Use Case                        | Service Type                                       |
@@ -775,10 +789,13 @@ Full documentation: [`docs/testing-utilities.md`](docs/testing-utilities.md)
 
 - [Event & Messaging Convention](docs/event-messaging-convention.md) — Full event standard specification
 - [Outbox Configuration](docs/outbox-configuration.md) — SQLite vs Postgres setup, service options, and migration guide
-- [AI Agent Guidelines](docs/ai-agent-guidelines.md) — Step-by-step event creation, naming, and common mistakes
+- [Outbox Usage Guidelines](docs/outbox-usage-guidelines.md) — Decision trees for outbox backend, transactional vs normal, and request-reply patterns
+- [Transactional Outbox Usage](docs/outbox-transactional-usage.md) — TypeORM transaction examples and saveInTransaction guide
+- [AI Agent Guidelines](docs/ai-agent-guidelines.md) — Step-by-step event creation, naming, correlation/causation, and common mistakes
 - [Request-Reply Patterns](docs/request-reply-patterns.md) — Sync vs async patterns, correlation, timeouts, and error handling
-- [Request-Reply Guidelines](docs/request-reply-guidelines.md) — Decision tree, timeout recommendations, and best practices for choosing request-reply patterns
-- [Request-Reply Examples](docs/examples/) — Complete code examples for sync and async patterns
+- [Request-Reply Guidelines](docs/request-reply-guidelines.md) — Decision tree, timeout recommendations, performance trade-offs, and best practices
+- [Request-Reply Examples](docs/examples/) — Complete code examples for sync, async, and outbox request-reply patterns
+- [Testing Utilities](docs/testing-utilities.md) — Mock services, test module, and assertion helpers
 - [Architecture](.agent/project-info/architecture.md) — Module design and data flows
 - [Tech Stack](.agent/project-info/tech.md) — Technology choices and development setup
 - [Product Overview](.agent/project-info/product.md) — Problem definition and goals

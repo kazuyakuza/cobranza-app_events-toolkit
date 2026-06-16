@@ -15,6 +15,19 @@ Two storage backends are supported:
 - **SQLite** — file-based, self-contained, ideal for lightweight microservices
 - **PostgreSQL** — shares the service's existing database, ideal for `ms-db-gateway`
 
+## Table of Contents
+
+- [When to Use Each Backend](#when-to-use-each-backend)
+- [SQLite Configuration](#sqlite-configuration)
+- [PostgreSQL Configuration](#postgresql-configuration)
+- [OutboxServiceOptions Reference](#outboxserviceoptions-reference)
+- [Background Processor Behavior](#background-processor-behavior)
+- [DLQ Routing](#dlq-routing)
+- [Usage After Configuration](#usage-after-configuration)
+- [Transactional Outbox (PostgreSQL + TypeORM)](#transactional-outbox-postgresql--typeorm)
+- [Request-Reply with the Outbox](#request-reply-with-the-outbox)
+- [Migration from 0.x API](#migration-from-0x-api)
+
 ## When to Use Each Backend
 
 | Backend  | Use Case                              | Service Type                                      |

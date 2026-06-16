@@ -6,6 +6,20 @@ For the convention specification, see [Event & Messaging Convention](event-messa
 
 ---
 
+## Table of Contents
+
+- [1. Overview](#1-overview)
+- [2. Sync Pattern — `request()`](#2-sync-pattern--request)
+- [3. Async Pattern — `sendRequest()` + `@OnRequestReply`](#3-async-pattern--sendrequest--onrequestreply)
+- [4. Comparison: Sync vs Async](#4-comparison-sync-vs-async)
+- [5. Correlation ID Management](#5-correlation-id-management)
+- [6. Timeout Handling](#6-timeout-handling)
+- [7. Idempotency Requirements](#7-idempotency-requirements)
+- [8. Sending Success vs Error Responses](#8-sending-success-vs-error-responses)
+- [9. Combining Request-Reply with the Outbox](#9-combining-request-reply-with-the-outbox)
+- [10. API Reference](#10-api-reference)
+- [11. Related Documentation](#11-related-documentation)
+
 ## 1. Overview
 
 | Concern | Sync (`request()`) | Async (`sendRequest()` + `@OnRequestReply`) |
@@ -294,6 +308,8 @@ See [Event & Messaging Convention §2.1](event-messaging-convention.md#21-respon
 
 ## 4. Comparison: Sync vs Async
 
+> For a visual decision flowchart and extended best practices, see [Request-Reply Guidelines](request-reply-guidelines.md).
+
 | Aspect | Sync (`request()`) | Async (`sendRequest()` + `@OnRequestReply`) |
 | ------ | ------------------ | --------------------------------------------- |
 | **Blocking** | Blocks caller until response or timeout | Non-blocking; caller continues immediately |
@@ -316,6 +332,8 @@ See [Event & Messaging Convention §2.1](event-messaging-convention.md#21-respon
 - The caller does not need the result immediately.
 - The system should remain responsive under load.
 - Multiple services may need to respond before a decision is made.
+
+> **Decision guide**: For a step-by-step decision flowchart, see [Request-Reply Guidelines — Decision Tree](request-reply-guidelines.md#decision-tree--sync-vs-async).
 
 ---
 
