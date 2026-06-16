@@ -1,4 +1,5 @@
 import { OutboxRepository, OutboxEntry, SaveOutboxEntryParams, EntityManagerLike } from './outbox.types';
+import { TransactionContext, TypeormQueryRunnerContext } from './transaction-context.interface';
 import { nowIso } from '../common/utils/date.utils';
 
 const CREATE_TABLE_SQL = `
@@ -52,11 +53,19 @@ export class PostgresOutboxRepository implements OutboxRepository {
     this.tableEnsured = true;
   }
 
+  private resolveQueryExecutor(context?: TransactionContext): EntityManagerLike {
+    if (context?.type === 'typeorm-query-runner') {
+      return (context as TypeormQueryRunnerContext).queryRunner;
+    }
+    return this.entityManager;
+  }
+
   /** @inheritdoc */
   async save(params: SaveOutboxEntryParams): Promise<void> {
     await this.ensureTable();
     const timestamp = nowIso();
-    await this.entityManager.query(INSERT_SQL, [
+    const executor = this.resolveQueryExecutor(params.transactionContext);
+    await executor.query(INSERT_SQL, [
       params.event.id,
       JSON.stringify(params.event),
       params.subject,
