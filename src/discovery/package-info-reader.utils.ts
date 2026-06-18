@@ -3,14 +3,25 @@ import { join } from 'path';
 
 /** Represents the service-relevant fields extracted from package.json. */
 export interface PackageInfo {
+  /** Service name from package.json. */
   name: string;
+  /** Service version from package.json. */
   version: string;
+  /** Human-readable description from package.json. */
   description?: string;
 }
 
+/** Fallback service info when package.json is missing or unreadable. */
 const UNKNOWN_SERVICE = Object.freeze({ name: 'unknown', version: '0.0.0' });
 
-/** Reads service-relevant fields from the nearest package.json. */
+/**
+ * Reads service-relevant fields from the nearest package.json.
+ *
+ * @param packageJsonPath - Optional explicit path to package.json.
+ *                          Defaults to `<cwd>/package.json`.
+ * @returns Parsed package info, or fallback values if the file is
+ *          missing, unreadable, or lacks the expected fields.
+ */
 export function readPackageInfo(packageJsonPath?: string): PackageInfo {
   const resolvedPath = packageJsonPath ?? join(process.cwd(), 'package.json');
   if (!existsSync(resolvedPath)) {
