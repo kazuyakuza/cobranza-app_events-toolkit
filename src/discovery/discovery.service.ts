@@ -19,11 +19,13 @@ export class DiscoveryService implements OnModuleInit, OnApplicationBootstrap, O
   @Inject(EventLoggerService)
   private readonly logger: EventLoggerService | undefined;
 
-  constructor(
-    private readonly manifestService: ManifestService,
-    private readonly schemaGenerator: SchemaGenerator,
-    private readonly eventPublisher: DiscoveryEventPublisher,
-  ) {}
+  @Inject(ManifestService)
+  private readonly manifestService!: ManifestService;
+
+  @Inject(SchemaGenerator)
+  private readonly schemaGenerator!: SchemaGenerator;
+
+  constructor(private readonly eventPublisher: DiscoveryEventPublisher) {}
 
   onModuleInit(): void {
     if (!this.resolvedOptions.enabled) {
