@@ -46,4 +46,21 @@ describe('MockDiscoveryEventPublisher', () => {
     expect(events.length).toBe(1);
     expect(events[0].event.type).toBe(PlatformEventType.SHUTDOWN);
   });
+
+  it('includes full manifest in heartbeat when configured via setter', async () => {
+    publisher.setIncludeFullManifestInHeartbeat(true);
+    await publisher.publishHeartbeat(testManifest);
+    const events = producer.getPublishedEventsBySubject(PLATFORM_HEARTBEAT_SUBJECT);
+    expect(events.length).toBe(1);
+    const data = events[0].event.data as Record<string, unknown>;
+    expect(data.manifest).toEqual(testManifest);
+  });
+
+  it('omits full manifest in heartbeat by default', async () => {
+    await publisher.publishHeartbeat(testManifest);
+    const events = producer.getPublishedEventsBySubject(PLATFORM_HEARTBEAT_SUBJECT);
+    expect(events.length).toBe(1);
+    const data = events[0].event.data as Record<string, unknown>;
+    expect(data.manifest).toBeUndefined();
+  });
 });

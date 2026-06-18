@@ -5,6 +5,7 @@ import { PLATFORM_REGISTER_SUBJECT } from '../discovery/events/platform-event-su
 import {
   expectRegistrationPublished,
   expectHeartbeatPublished,
+  expectShutdownPublished,
   getRegistrationEvents,
   getHeartbeatEvents,
   getRegistrationManifest,
@@ -43,6 +44,17 @@ describe('discovery assertion helpers', () => {
     it('passes when heartbeat event exists', async () => {
       await publisher.publishHeartbeat(manifest);
       expect(() => expectHeartbeatPublished(producer)).not.toThrow();
+    });
+  });
+
+  describe('expectShutdownPublished', () => {
+    it('passes when shutdown event exists', async () => {
+      await publisher.publishShutdown(manifest);
+      expect(() => expectShutdownPublished(producer)).not.toThrow();
+    });
+
+    it('fails when no shutdown event', () => {
+      expect(() => expectShutdownPublished(producer)).toThrow();
     });
   });
 

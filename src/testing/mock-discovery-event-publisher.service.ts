@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ServiceManifestDto } from '../discovery/dto/service-manifest.dto';
+import { ServiceHeartbeatPayload } from '../discovery/events/discovery-payloads.interface';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { generateEventId, generateUuidV7 } from '../common/utils/uuid.utils';
 import { nowIso } from '../common/utils/date.utils';
@@ -28,7 +29,14 @@ interface PlatformEnvelopeParams {
  */
 @Injectable()
 export class MockDiscoveryEventPublisher {
+  private includeFullManifestInHeartbeat = false;
+
   constructor(private readonly producer: MockProducerService) {}
+
+  /** Sets whether to include the full manifest in heartbeat payloads. */
+  setIncludeFullManifestInHeartbeat(value: boolean): void {
+    this.includeFullManifestInHeartbeat = value;
+  }
 
   /** Publishes a platform.service.register.v1 event carrying the full service manifest. */
   async publishRegistration(manifest: ServiceManifestDto): Promise<void> {
@@ -42,12 +50,15 @@ export class MockDiscoveryEventPublisher {
 
   /** Publishes a platform.service.heartbeat.v1 liveness event. */
   async publishHeartbeat(manifest: ServiceManifestDto): Promise<void> {
-    const payload = {
+    const payload: ServiceHeartbeatPayload = {
       name: manifest.name,
       version: manifest.version,
       instanceId: manifest.instanceId,
       timestamp: nowIso(),
     };
+    if (this.includeFullManifestInHeartbeat) {
+      payload.manifest = manifest;
+    }
     const envelope = this.buildEnvelope({
       eventType: PlatformEventType.HEARTBEAT,
       producerName: manifest.name,

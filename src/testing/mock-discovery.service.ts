@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
 import { ServiceManifestDto } from '../discovery/dto/service-manifest.dto';
 import { ServiceInfo } from '../discovery/service-info.interface';
 import { MockManifestService } from './mock-manifest.service';
@@ -26,7 +26,7 @@ export interface MockDiscoveryServiceConfig {
  * events are published.
  */
 @Injectable()
-export class MockDiscoveryService {
+export class MockDiscoveryService implements OnModuleInit, OnApplicationBootstrap, OnModuleDestroy {
   private cachedManifest: ServiceManifestDto | null = null;
   private readonly enabled: boolean;
   private readonly serviceInfo: ServiceInfo;
@@ -41,6 +41,24 @@ export class MockDiscoveryService {
       name: 'test-service',
       version: '1.0.0',
     };
+  }
+
+  /** Lifecycle hook: generates manifest on module init when enabled. */
+  onModuleInit(): void {
+    if (!this.enabled) {
+      return;
+    }
+    this.generateManifest();
+  }
+
+  /** Lifecycle hook: publishes registration on application bootstrap. */
+  onApplicationBootstrap(): Promise<void> {
+    return this.triggerStartup();
+  }
+
+  /** Lifecycle hook: publishes shutdown on module destroy. */
+  onModuleDestroy(): void {
+    void this.triggerShutdown();
   }
 
   /** Generates and caches the service manifest using MockManifestService. */

@@ -7,6 +7,7 @@ import { EventLoggerService } from '../logging/event-logger.service';
 import { ManifestService } from '../discovery/manifest.service';
 import { DiscoveryService } from '../discovery/discovery.service';
 import { DiscoveryEventPublisher } from '../discovery/events/discovery-event-publisher.service';
+import { ServiceInfo } from '../discovery/service-info.interface';
 import { MockProducerService } from './mock-producer.service';
 import { MockConsumerService } from './mock-consumer.service';
 import { MockEventLoggerService } from './mock-event-logger.service';
@@ -74,22 +75,29 @@ export class EventsToolkitTestModule {
   }
 
   private static buildDiscoveryProviders(options?: EventsToolkitTestModuleOptions): Provider[] {
-    const serviceInfo = options?.discovery?.serviceInfo;
     return [
       MockManifestService,
       { provide: ManifestService, useExisting: MockManifestService },
       MockDiscoveryEventPublisher,
       { provide: DiscoveryEventPublisher, useExisting: MockDiscoveryEventPublisher },
-      {
-        provide: MockDiscoveryService,
-        useFactory: (manifestService: MockManifestService, eventPublisher: MockDiscoveryEventPublisher) => {
-          const deps: MockDiscoveryServiceDeps = { manifestService, eventPublisher };
-          return new MockDiscoveryService(deps, { enabled: true, serviceInfo });
-        },
-        inject: [MockManifestService, MockDiscoveryEventPublisher],
-      },
+      this.buildMockDiscoveryServiceProvider(options),
       { provide: DiscoveryService, useExisting: MockDiscoveryService },
     ];
+  }
+
+  private static buildMockDiscoveryServiceProvider(options?: EventsToolkitTestModuleOptions): Provider {
+    return {
+      provide: MockDiscoveryService,
+      useFactory: this.buildMockDiscoveryServiceFactory(options?.discovery?.serviceInfo),
+      inject: [MockManifestService, MockDiscoveryEventPublisher],
+    };
+  }
+
+  private static buildMockDiscoveryServiceFactory(serviceInfo?: ServiceInfo) {
+    return (manifestService: MockManifestService, eventPublisher: MockDiscoveryEventPublisher) => {
+      const deps: MockDiscoveryServiceDeps = { manifestService, eventPublisher };
+      return new MockDiscoveryService(deps, { enabled: true, serviceInfo });
+    };
   }
 
   private static buildExports(discoveryEnabled: boolean): Type<unknown>[] {

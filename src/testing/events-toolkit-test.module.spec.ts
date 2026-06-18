@@ -128,5 +128,21 @@ describe('EventsToolkitTestModule', () => {
 
       expect(() => module.get(ManifestService)).toThrow();
     });
+
+    it('does not provide DiscoveryService', async () => {
+      const module = await Test.createTestingModule({
+        imports: [EventsToolkitTestModule.forRoot({ discovery: { enabled: false } })],
+      }).compile();
+
+      expect(() => module.get(DiscoveryService)).toThrow();
+    });
+
+    it('does not provide DiscoveryEventPublisher', async () => {
+      const module = await Test.createTestingModule({
+        imports: [EventsToolkitTestModule.forRoot({ discovery: { enabled: false } })],
+      }).compile();
+
+      expect(() => module.get(DiscoveryEventPublisher)).toThrow();
+    });
   });
 });

@@ -52,4 +52,36 @@ describe('MockDiscoveryService', () => {
     const manifest = service.getManifest();
     expect(manifest).toBeDefined();
   });
+
+  describe('lifecycle hooks', () => {
+    it('onModuleInit generates manifest when enabled', () => {
+      service.onModuleInit();
+      const manifest = service.getManifest();
+      expect(manifest.name).toBe('test-service');
+    });
+
+    it('onModuleInit does not generate manifest when disabled', () => {
+      const disabledService = new MockDiscoveryService({ manifestService, eventPublisher }, { enabled: false });
+      disabledService.onModuleInit();
+      const manifest = disabledService.getManifest();
+      expect(manifest).toBeDefined();
+    });
+
+    it('onApplicationBootstrap delegates to triggerStartup', async () => {
+      await service.onApplicationBootstrap();
+      const events = producer.getPublishedEventsBySubject(PLATFORM_REGISTER_SUBJECT);
+      expect(events.length).toBe(1);
+    });
+
+    it('onModuleDestroy publishes shutdown when manifest exists', () => {
+      service.generateManifest();
+      service.onModuleDestroy();
+      expect(producer.count).toBe(1);
+    });
+
+    it('onModuleDestroy is no-op when no manifest cached', () => {
+      service.onModuleDestroy();
+      expect(producer.count).toBe(0);
+    });
+  });
 });
