@@ -2,6 +2,7 @@ import { Injectable, Inject, OnModuleInit, Optional } from '@nestjs/common';
 import { DISCOVERY_MODULE_OPTIONS } from './discovery-service-options.interface';
 import { DiscoveryModuleOptions } from './discovery.module';
 import { ManifestService } from './manifest.service';
+import { SchemaGenerator } from './utils/schema-generator';
 import { ServiceManifestDto } from './dto/service-manifest.dto';
 import { EventLoggerService } from '../logging/event-logger.service';
 
@@ -17,6 +18,7 @@ export class DiscoveryService implements OnModuleInit {
   constructor(
     @Inject(DISCOVERY_MODULE_OPTIONS) options: DiscoveryModuleOptions,
     private readonly manifestService: ManifestService,
+    private readonly schemaGenerator: SchemaGenerator,
   ) {
     this.resolvedOptions = options;
   }
@@ -32,6 +34,7 @@ export class DiscoveryService implements OnModuleInit {
     const manifest: ServiceManifestDto = this.manifestService.generateManifest(
       this.resolvedOptions.service ?? { name: 'unknown', version: '0.0.0' },
     );
+    this.schemaGenerator.generateSchemasForManifest(manifest);
     const resolvedLogger = this.logger ?? new EventLoggerService();
     resolvedLogger.logDiscoveryManifest(manifest as unknown as Record<string, unknown>);
     resolvedLogger.logEventEmitted({

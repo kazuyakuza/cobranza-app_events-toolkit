@@ -4,6 +4,7 @@ import { DiscoveryService } from './discovery.service';
 import { ManifestService } from './manifest.service';
 import { MANIFEST_SERVICE_DEPS_TOKEN } from './manifest-deps.interface';
 import { ManifestServiceDepsProvider } from './manifest-deps.provider';
+import { SchemaGenerator } from './utils/schema-generator';
 import { ServiceInfo } from './service-info.interface';
 
 /** Resolved options used internally by DiscoveryModule providers. */
@@ -18,6 +19,10 @@ export interface DiscoveryModuleOptions {
   includeFullManifestInHeartbeat: boolean;
   /** Service identity metadata for the discovery manifest. */
   service?: ServiceInfo;
+  /** Directory path for schema persistence. */
+  schemaDir: string;
+  /** Force schema regeneration on startup. */
+  forceRegenerateSchemas: boolean;
 }
 
 const DEFAULT_DISCOVERY_OPTIONS: DiscoveryModuleOptions = {
@@ -25,6 +30,8 @@ const DEFAULT_DISCOVERY_OPTIONS: DiscoveryModuleOptions = {
   registerOnStartup: true,
   heartbeatIntervalMinutes: 0,
   includeFullManifestInHeartbeat: false,
+  schemaDir: '.events-toolkit/schemas',
+  forceRegenerateSchemas: false,
 };
 
 const MANIFEST_DEPS_FACTORY = {
@@ -41,6 +48,8 @@ function resolveDiscoveryOptions(userOptions: EventsToolkitDiscoveryOptions): Di
     includeFullManifestInHeartbeat:
       userOptions.includeFullManifestInHeartbeat ?? DEFAULT_DISCOVERY_OPTIONS.includeFullManifestInHeartbeat,
     service: userOptions.service,
+    schemaDir: userOptions.schemaDir ?? DEFAULT_DISCOVERY_OPTIONS.schemaDir,
+    forceRegenerateSchemas: userOptions.forceRegenerateSchemas ?? DEFAULT_DISCOVERY_OPTIONS.forceRegenerateSchemas,
   };
 }
 
@@ -65,8 +74,9 @@ export class DiscoveryModule {
       DiscoveryService,
       ManifestService,
       MANIFEST_DEPS_FACTORY,
+      SchemaGenerator,
     ];
-    const exported = [DiscoveryService, ManifestService];
+    const exported = [DiscoveryService, ManifestService, SchemaGenerator];
 
     return {
       module: DiscoveryModule,
@@ -90,8 +100,9 @@ export class DiscoveryModule {
       DiscoveryService,
       ManifestService,
       MANIFEST_DEPS_FACTORY,
+      SchemaGenerator,
     ];
-    const exported = [DiscoveryService, ManifestService];
+    const exported = [DiscoveryService, ManifestService, SchemaGenerator];
 
     return {
       module: DiscoveryModule,

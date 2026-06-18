@@ -12,6 +12,10 @@ export interface EventsToolkitDiscoveryOptions {
   includeFullManifestInHeartbeat?: boolean;
   /** Service identity metadata for the discovery manifest. */
   service?: ServiceInfo;
+  /** Directory path where generated JSON Schemas are persisted. Default: '.events-toolkit/schemas'. */
+  schemaDir?: string;
+  /** When true, regenerate all schemas on startup even if cached files exist. Default: false. */
+  forceRegenerateSchemas?: boolean;
 }
 
 /** Injection token for DiscoveryModule resolved options. */

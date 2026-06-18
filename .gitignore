@@ -38,3 +38,6 @@ node_modules/
 
 # Kilo agent manager
 .kilo/agent-manager.json
+
+# Generated JSON Schemas
+.events-toolkit/
