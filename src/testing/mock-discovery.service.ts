@@ -6,7 +6,9 @@ import { MockDiscoveryEventPublisher } from './mock-discovery-event-publisher.se
 
 /** Dependencies injected into MockDiscoveryService. */
 export interface MockDiscoveryServiceDeps {
+  /** Mock manifest service for generating service manifests. */
   manifestService: MockManifestService;
+  /** Mock event publisher for platform discovery events. */
   eventPublisher: MockDiscoveryEventPublisher;
 }
 

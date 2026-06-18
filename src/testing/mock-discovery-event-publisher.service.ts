@@ -16,8 +16,11 @@ import { MockProducerService } from './mock-producer.service';
 
 /** Parameters for building a platform event envelope. */
 interface PlatformEnvelopeParams {
+  /** Event type string. */
   eventType: string;
+  /** Producer service name from the manifest. */
   producerName: string;
+  /** Domain-specific payload. */
   data: unknown;
 }
 
