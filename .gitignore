@@ -35,9 +35,13 @@ node_modules/
 
 # Tokens and secrets
 .git-credentials
+.npmrc
 
 # Kilo agent manager
 .kilo/agent-manager.json
 
 # Generated JSON Schemas
 .events-toolkit/
+
+# ESLint cache
+.eslintcache

@@ -1,0 +1,4 @@
+# To use this, copy its content to a new file named `.npmrc` in your project root.
+# Replace 'YOUR_AUTH_TOKEN' with your actual authentication token.
+# IMPORTANT: to publish new packages, a token with that permission is required.
+//registry.npmjs.org/:_authToken=YOUR_AUTH_TOKEN

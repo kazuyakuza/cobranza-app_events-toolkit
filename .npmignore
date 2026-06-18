@@ -1,0 +1,69 @@
+# Source files
+src/
+tests/
+__tests__/
+*.test.ts
+*.spec.ts
+
+# Development configs
+tsconfig.json
+tsconfig.build.json
+.prettierrc
+.prettierignore
+.eslintrc*
+.eslintignore
+.editorconfig
+.github/
+.vscode/
+.idea/
+*.config.*
+.nvmrc
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.*
+
+# Build process
+coverage/
+.nyc_output/
+.DS_Store
+
+# Documentation and examples
+docs/how-to-set-up-git.md
+docs/how-to-write-todo-files.md
+wiki/
+
+# CI/CD
+.travis.yml
+.circleci/
+.gitlab-ci.yml
+azure-pipelines.yml
+*.yml
+
+# Temp files
+*.tmp
+*.temp
+.cache/
+
+# AI Agent
+AGENTS.md
+.kilocodeignore
+.kilo/
+.agent/**/*
+
+# Tokens and secrets
+.git-credentials
+.npmrc*
