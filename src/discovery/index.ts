@@ -6,3 +6,7 @@
 export { DiscoveryModule, DiscoveryModuleOptions } from './discovery.module';
 export { DiscoveryService } from './discovery.service';
 export { DISCOVERY_MODULE_OPTIONS, EventsToolkitDiscoveryOptions } from './discovery-service-options.interface';
+export { ManifestService } from './manifest.service';
+export { ServiceManifestDto, ManifestConsumeEntry, ManifestProduceEntry, ManifestEntryBase } from './dto';
+export { ServiceInfo } from './service-info.interface';
+export { MANIFEST_SERVICE_DEPS_TOKEN, ManifestServiceDeps } from './manifest-deps.interface';

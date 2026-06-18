@@ -13,6 +13,12 @@ export interface OnRequestReplyOptions {
    * `company_id` matches this value.
    */
   companyId?: string;
+  /** Human-readable description for discovery manifests. */
+  description?: string;
+  /** Arbitrary tags for categorization in discovery manifests. */
+  tags?: string[];
+  /** Explicit payload schema reference (e.g., 'PaymentProofUploadedData'). */
+  payloadSchemaRef?: string;
 }
 
 /**

@@ -13,6 +13,12 @@ export interface OnEventOptions {
   action: string;
   /** Major version number (default: '1'). */
   version?: string;
+  /** Human-readable description for discovery manifests. */
+  description?: string;
+  /** Arbitrary tags for categorization in discovery manifests. */
+  tags?: string[];
+  /** Explicit payload schema reference (e.g., 'PaymentProofUploadedEvent'). */
+  payloadSchemaRef?: string;
 }
 
 /**

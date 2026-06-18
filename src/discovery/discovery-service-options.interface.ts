@@ -1,3 +1,5 @@
+import { ServiceInfo } from './service-info.interface';
+
 /** Discovery subsystem configuration for EventsToolkitModule. */
 export interface EventsToolkitDiscoveryOptions {
   /** Enable the discovery subsystem. Default: true. */
@@ -8,6 +10,8 @@ export interface EventsToolkitDiscoveryOptions {
   heartbeatIntervalMinutes?: number;
   /** Include full manifest payload in heartbeat messages. Default: false. */
   includeFullManifestInHeartbeat?: boolean;
+  /** Service identity metadata for the discovery manifest. */
+  service?: ServiceInfo;
 }
 
 /** Injection token for DiscoveryModule resolved options. */

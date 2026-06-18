@@ -1,6 +1,10 @@
 import { DynamicModule, Module, Type } from '@nestjs/common';
+import { DiscoveryService as NestDiscoveryService, Reflector, MetadataScanner } from '@nestjs/core';
 import { DISCOVERY_MODULE_OPTIONS, EventsToolkitDiscoveryOptions } from './discovery-service-options.interface';
 import { DiscoveryService } from './discovery.service';
+import { ManifestService } from './manifest.service';
+import { MANIFEST_SERVICE_DEPS_TOKEN } from './manifest-deps.interface';
+import { ServiceInfo } from './service-info.interface';
 
 /** Resolved options used internally by DiscoveryModule providers. */
 export interface DiscoveryModuleOptions {
@@ -12,6 +16,8 @@ export interface DiscoveryModuleOptions {
   heartbeatIntervalMinutes: number;
   /** Whether to include the full manifest payload in heartbeat messages. */
   includeFullManifestInHeartbeat: boolean;
+  /** Service identity metadata for the discovery manifest. */
+  service?: ServiceInfo;
 }
 
 const DEFAULT_DISCOVERY_OPTIONS: DiscoveryModuleOptions = {
@@ -19,6 +25,16 @@ const DEFAULT_DISCOVERY_OPTIONS: DiscoveryModuleOptions = {
   registerOnStartup: true,
   heartbeatIntervalMinutes: 0,
   includeFullManifestInHeartbeat: false,
+};
+
+const MANIFEST_DEPS_FACTORY = {
+  provide: MANIFEST_SERVICE_DEPS_TOKEN,
+  useFactory: (discovery: NestDiscoveryService, reflector: Reflector, metadataScanner: MetadataScanner) => ({
+    discovery,
+    reflector,
+    metadataScanner,
+  }),
+  inject: [NestDiscoveryService, Reflector, MetadataScanner],
 };
 
 function resolveDiscoveryOptions(userOptions: EventsToolkitDiscoveryOptions): DiscoveryModuleOptions {
@@ -29,6 +45,7 @@ function resolveDiscoveryOptions(userOptions: EventsToolkitDiscoveryOptions): Di
       userOptions.heartbeatIntervalMinutes ?? DEFAULT_DISCOVERY_OPTIONS.heartbeatIntervalMinutes,
     includeFullManifestInHeartbeat:
       userOptions.includeFullManifestInHeartbeat ?? DEFAULT_DISCOVERY_OPTIONS.includeFullManifestInHeartbeat,
+    service: userOptions.service,
   };
 }
 
@@ -48,8 +65,13 @@ export class DiscoveryModule {
   /** Registers the discovery module with synchronous options. */
   static forRoot(options: EventsToolkitDiscoveryOptions): DynamicModule {
     const resolvedOptions = resolveDiscoveryOptions(options);
-    const providers = [{ provide: DISCOVERY_MODULE_OPTIONS, useValue: resolvedOptions }, DiscoveryService];
-    const exported = [DiscoveryService];
+    const providers = [
+      { provide: DISCOVERY_MODULE_OPTIONS, useValue: resolvedOptions },
+      DiscoveryService,
+      ManifestService,
+      MANIFEST_DEPS_FACTORY,
+    ];
+    const exported = [DiscoveryService, ManifestService];
 
     return {
       module: DiscoveryModule,
@@ -71,8 +93,10 @@ export class DiscoveryModule {
         inject: asyncOptions.inject ?? [],
       },
       DiscoveryService,
+      ManifestService,
+      MANIFEST_DEPS_FACTORY,
     ];
-    const exported = [DiscoveryService];
+    const exported = [DiscoveryService, ManifestService];
 
     return {
       module: DiscoveryModule,

@@ -1,6 +1,7 @@
 import { Injectable, Inject, OnModuleInit, Optional } from '@nestjs/common';
 import { DISCOVERY_MODULE_OPTIONS } from './discovery-service-options.interface';
 import { DiscoveryModuleOptions } from './discovery.module';
+import { ManifestService } from './manifest.service';
 import { EventLoggerService } from '../logging/event-logger.service';
 
 /** Handles service manifest registration and heartbeat emission for discovery. */
@@ -12,6 +13,7 @@ export class DiscoveryService implements OnModuleInit {
   constructor(
     @Inject(DISCOVERY_MODULE_OPTIONS) options: DiscoveryModuleOptions,
     @Optional() logger: EventLoggerService,
+    private readonly manifestService: ManifestService,
   ) {
     this.resolvedOptions = options;
     this.logger = logger ?? new EventLoggerService();
@@ -25,6 +27,9 @@ export class DiscoveryService implements OnModuleInit {
     if (!this.resolvedOptions.registerOnStartup) {
       return;
     }
+    this.manifestService.generateManifest(
+      this.resolvedOptions.service ?? { name: 'unknown', version: '0.0.0' },
+    );
     this.logger.logEventEmitted({
       eventId: 'discovery-startup',
       eventType: 'discovery.service.initialized',
