@@ -21,6 +21,9 @@ export * from './request-reply';
 // ── Outbox ──
 export * from './outbox';
 
+// ── Discovery ──
+export * from './discovery';
+
 // ── Events Toolkit (Unified) ──
 export { EventsToolkitModule } from './events-toolkit.module';
 export {
@@ -30,6 +33,7 @@ export {
   EventsToolkitOutboxOptions,
   EventsToolkitLoggingOptions,
   EventsToolkitConsumerOptions,
+  EventsToolkitDiscoveryOptions,
 } from './events-toolkit-options.interface';
 
 // ── Testing ──

@@ -8,6 +8,8 @@ import { EventLoggerService, EventLoggerOptions } from './logging/event-logger.s
 import { ProducerService } from './producer/producer.service';
 import { ConsumerService } from './consumer/consumer.service';
 import { OutboxService } from './outbox/outbox.service';
+import { DiscoveryService } from './discovery/discovery.service';
+import { DiscoveryModule } from './discovery/discovery.module';
 import {
   EventsToolkitModuleOptions,
   EventsToolkitModuleAsyncOptions,
@@ -90,6 +92,12 @@ export class EventsToolkitModule implements OnModuleDestroy {
       imports.push(OutboxModule.forRoot(outboxOpts));
     }
 
+    const discoveryEnabled = options.discovery?.enabled !== false;
+    if (discoveryEnabled) {
+      const discoveryOpts = options.discovery ?? {};
+      imports.push(DiscoveryModule.forRoot(discoveryOpts));
+    }
+
     const loggingProvider = buildLoggingProvider(options);
 
     return {
@@ -97,7 +105,7 @@ export class EventsToolkitModule implements OnModuleDestroy {
       global: true,
       imports,
       providers: [loggingProvider],
-      exports: [ProducerService, ConsumerService, OutboxService, EventLoggerService],
+      exports: [ProducerService, ConsumerService, OutboxService, EventLoggerService, DiscoveryService],
     };
   }
 
@@ -114,6 +122,7 @@ export class EventsToolkitModule implements OnModuleDestroy {
       ProducerModule.forRootAsync({ useExisting: JETSTREAM_TOKEN, useFactory: async () => ({}), inject: [] }),
       buildConsumerAsyncImport(),
       buildOutboxAsyncImport(),
+      buildDiscoveryAsyncImport(),
       ...(asyncOptions.imports ?? []),
     ];
 
@@ -122,7 +131,7 @@ export class EventsToolkitModule implements OnModuleDestroy {
       global: true,
       imports,
       providers: [optionsProvider, jetStreamProvider, loggingProvider],
-      exports: [ProducerService, ConsumerService, OutboxService, EventLoggerService],
+      exports: [ProducerService, ConsumerService, OutboxService, EventLoggerService, DiscoveryService],
     };
   }
 
@@ -205,4 +214,8 @@ function buildOutboxAsyncImport(): DynamicModule {
     },
     inject: [EVENTS_TOOLKIT_OPTIONS],
   });
+}
+
+function buildDiscoveryAsyncImport(): DynamicModule {
+  return DiscoveryModule.forRoot({});
 }

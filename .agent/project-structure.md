@@ -16,6 +16,7 @@
 - outbox/ - OutboxModule, SqliteOutboxRepository, PostgresOutboxRepository, transaction context types, shared types (barrel: index.ts)
 - logging/ - EventLoggerService (Winston-based) (barrel: index.ts)
 - testing/ - Mock services, test module, and assertion helpers for unit-testing (barrel: index.ts)
+- discovery/ - DiscoveryModule, DiscoveryService, manifest registration and heartbeat (barrel: index.ts)
 
 # Other folders
 

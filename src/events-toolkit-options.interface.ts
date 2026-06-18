@@ -3,6 +3,7 @@ import { OutboxServiceOptions } from './outbox/outbox-service-options.interface'
 import { EntityManagerLike } from './outbox/outbox.types';
 import { Type, DynamicModule, ForwardReference } from '@nestjs/common';
 import * as winston from 'winston';
+import { EventsToolkitDiscoveryOptions } from './discovery/discovery-service-options.interface';
 
 /** NATS connection configuration for EventsToolkitModule. */
 export interface EventsToolkitNatsOptions {
@@ -41,6 +42,8 @@ export interface EventsToolkitConsumerOptions {
 }
 
 /** Top-level options for EventsToolkitModule.forRoot. */
+export { EventsToolkitDiscoveryOptions } from './discovery/discovery-service-options.interface';
+
 export interface EventsToolkitModuleOptions {
   /** NATS connection settings. Required. */
   nats: EventsToolkitNatsOptions;
@@ -50,6 +53,8 @@ export interface EventsToolkitModuleOptions {
   logging?: EventsToolkitLoggingOptions;
   /** Consumer subsystem toggle and options. */
   consumer?: EventsToolkitConsumerOptions;
+  /** Discovery subsystem toggle and options. */
+  discovery?: EventsToolkitDiscoveryOptions;
 }
 
 /** Asynchronous options for EventsToolkitModule.forRootAsync. */
