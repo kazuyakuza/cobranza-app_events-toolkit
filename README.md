@@ -714,9 +714,14 @@ src/
 │   ├── consumer.service.ts
 │   └── jetstream-consumer.service.ts
 ├── discovery/                    # Service discovery, manifest generation, schema publishing
-│   ├── dto/                      # Manifest DTOs
-│   ├── events/                   # Platform event publisher and subjects
-│   └── utils/                    # Schema generator and persister
+│   ├── dto/                      # Manifest DTOs (ServiceManifestDto, ManifestConsumeEntry, etc.)
+│   ├── events/                   # DiscoveryEventPublisher, platform subjects and event types
+│   ├── utils/                    # SchemaGenerator, SchemaPersister
+│   ├── discovery.controller.ts   # HTTP endpoints: GET /discovery/manifest, GET /discovery/schemas
+│   ├── discovery.service.ts      # Orchestrates manifest generation, heartbeat, shutdown
+│   ├── discovery.module.ts       # DiscoveryModule DynamicModule
+│   ├── manifest.service.ts       # Scans decorators, builds ServiceManifestDto
+│   └── manifest-entry.builder.ts # Builds manifest entries, resolves payloadSchemaRef
 ├── request-reply/              # RequestReplyService
 ├── outbox/                     # OutboxModule, OutboxService, SqliteOutboxRepository, PostgresOutboxRepository
 └── logging/                    # EventLoggerService (Winston)

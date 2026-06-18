@@ -201,8 +201,6 @@ The old object-based signature (`@OnEvent({ domain, entity, action })`) has been
 
 ### 4.2 Idempotency & Deduplication
 
-
-
 - All consumers **must** be idempotent.
 - Use `id` + `correlation_id` combination to detect and ignore duplicates.
 - Leverage JetStream `dedupe_window` when appropriate.
@@ -353,10 +351,12 @@ await nc.jetStreamManager.streams.add({
 
 ## 5. Actor Types (Enum)
 
-```ts
-"client"
-"company_user"
-"system"
-"scheduler"
-"external_api"
+```typescript
+enum ActorType {
+  CLIENT = "client",
+  COMPANY_USER = "company_user",
+  SYSTEM = "system",
+  SCHEDULER = "scheduler",
+  EXTERNAL_API = "external_api",
+}
 ```
