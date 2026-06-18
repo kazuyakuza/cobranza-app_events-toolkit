@@ -69,12 +69,22 @@ export class DiscoveryModule {
   /** Registers the discovery module with synchronous options. */
   static forRoot(options: EventsToolkitDiscoveryOptions): DynamicModule {
     const resolvedOptions = resolveDiscoveryOptions(options);
+    const schemaGeneratorFactory = {
+      provide: SchemaGenerator,
+      useFactory: (moduleOptions: DiscoveryModuleOptions): SchemaGenerator =>
+        new SchemaGenerator({
+          schemaDir: moduleOptions.schemaDir,
+          forceRegenerate: moduleOptions.forceRegenerateSchemas,
+        }),
+      inject: [DISCOVERY_MODULE_OPTIONS],
+    };
+
     const providers = [
       { provide: DISCOVERY_MODULE_OPTIONS, useValue: resolvedOptions },
       DiscoveryService,
       ManifestService,
       MANIFEST_DEPS_FACTORY,
-      SchemaGenerator,
+      schemaGeneratorFactory,
     ];
     const exported = [DiscoveryService, ManifestService, SchemaGenerator];
 
@@ -88,6 +98,16 @@ export class DiscoveryModule {
 
   /** Registers the discovery module with asynchronous options resolved via a factory. */
   static forRootAsync(asyncOptions: DiscoveryModuleAsyncOptions): DynamicModule {
+    const schemaGeneratorFactory = {
+      provide: SchemaGenerator,
+      useFactory: (moduleOptions: DiscoveryModuleOptions): SchemaGenerator =>
+        new SchemaGenerator({
+          schemaDir: moduleOptions.schemaDir,
+          forceRegenerate: moduleOptions.forceRegenerateSchemas,
+        }),
+      inject: [DISCOVERY_MODULE_OPTIONS],
+    };
+
     const providers = [
       {
         provide: DISCOVERY_MODULE_OPTIONS,
@@ -100,7 +120,7 @@ export class DiscoveryModule {
       DiscoveryService,
       ManifestService,
       MANIFEST_DEPS_FACTORY,
-      SchemaGenerator,
+      schemaGeneratorFactory,
     ];
     const exported = [DiscoveryService, ManifestService, SchemaGenerator];
 
