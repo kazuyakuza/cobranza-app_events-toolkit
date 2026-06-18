@@ -217,5 +217,11 @@ function buildOutboxAsyncImport(): DynamicModule {
 }
 
 function buildDiscoveryAsyncImport(): DynamicModule {
-  return DiscoveryModule.forRoot({});
+  return DiscoveryModule.forRootAsync({
+    useFactory: (...args: unknown[]) => {
+      const opts = args[0] as EventsToolkitModuleOptions;
+      return opts.discovery ?? {};
+    },
+    inject: [EVENTS_TOOLKIT_OPTIONS],
+  });
 }

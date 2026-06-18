@@ -1,4 +1,4 @@
-import { Injectable, Inject, OnModuleInit } from '@nestjs/common';
+import { Injectable, Inject, OnModuleInit, Optional } from '@nestjs/common';
 import { DISCOVERY_MODULE_OPTIONS } from './discovery-service-options.interface';
 import { DiscoveryModuleOptions } from './discovery.module';
 import { EventLoggerService } from '../logging/event-logger.service';
@@ -8,12 +8,18 @@ export class DiscoveryService implements OnModuleInit {
   private readonly resolvedOptions: DiscoveryModuleOptions;
   private readonly logger: EventLoggerService;
 
-  constructor(@Inject(DISCOVERY_MODULE_OPTIONS) options: DiscoveryModuleOptions, logger: EventLoggerService) {
+  constructor(
+    @Inject(DISCOVERY_MODULE_OPTIONS) options: DiscoveryModuleOptions,
+    @Optional() logger: EventLoggerService,
+  ) {
     this.resolvedOptions = options;
-    this.logger = logger;
+    this.logger = logger ?? new EventLoggerService();
   }
 
   onModuleInit(): void {
+    if (!this.resolvedOptions.enabled) {
+      return;
+    }
     if (!this.resolvedOptions.registerOnStartup) {
       return;
     }
