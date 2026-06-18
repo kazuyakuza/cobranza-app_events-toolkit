@@ -6,6 +6,7 @@ NATS + JetStream Event Standard v1.0
 
 - [1. Purpose](#1-purpose)
 - [2. Subject Naming Convention](#2-subject-naming-convention-natsjetstream)
+- [2.2 Platform Event Subjects](#22-platform-event-subjects)
 - [3. Event Envelope (Payload Structure)](#3-event-envelope-payload-structure)
 - [4. Good Practices](#4-good-practices)
 - [5. Actor Types](#5-actor-types-enum)
@@ -45,6 +46,8 @@ company.{company_id}.{domain}.{entity}.{action}.v{version}
 - `company.550e8400e29b41d4a716446655440000.bank.statement.processed.v1`
 - `company.550e8400e29b41d4a716446655440000.notification.sent.v1`
 - `company.550e8400e29b41d4a716446655440000.client.updated.v1`
+
+> **Platform subjects** follow a different pattern (`platform.service.{action}.v{version}`) and are not tenant-isolated. See [Section 2.2](#22-platform-event-subjects) for details.
 
 ### 2.1 Response Subject Naming Convention
 
@@ -101,6 +104,24 @@ const responseSubject = buildResponseSubject(requestSubject);
 | Subject parsing | Standard format | Requires awareness of `.response` suffix |
 
 > **Rule of thumb**: Use the preferred convention when the response has a distinct semantic meaning (e.g., `calculated`, `approved`, `rejected`). Use the alternative when the response is purely a reply to the request with no distinct outcome verb.
+
+### 2.2 Platform Event Subjects
+
+Platform events use a special `platform.*` namespace for service discovery infrastructure. These subjects do **not** follow the tenant-isolated `company.{company_id}.*` format because they are system-level concerns, not tenant-specific business events.
+
+| Subject | Type | Description |
+|---------|------|-------------|
+| `platform.service.register.v1` | Event | Service instance registered its manifest |
+| `platform.service.heartbeat.v1` | Event | Periodic liveness signal from a service instance |
+| `platform.service.shutdown.v1` | Event | Service instance is shutting down gracefully |
+
+**Key differences from domain subjects:**
+
+- No `company_id` segment — platform events are global, not tenant-scoped.
+- The `company_id` field in the envelope uses the nil UUID `00000000-0000-0000-0000-000000000000`.
+- The `actor_type` is always `system` and `actor_id` is `platform-discovery`.
+
+For full details, see [Event Discovery & Service Registry](event-discovery-and-service-registry.md).
 
 ## 3. Event Envelope (Payload Structure)
 

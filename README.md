@@ -22,6 +22,7 @@ NATS + JetStream event handling library for the Cobranza App microservices platf
 - **Request-Reply**: `RequestReplyService` for sync (`request()`) and async (`sendRequest()` + `@OnRequestReply`) request-reply patterns
 - **Outbox Module**: Persistent outbox with SQLite or PostgreSQL backends, background processor for transactional safety
 - **Event Logger**: Winston-based structured logging with trace and correlation IDs
+- **Discovery Module**: `DiscoveryModule`, `DiscoveryService`, `@EmitEvent/@OnEvent/@OnRequestReply` manifest annotation, schema auto-generation from class-validator DTOs, service registration via `platform.service.register.v1` events, periodic heartbeats, and HTTP endpoints for manifest/schema retrieval
 
 ### Non-goals
 
@@ -649,6 +650,26 @@ const subject = subjectBuilder.build({
 // Result: "company.550e8400e29b41d4a716446655440000.payment.proof.uploaded.v1"
 ```
 
+### Discovery
+
+Configure the discovery subsystem to auto-register your service and generate JSON Schemas:
+
+```typescript
+import { EventsToolkitModule } from '@cobranza-apps/events-toolkit';
+
+EventsToolkitModule.forRoot({
+  nats: { servers: ['nats://localhost:4222'] },
+  discovery: {
+    enabled: true,
+    registerOnStartup: true,
+    heartbeatIntervalMinutes: 5,
+    service: { name: 'payment-service', version: '1.0.0' },
+  },
+})
+```
+
+For the full guide, see [Event Discovery & Service Registry](docs/event-discovery-and-service-registry.md).
+
 ### Event Factory
 
 Create validated event instances without the `new` keyword. The factory accepts the data payload and an `EventContext`, and returns a fully-populated `EventEnvelope`:
@@ -792,6 +813,7 @@ Full documentation: [`docs/testing-utilities.md`](docs/testing-utilities.md)
 - [Outbox Usage Guidelines](docs/outbox-usage-guidelines.md) — Decision trees for outbox backend, transactional vs normal, and request-reply patterns
 - [Transactional Outbox Usage](docs/outbox-transactional-usage.md) — TypeORM transaction examples and saveInTransaction guide
 - [AI Agent Guidelines](docs/ai-agent-guidelines.md) — Step-by-step event creation, naming, correlation/causation, and common mistakes
+- [Event Discovery & Service Registry](docs/event-discovery-and-service-registry.md) — Service manifest, schema generation, platform events, and discovery module setup
 - [Request-Reply Patterns](docs/request-reply-patterns.md) — Sync vs async patterns, correlation, timeouts, and error handling
 - [Request-Reply Guidelines](docs/request-reply-guidelines.md) — Decision tree, timeout recommendations, performance trade-offs, and best practices
 - [Request-Reply Examples](docs/examples/) — Complete code examples for sync, async, and outbox request-reply patterns
