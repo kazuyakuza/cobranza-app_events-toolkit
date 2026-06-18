@@ -11,10 +11,13 @@ import { ON_REQUEST_REPLY_METADATA, OnRequestReplyOptions } from '../consumer/de
 
 const COMPANY_ID_PLACEHOLDER = '{companyId}';
 
+type AnyFunction = (...args: unknown[]) => unknown;
+
 interface PayloadSchemaRefParams {
   prototype: object;
   methodName: string;
   explicitRef?: string;
+  preferReturnType?: boolean;
 }
 
 const GENERIC_WRAPPER_TYPES = new Set(['EventEnvelope', 'EventBase', 'Object']);
@@ -46,52 +49,40 @@ export class ManifestService {
     return this.scanEmitEventDecorators();
   }
 
+  private getMethodNames(instance: object): string[] {
+    const methodNames: string[] = [];
+    this.deps.metadataScanner.scanFromPrototype(instance, Object.getPrototypeOf(instance), (methodName) =>
+      methodNames.push(methodName),
+    );
+    return methodNames;
+  }
+
   private scanOnEventDecorators(): ManifestConsumeEntry[] {
-    const instances = this.getValidInstances();
-    const entries: ManifestConsumeEntry[] = [];
-    for (const instance of instances) {
-      this.scanOnInstance(instance, (methodName) => {
-        const entry = this.buildOnEventEntry(instance, methodName);
-        if (entry) entries.push(entry);
-      });
-    }
-    return entries;
+    return this.getValidInstances().flatMap((instance) =>
+      this.getMethodNames(instance)
+        .map((methodName) => this.buildOnEventEntry(instance, methodName))
+        .filter((entry): entry is ManifestConsumeEntry => entry != null),
+    );
   }
 
   private scanOnRequestReplyDecorators(): ManifestConsumeEntry[] {
-    const instances = this.getValidInstances();
-    const entries: ManifestConsumeEntry[] = [];
-    for (const instance of instances) {
-      this.scanOnInstance(instance, (methodName) => {
-        const entry = this.buildOnRequestReplyEntry(instance, methodName);
-        if (entry) entries.push(entry);
-      });
-    }
-    return entries;
+    return this.getValidInstances().flatMap((instance) =>
+      this.getMethodNames(instance)
+        .map((methodName) => this.buildOnRequestReplyEntry(instance, methodName))
+        .filter((entry): entry is ManifestConsumeEntry => entry != null),
+    );
   }
 
   private scanEmitEventDecorators(): ManifestProduceEntry[] {
-    const instances = this.getValidInstances();
-    const entries: ManifestProduceEntry[] = [];
-    for (const instance of instances) {
-      this.scanOnInstance(instance, (methodName) => {
-        const entry = this.buildEmitEventEntry(instance, methodName);
-        if (entry) entries.push(entry);
-      });
-    }
-    return entries;
-  }
-
-  private scanOnInstance(instance: object, callback: (methodName: string) => void): void {
-    this.deps.metadataScanner.scanFromPrototype(
-      instance,
-      Object.getPrototypeOf(instance),
-      callback,
+    return this.getValidInstances().flatMap((instance) =>
+      this.getMethodNames(instance)
+        .map((methodName) => this.buildEmitEventEntry(instance, methodName))
+        .filter((entry): entry is ManifestProduceEntry => entry != null),
     );
   }
 
   private buildOnEventEntry(instance: object, methodName: string): ManifestConsumeEntry | undefined {
-    const methodRef = (Object.getPrototypeOf(instance) as Record<string, Function>)[methodName];
+    const methodRef = (Object.getPrototypeOf(instance) as Record<string, AnyFunction>)[methodName];
     const options = this.deps.reflector.get<OnEventOptions>(ON_EVENT_METADATA, methodRef);
     if (!options) return undefined;
     const version = options.version ?? '1';
@@ -111,7 +102,7 @@ export class ManifestService {
   }
 
   private buildOnRequestReplyEntry(instance: object, methodName: string): ManifestConsumeEntry | undefined {
-    const methodRef = (Object.getPrototypeOf(instance) as Record<string, Function>)[methodName];
+    const methodRef = (Object.getPrototypeOf(instance) as Record<string, AnyFunction>)[methodName];
     const options = this.deps.reflector.get<OnRequestReplyOptions>(ON_REQUEST_REPLY_METADATA, methodRef);
     if (!options) return undefined;
     return {
@@ -130,7 +121,7 @@ export class ManifestService {
   }
 
   private buildEmitEventEntry(instance: object, methodName: string): ManifestProduceEntry | undefined {
-    const methodRef = (Object.getPrototypeOf(instance) as Record<string, Function>)[methodName];
+    const methodRef = (Object.getPrototypeOf(instance) as Record<string, AnyFunction>)[methodName];
     const options = this.deps.reflector.get<EmitEventOptions>(EMIT_EVENT_METADATA, methodRef);
     if (!options) return undefined;
     const version = options.version ?? '1';
@@ -140,6 +131,7 @@ export class ManifestService {
         prototype: Object.getPrototypeOf(instance),
         methodName,
         explicitRef: options.payloadSchemaRef,
+        preferReturnType: true,
       }),
       description: options.description ?? '',
       version,
@@ -152,9 +144,16 @@ export class ManifestService {
     if (params.explicitRef) {
       return params.explicitRef;
     }
-    const typeName = this.extractParamTypeName(params.prototype, params.methodName);
-    if (typeName) {
-      return typeName;
+    if (params.preferReturnType) {
+      const returnTypeName = this.extractReturnTypeName(params.prototype, params.methodName);
+      if (returnTypeName) {
+        return returnTypeName;
+      }
+      return this.extractParamTypeName(params.prototype, params.methodName);
+    }
+    const paramTypeName = this.extractParamTypeName(params.prototype, params.methodName);
+    if (paramTypeName) {
+      return paramTypeName;
     }
     return this.extractReturnTypeName(params.prototype, params.methodName);
   }
@@ -179,7 +178,7 @@ export class ManifestService {
     if (typeof type !== 'function') {
       return '';
     }
-    const name = (type as Function).name;
+    const name = (type as AnyFunction).name;
     if (!name || GENERIC_WRAPPER_TYPES.has(name)) {
       return '';
     }
@@ -187,10 +186,7 @@ export class ManifestService {
   }
 
   private getValidInstances(): object[] {
-    const allWrappers = [
-      ...this.deps.discovery.getProviders(),
-      ...this.deps.discovery.getControllers(),
-    ];
+    const allWrappers = [...this.deps.discovery.getProviders(), ...this.deps.discovery.getControllers()];
     return allWrappers
       .filter((w) => w.instance != null && typeof w.instance === 'object')
       .map((w) => w.instance as object);

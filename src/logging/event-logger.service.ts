@@ -27,6 +27,15 @@ export class EventLoggerService {
   }
 
   /**
+   * Logs the generated service discovery manifest.
+   *
+   * @param manifest - The service manifest data to log.
+   */
+  logDiscoveryManifest(manifest: Record<string, unknown>): void {
+    this.logger.info('Discovery manifest generated', { manifest });
+  }
+
+  /**
    * Logs a successfully published event.
    *
    * @param context - Event metadata to include in the log entry.

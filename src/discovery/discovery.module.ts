@@ -1,9 +1,9 @@
 import { DynamicModule, Module, Type } from '@nestjs/common';
-import { DiscoveryService as NestDiscoveryService, Reflector, MetadataScanner } from '@nestjs/core';
 import { DISCOVERY_MODULE_OPTIONS, EventsToolkitDiscoveryOptions } from './discovery-service-options.interface';
 import { DiscoveryService } from './discovery.service';
 import { ManifestService } from './manifest.service';
 import { MANIFEST_SERVICE_DEPS_TOKEN } from './manifest-deps.interface';
+import { ManifestServiceDepsProvider } from './manifest-deps.provider';
 import { ServiceInfo } from './service-info.interface';
 
 /** Resolved options used internally by DiscoveryModule providers. */
@@ -29,12 +29,7 @@ const DEFAULT_DISCOVERY_OPTIONS: DiscoveryModuleOptions = {
 
 const MANIFEST_DEPS_FACTORY = {
   provide: MANIFEST_SERVICE_DEPS_TOKEN,
-  useFactory: (discovery: NestDiscoveryService, reflector: Reflector, metadataScanner: MetadataScanner) => ({
-    discovery,
-    reflector,
-    metadataScanner,
-  }),
-  inject: [NestDiscoveryService, Reflector, MetadataScanner],
+  useClass: ManifestServiceDepsProvider,
 };
 
 function resolveDiscoveryOptions(userOptions: EventsToolkitDiscoveryOptions): DiscoveryModuleOptions {
