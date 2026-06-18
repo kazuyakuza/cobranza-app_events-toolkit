@@ -3,21 +3,19 @@ import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { concatMap } from 'rxjs/operators';
 import { EventContext } from '../../common/envelope/event-context.interface';
-import { BuildSubjectDto } from '../../common/dto/build-subject.dto';
-import { SubjectBuilder } from '../../common/utils/subject.builder';
 import { ProducerService } from '../producer.service';
-import { EMIT_EVENT_METADATA, EmitEventOptions } from './emit-event.decorator';
+import { EMIT_EVENT_METADATA, EmitEventMetadata } from './emit-event.decorator';
 
 /** Internal bundle passed to handleEmission for post-handler event publishing. */
 interface EmissionInput {
-  options: EmitEventOptions;
+  metadata: EmitEventMetadata;
   context: ExecutionContext;
   data: unknown;
 }
 
 /** Internal bundle passed to emitEvent for subject building and publishing. */
 interface EmitEventInput {
-  options: EmitEventOptions;
+  metadata: EmitEventMetadata;
   eventContext: EventContext;
   data: unknown;
 }
@@ -26,7 +24,7 @@ interface EmitEventInput {
  * NestJS interceptor that auto-publishes events for @EmitEvent() decorated methods.
  *
  * Reads the subject-building metadata stored by @EmitEvent(), builds the NATS subject
- * using SubjectBuilder, extracts EventContext from method arguments, and calls
+ * from the eventType and version, extracts EventContext from method arguments, and calls
  * ProducerService.emit() with the method's return value after successful execution.
  *
  * Must be bound via @UseInterceptors(EmitEventInterceptor) on controllers or methods.
@@ -34,8 +32,6 @@ interface EmitEventInput {
  */
 @Injectable()
 export class EmitEventInterceptor implements NestInterceptor {
-  private readonly subjectBuilder = new SubjectBuilder();
-
   constructor(
     private readonly reflector: Reflector,
     private readonly producerService: ProducerService,
@@ -50,18 +46,18 @@ export class EmitEventInterceptor implements NestInterceptor {
    * @returns Observable that resolves to the handler's return value.
    */
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const options = this.reflector.get<EmitEventOptions>(EMIT_EVENT_METADATA, context.getHandler());
-    if (!options) {
+    const metadata = this.reflector.get<EmitEventMetadata>(EMIT_EVENT_METADATA, context.getHandler());
+    if (!metadata) {
       return next.handle();
     }
 
-    return next.handle().pipe(concatMap(async (data) => await this.handleEmission({ options, context, data })));
+    return next.handle().pipe(concatMap(async (data) => await this.handleEmission({ metadata, context, data })));
   }
 
   private async handleEmission(input: EmissionInput): Promise<unknown> {
     const eventContext = this.findEventContext(input.context);
     if (eventContext) {
-      await this.emitEvent({ options: input.options, eventContext, data: input.data });
+      await this.emitEvent({ metadata: input.metadata, eventContext, data: input.data });
     }
     return input.data;
   }
@@ -84,18 +80,12 @@ export class EmitEventInterceptor implements NestInterceptor {
   }
 
   private async emitEvent(input: EmitEventInput): Promise<void> {
-    const subject = this.buildSubject(input.options, input.eventContext);
+    const subject = this.buildSubject(input.metadata, input.eventContext);
     await this.producerService.emit({ subject, data: input.data, context: input.eventContext });
   }
 
-  private buildSubject(options: EmitEventOptions, eventContext: EventContext): string {
-    const dto = Object.assign(new BuildSubjectDto(), {
-      companyId: eventContext.companyId,
-      domain: options.domain,
-      entity: options.entity,
-      action: options.action,
-      version: options.version ?? '1',
-    });
-    return this.subjectBuilder.build(dto);
+  private buildSubject(metadata: EmitEventMetadata, eventContext: EventContext): string {
+    const version = metadata.version ?? '1';
+    return `company.${eventContext.companyId}.${metadata.eventType}.v${version}`;
   }
 }

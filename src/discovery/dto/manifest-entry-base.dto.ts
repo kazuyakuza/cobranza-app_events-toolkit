@@ -12,4 +12,6 @@ export interface ManifestEntryBase {
   handler: string;
   /** Arbitrary tags for categorization and filtering. */
   tags: string[];
+  /** Example payload object for documentation in discovery manifests. */
+  payloadExample?: Record<string, unknown>;
 }

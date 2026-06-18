@@ -3,10 +3,18 @@ import { SetMetadata } from '@nestjs/common';
 /** Metadata key for @OnRequestReply() decorator. */
 export const ON_REQUEST_REPLY_METADATA = 'on_request_reply_metadata';
 
-/** Options for the @OnRequestReply() method decorator. */
-export interface OnRequestReplyOptions {
-  /** Dot-notation event type (e.g. 'payment.proof.uploaded'). */
+/** Internal stored metadata shape for @OnRequestReply. */
+export interface OnRequestReplyMetadata {
   eventType: string;
+  companyId?: string;
+  description?: string;
+  tags?: string[];
+  payloadSchemaRef?: string;
+  payloadExample?: Record<string, unknown>;
+}
+
+/** Options for the @OnRequestReply() method decorator (second argument). */
+export interface OnRequestReplyOptions {
   /**
    * Optional tenant identifier.
    * When set, the handler is only dispatched for responses whose
@@ -19,6 +27,8 @@ export interface OnRequestReplyOptions {
   tags?: string[];
   /** Explicit payload schema reference (e.g., 'PaymentProofUploadedData'). */
   payloadSchemaRef?: string;
+  /** Example payload object for documentation in discovery manifests. */
+  payloadExample?: Record<string, unknown>;
 }
 
 /**
@@ -30,12 +40,13 @@ export interface OnRequestReplyOptions {
  *
  * @example
  * ```ts
- * @OnRequestReply({ eventType: 'payment.proof.uploaded' })
+ * @OnRequestReply('payment.proof.uploaded', { companyId: '550e8400-e29b-41d4-a716-446655440000' })
  * async handleResponse(event: EventEnvelope<PaymentProofData>) {
  *   // handle response
  * }
  * ```
  */
-export function OnRequestReply(options: OnRequestReplyOptions): MethodDecorator {
-  return SetMetadata(ON_REQUEST_REPLY_METADATA, options);
+export function OnRequestReply(eventType: string, options?: OnRequestReplyOptions): MethodDecorator {
+  const metadata: OnRequestReplyMetadata = { eventType, ...options };
+  return SetMetadata(ON_REQUEST_REPLY_METADATA, metadata);
 }

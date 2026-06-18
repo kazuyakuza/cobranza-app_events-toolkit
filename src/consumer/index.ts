@@ -12,7 +12,7 @@ export {
   ConsumerModuleOptions,
   ConsumerModuleAsyncOptions,
 } from './consumer.module';
-export { OnEvent, ON_EVENT_METADATA, OnEventOptions } from './decorators/on-event.decorator';
+export { OnEvent, ON_EVENT_METADATA, OnEventOptions, OnEventMetadata } from './decorators/on-event.decorator';
 export { OnEventExplorer } from './decorators/on-event.explorer';
 export { ON_EVENT_EXPLORER_DEPS_TOKEN, OnEventExplorerDeps } from './decorators/on-event-explorer-deps.interface';
 export { DispatchOptions } from './dispatch-options.interface';
@@ -27,6 +27,7 @@ export {
   OnRequestReply,
   ON_REQUEST_REPLY_METADATA,
   OnRequestReplyOptions,
+  OnRequestReplyMetadata,
 } from './decorators/on-request-reply.decorator';
 export { OnRequestReplyExplorer } from './decorators/on-request-reply.explorer';
 export {

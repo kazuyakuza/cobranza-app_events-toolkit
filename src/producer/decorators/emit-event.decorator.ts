@@ -3,14 +3,18 @@ import { SetMetadata } from '@nestjs/common';
 /** Metadata key for @EmitEvent() decorator. */
 export const EMIT_EVENT_METADATA = 'emit_event_metadata';
 
-/** Options for the @EmitEvent() method decorator. */
+/** Internal stored metadata shape for @EmitEvent. */
+export interface EmitEventMetadata {
+  eventType: string;
+  version?: string;
+  description?: string;
+  tags?: string[];
+  payloadSchemaRef?: string;
+  payloadExample?: Record<string, unknown>;
+}
+
+/** Options for the @EmitEvent() method decorator (second argument). */
 export interface EmitEventOptions {
-  /** Business domain (e.g. 'payment', 'debt'). */
-  domain: string;
-  /** Main entity involved (e.g. 'proof', 'statement'). */
-  entity: string;
-  /** Verb in past tense describing the action (e.g. 'uploaded', 'created'). */
-  action: string;
   /** Major version number (default: '1'). */
   version?: string;
   /** Human-readable description for discovery manifests. */
@@ -19,6 +23,8 @@ export interface EmitEventOptions {
   tags?: string[];
   /** Explicit payload schema reference (e.g., 'PaymentProofUploadedEvent'). */
   payloadSchemaRef?: string;
+  /** Example payload object for documentation in discovery manifests. */
+  payloadExample?: Record<string, unknown>;
 }
 
 /**
@@ -29,12 +35,13 @@ export interface EmitEventOptions {
  *
  * @example
  * ```ts
- * @EmitEvent({ domain: 'payment', entity: 'proof', action: 'uploaded' })
+ * @EmitEvent('payment.proof.uploaded', { version: '1', description: 'Proof was uploaded' })
  * async handleProofUpload(data: ProofData, context: EventContext) {
  *   return new PaymentProofUploadedEvent(data, context);
  * }
  * ```
  */
-export function EmitEvent(options: EmitEventOptions): MethodDecorator {
-  return SetMetadata(EMIT_EVENT_METADATA, options);
+export function EmitEvent(eventType: string, options?: EmitEventOptions): MethodDecorator {
+  const metadata: EmitEventMetadata = { eventType, ...options };
+  return SetMetadata(EMIT_EVENT_METADATA, metadata);
 }

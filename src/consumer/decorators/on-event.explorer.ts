@@ -1,6 +1,6 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { EventHandler } from '../consumer.service';
-import { ON_EVENT_METADATA, OnEventOptions } from './on-event.decorator';
+import { ON_EVENT_METADATA, OnEventMetadata } from './on-event.decorator';
 import { ON_EVENT_EXPLORER_DEPS_TOKEN, OnEventExplorerDeps } from './on-event-explorer-deps.interface';
 
 /** Pairs a class instance with its prototype for method metadata scanning. */
@@ -66,18 +66,18 @@ export class OnEventExplorer implements OnModuleInit {
 
   private tryRegisterHandler(target: HandlerTarget, methodName: string): void {
     const methodRef = (target.prototype as Record<string, (...args: unknown[]) => unknown>)[methodName];
-    const options = this.deps.reflector.get<OnEventOptions>(ON_EVENT_METADATA, methodRef);
-    if (!options) return;
+    const metadata = this.deps.reflector.get<OnEventMetadata>(ON_EVENT_METADATA, methodRef);
+    if (!metadata) return;
 
     const handler = (target.instance as Record<string, (...args: unknown[]) => unknown>)[methodName].bind(
       target.instance,
     ) as EventHandler;
-    const subject = this.buildWildcardSubject(options);
+    const subject = this.buildWildcardSubject(metadata);
     this.deps.consumerService.registerHandler(subject, handler);
   }
 
-  private buildWildcardSubject(options: OnEventOptions): string {
-    const version = options.version ?? '1';
-    return `company.*.${options.domain}.${options.entity}.${options.action}.v${version}`;
+  private buildWildcardSubject(metadata: OnEventMetadata): string {
+    const version = metadata.version ?? '1';
+    return `company.*.${metadata.eventType}.v${version}`;
   }
 }

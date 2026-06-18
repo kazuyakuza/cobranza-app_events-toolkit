@@ -5,12 +5,10 @@ import { ManifestProduceEntry } from './dto/manifest-produce-entry.dto';
 import { MANIFEST_SERVICE_DEPS_TOKEN, ManifestServiceDeps } from './manifest-deps.interface';
 import { ServiceInfo } from './service-info.interface';
 import { generateInstanceId } from './instance-id.utils';
-import { ON_EVENT_METADATA, OnEventOptions } from '../consumer/decorators/on-event.decorator';
-import { EMIT_EVENT_METADATA, EmitEventOptions } from '../producer/decorators/emit-event.decorator';
-import { ON_REQUEST_REPLY_METADATA, OnRequestReplyOptions } from '../consumer/decorators/on-request-reply.decorator';
-
-/** Placeholder token in producer subjects replaced with the actual company ID at runtime. */
-const COMPANY_ID_PLACEHOLDER = '{companyId}';
+import { ON_EVENT_METADATA, OnEventMetadata } from '../consumer/decorators/on-event.decorator';
+import { EMIT_EVENT_METADATA, EmitEventMetadata } from '../producer/decorators/emit-event.decorator';
+import { ON_REQUEST_REPLY_METADATA, OnRequestReplyMetadata } from '../consumer/decorators/on-request-reply.decorator';
+import { ManifestEntryBuilder } from './manifest-entry.builder';
 
 /** Generic callable type used for prototype method access. */
 type AnyFunction = (...args: unknown[]) => unknown;
@@ -36,6 +34,8 @@ const GENERIC_WRAPPER_TYPES = new Set(['EventEnvelope', 'EventBase', 'Object']);
  */
 @Injectable()
 export class ManifestService {
+  private readonly entryBuilder = new ManifestEntryBuilder();
+
   constructor(@Inject(MANIFEST_SERVICE_DEPS_TOKEN) private readonly deps: ManifestServiceDeps) {}
 
   /**
@@ -108,75 +108,53 @@ export class ManifestService {
   /**
    * Builds a consume entry from @OnEvent decorator metadata on the given method.
    *
-   * @returns The consume entry, or undefined if the method has no @OnEvent decorator.
+   * @returns The consume entry, or null if the method has no @OnEvent decorator.
    */
-  private buildOnEventEntry(instance: object, methodName: string): ManifestConsumeEntry | undefined {
+  private buildOnEventEntry(instance: object, methodName: string): ManifestConsumeEntry | null {
     const methodRef = (Object.getPrototypeOf(instance) as Record<string, AnyFunction>)[methodName];
-    const options = this.deps.reflector.get<OnEventOptions>(ON_EVENT_METADATA, methodRef);
-    if (!options) return undefined;
-    const version = options.version ?? '1';
-    return {
-      subject: `company.*.${options.domain}.${options.entity}.${options.action}.v${version}`,
-      payloadSchemaRef: this.extractPayloadSchemaRef({
-        prototype: Object.getPrototypeOf(instance),
-        methodName,
-        explicitRef: options.payloadSchemaRef,
-      }),
-      description: options.description ?? '',
-      version,
-      handler: methodName,
-      tags: options.tags ?? [],
-      type: 'event',
-    };
+    const metadata = this.deps.reflector.get<OnEventMetadata>(ON_EVENT_METADATA, methodRef);
+    if (!metadata) return null;
+    const payloadSchemaRef = this.extractPayloadSchemaRef({
+      prototype: Object.getPrototypeOf(instance),
+      methodName,
+      explicitRef: metadata.payloadSchemaRef,
+    });
+    return this.entryBuilder.buildOnEventEntry(metadata, methodName, payloadSchemaRef);
   }
 
   /**
    * Builds a consume entry from @OnRequestReply decorator metadata on the given method.
    *
-   * @returns The consume entry, or undefined if the method has no @OnRequestReply decorator.
+   * @returns The consume entry, or null if the method has no @OnRequestReply decorator.
    */
-  private buildOnRequestReplyEntry(instance: object, methodName: string): ManifestConsumeEntry | undefined {
+  private buildOnRequestReplyEntry(instance: object, methodName: string): ManifestConsumeEntry | null {
     const methodRef = (Object.getPrototypeOf(instance) as Record<string, AnyFunction>)[methodName];
-    const options = this.deps.reflector.get<OnRequestReplyOptions>(ON_REQUEST_REPLY_METADATA, methodRef);
-    if (!options) return undefined;
-    return {
-      subject: options.eventType,
-      payloadSchemaRef: this.extractPayloadSchemaRef({
-        prototype: Object.getPrototypeOf(instance),
-        methodName,
-        explicitRef: options.payloadSchemaRef,
-      }),
-      description: options.description ?? '',
-      version: '1',
-      handler: methodName,
-      tags: options.tags ?? [],
-      type: 'request-reply',
-    };
+    const metadata = this.deps.reflector.get<OnRequestReplyMetadata>(ON_REQUEST_REPLY_METADATA, methodRef);
+    if (!metadata) return null;
+    const payloadSchemaRef = this.extractPayloadSchemaRef({
+      prototype: Object.getPrototypeOf(instance),
+      methodName,
+      explicitRef: metadata.payloadSchemaRef,
+    });
+    return this.entryBuilder.buildOnRequestReplyEntry(metadata, methodName, payloadSchemaRef);
   }
 
   /**
    * Builds a produce entry from @EmitEvent decorator metadata on the given method.
    *
-   * @returns The produce entry, or undefined if the method has no @EmitEvent decorator.
+   * @returns The produce entry, or null if the method has no @EmitEvent decorator.
    */
-  private buildEmitEventEntry(instance: object, methodName: string): ManifestProduceEntry | undefined {
+  private buildEmitEventEntry(instance: object, methodName: string): ManifestProduceEntry | null {
     const methodRef = (Object.getPrototypeOf(instance) as Record<string, AnyFunction>)[methodName];
-    const options = this.deps.reflector.get<EmitEventOptions>(EMIT_EVENT_METADATA, methodRef);
-    if (!options) return undefined;
-    const version = options.version ?? '1';
-    return {
-      subject: `company.${COMPANY_ID_PLACEHOLDER}.${options.domain}.${options.entity}.${options.action}.v${version}`,
-      payloadSchemaRef: this.extractPayloadSchemaRef({
-        prototype: Object.getPrototypeOf(instance),
-        methodName,
-        explicitRef: options.payloadSchemaRef,
-        preferReturnType: true,
-      }),
-      description: options.description ?? '',
-      version,
-      handler: methodName,
-      tags: options.tags ?? [],
-    };
+    const metadata = this.deps.reflector.get<EmitEventMetadata>(EMIT_EVENT_METADATA, methodRef);
+    if (!metadata) return null;
+    const payloadSchemaRef = this.extractPayloadSchemaRef({
+      prototype: Object.getPrototypeOf(instance),
+      methodName,
+      explicitRef: metadata.payloadSchemaRef,
+      preferReturnType: true,
+    });
+    return this.entryBuilder.buildEmitEventEntry(metadata, methodName, payloadSchemaRef);
   }
 
   /**

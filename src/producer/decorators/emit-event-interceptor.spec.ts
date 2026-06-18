@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { Reflector } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import { EmitEventInterceptor } from './emit-event-interceptor';
-import { EmitEventOptions, EmitEvent } from './emit-event.decorator';
+import { EmitEvent } from './emit-event.decorator';
 import { ProducerService } from '../producer.service';
 import { JETSTREAM_TOKEN } from '../producer.module';
 import { EventLoggerService } from '../../logging/event-logger.service';
@@ -60,9 +60,8 @@ describe('EmitEventInterceptor', () => {
     });
 
     it('should emit event when @EmitEvent metadata is present', async () => {
-      const options: EmitEventOptions = { domain: 'payment', entity: 'proof', action: 'uploaded', version: '1' };
       class WithMetadataProducer {
-        @EmitEvent(options) handleUpload(): void {}
+        @EmitEvent('payment.proof.uploaded', { version: '1' }) handleUpload(): void {}
       }
       const handler = WithMetadataProducer.prototype.handleUpload;
       const data = { amount: 250 };
@@ -70,16 +69,15 @@ describe('EmitEventInterceptor', () => {
       const emitSpy = jest.spyOn(producerService, 'emit');
       await subscribeToResult(interceptor.intercept(context, createMockCallHandler(data)));
       expect(emitSpy).toHaveBeenCalledWith({
-        subject: 'company.550e8400e29b41d4a716446655440000.payment.proof.uploaded.v1',
+        subject: 'company.550e8400-e29b-41d4-a716-446655440000.payment.proof.uploaded.v1',
         data,
         context: sampleContext,
       });
     });
 
     it('should emit event with default version when version is not specified', async () => {
-      const options: EmitEventOptions = { domain: 'debt', entity: 'schedule', action: 'processed' };
       class NoVersionProducer {
-        @EmitEvent(options) handleProcessed(): void {}
+        @EmitEvent('debt.schedule.processed') handleProcessed(): void {}
       }
       const handler = NoVersionProducer.prototype.handleProcessed;
       const data = { scheduleId: 'sch-1' };
@@ -88,15 +86,14 @@ describe('EmitEventInterceptor', () => {
       await subscribeToResult(interceptor.intercept(context, createMockCallHandler(data)));
       expect(emitSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          subject: 'company.550e8400e29b41d4a716446655440000.debt.schedule.processed.v1',
+          subject: 'company.550e8400-e29b-41d4-a716-446655440000.debt.schedule.processed.v1',
         }),
       );
     });
 
     it('should skip emission when EventContext is not found in arguments', async () => {
-      const options: EmitEventOptions = { domain: 'payment', entity: 'proof', action: 'uploaded' };
       class NoContextProducer {
-        @EmitEvent(options) handleUpload(): void {}
+        @EmitEvent('payment.proof.uploaded') handleUpload(): void {}
       }
       const handler = NoContextProducer.prototype.handleUpload;
       const context = createMockExecutionContext(handler, [{ plainData: true }]);
@@ -106,9 +103,8 @@ describe('EmitEventInterceptor', () => {
     });
 
     it('should find EventContext among multiple arguments', async () => {
-      const options: EmitEventOptions = { domain: 'payment', entity: 'proof', action: 'uploaded' };
       class MultipleArgsProducer {
-        @EmitEvent(options) handleUpload(): void {}
+        @EmitEvent('payment.proof.uploaded') handleUpload(): void {}
       }
       const handler = MultipleArgsProducer.prototype.handleUpload;
       const data = { proofId: 'p-1' };
@@ -119,9 +115,8 @@ describe('EmitEventInterceptor', () => {
     });
 
     it('should return the original handler return value', async () => {
-      const options: EmitEventOptions = { domain: 'payment', entity: 'proof', action: 'uploaded' };
       class ReturnValueProducer {
-        @EmitEvent(options) handleUpload(): void {}
+        @EmitEvent('payment.proof.uploaded') handleUpload(): void {}
       }
       const handler = ReturnValueProducer.prototype.handleUpload;
       const returnValue = { id: 'evt-123', type: 'proof_uploaded' };

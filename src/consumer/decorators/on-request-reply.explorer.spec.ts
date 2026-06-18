@@ -8,12 +8,12 @@ import { OnRequestReplyExplorerDeps } from './on-request-reply-explorer-deps.int
 class SampleConsumer {
   handlerInvoked = false;
 
-  @OnRequestReply({ eventType: 'payment.proof.uploaded', companyId: 'tenant-1' })
+  @OnRequestReply('payment.proof.uploaded', { companyId: 'tenant-1' })
   handleProofUploaded(): void {
     this.handlerInvoked = true;
   }
 
-  @OnRequestReply({ eventType: 'debt.schedule.created' })
+  @OnRequestReply('debt.schedule.created')
   handleScheduleCreated(): void {
     this.handlerInvoked = true;
   }
@@ -28,7 +28,7 @@ class ConsumerWithoutDecorator {
 class CompanyScopedConsumer {
   handlerInvoked = false;
 
-  @OnRequestReply({ eventType: 'client.profile.updated', companyId: 'tenant-2' })
+  @OnRequestReply('client.profile.updated', { companyId: 'tenant-2' })
   handleUpdated(): void {
     this.handlerInvoked = true;
   }

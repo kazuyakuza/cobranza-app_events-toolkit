@@ -11,12 +11,12 @@ import { EventContext } from '../../common/envelope/event-context.interface';
 class SampleConsumer {
   handlerInvoked = false;
 
-  @OnEvent({ domain: 'payment', entity: 'proof', action: 'uploaded', version: '1' })
+  @OnEvent('payment.proof.uploaded', { version: '1' })
   handleProofUploaded(): void {
     this.handlerInvoked = true;
   }
 
-  @OnEvent({ domain: 'debt', entity: 'schedule', action: 'created' })
+  @OnEvent('debt.schedule.created')
   handleScheduleCreated(): void {
     this.handlerInvoked = true;
   }
@@ -31,7 +31,7 @@ class ConsumerWithoutDecorator {
 class CustomVersionConsumer {
   handlerInvoked = false;
 
-  @OnEvent({ domain: 'client', entity: 'profile', action: 'updated', version: '2' })
+  @OnEvent('client.profile.updated', { version: '2' })
   handleUpdated(): void {
     this.handlerInvoked = true;
   }

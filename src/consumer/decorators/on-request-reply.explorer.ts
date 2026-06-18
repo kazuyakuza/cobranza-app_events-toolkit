@@ -1,6 +1,6 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { EventHandler } from '../consumer.service';
-import { ON_REQUEST_REPLY_METADATA, OnRequestReplyOptions } from './on-request-reply.decorator';
+import { ON_REQUEST_REPLY_METADATA, OnRequestReplyMetadata } from './on-request-reply.decorator';
 import {
   ON_REQUEST_REPLY_EXPLORER_DEPS_TOKEN,
   OnRequestReplyExplorerDeps,
@@ -60,17 +60,17 @@ export class OnRequestReplyExplorer implements OnModuleInit {
 
   private tryRegisterHandler(target: HandlerTarget, methodName: string): void {
     const methodRef = (target.prototype as Record<string, (...args: unknown[]) => unknown>)[methodName];
-    const options = this.deps.reflector.get<OnRequestReplyOptions>(ON_REQUEST_REPLY_METADATA, methodRef);
-    if (!options) return;
+    const metadata = this.deps.reflector.get<OnRequestReplyMetadata>(ON_REQUEST_REPLY_METADATA, methodRef);
+    if (!metadata) return;
 
     const handler = (target.instance as Record<string, (...args: unknown[]) => unknown>)[methodName].bind(
       target.instance,
     ) as EventHandler;
 
     this.deps.requestReplyConsumerService.registerHandler({
-      eventType: options.eventType,
+      eventType: metadata.eventType,
       handler,
-      companyId: options.companyId,
+      companyId: metadata.companyId,
     });
   }
 }
