@@ -4,9 +4,9 @@
 
 | Category | Technology | Purpose |
 |----------|-----------|---------|
-| **Runtime** | Node.js >= 18 | JavaScript runtime |
+| **Runtime** | Node.js >= 20 | JavaScript runtime |
 | **Language** | TypeScript 5.x | Static typing, decorators |
-| **Framework** | NestJS 10.x | Module system, DI, decorators |
+| **Framework** | NestJS 11.x | Module system, DI, decorators |
 | **Validation** | `class-validator` 0.14.x | Runtime validation via decorators |
 | **Transformation** | `class-transformer` 0.5.x | Plain object -> class instance |
 | **UUID** | `uuid` 9.x | UUIDv7 generation for event IDs |
@@ -20,7 +20,7 @@
 ## 2. Development Setup
 
 ### Prerequisites
-- Node.js >= 18.0.0
+- Node.js >= 20.0.0
 - npm >= 9 or pnpm >= 8
 - NATS server (for integration testing) — can use Docker: `docker run -p 4222:4222 nats:latest -js`
 
@@ -57,8 +57,8 @@ npm run test:e2e
     "format": "prettier --write src/"
   },
   "peerDependencies": {
-    "@nestjs/common": "^10.0.0",
-    "@nestjs/microservices": "^10.0.0",
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/microservices": "^11.0.0",
     "class-transformer": "^0.5.0",
     "class-validator": "^0.14.0",
     "nats": "^2.0.0"
@@ -71,7 +71,7 @@ npm run test:e2e
   "devDependencies": {
     "@types/better-sqlite3": "^7.0.0",
     "@types/uuid": "^9.0.0",
-    "@nestjs/testing": "^10.0.0",
+    "@nestjs/testing": "^11.0.0",
     "typescript": "^5.0.0",
     "jest": "^29.0.0",
     "ts-jest": "^29.0.0",
@@ -170,8 +170,8 @@ await this.outboxService.saveToOutbox(eventEnvelope);
 
 ## 7. Version Compatibility
 
-- NestJS 10.x (peer dependency — consumer microservice chooses exact version).
-- Node.js >= 18.
+- NestJS 11.x (peer dependency — consumer microservice chooses exact version).
+- Node.js >= 20.
 - NATS server >= 2.10 with JetStream enabled.
 - SQLite 3.x (via `better-sqlite3`).
 

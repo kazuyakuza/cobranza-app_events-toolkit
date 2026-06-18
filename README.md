@@ -2,9 +2,9 @@
 
 NATS + JetStream event handling library for the Cobranza App microservices platform.
 
-[![NestJS](https://img.shields.io/badge/NestJS-10.x-E0234E?logo=nestjs)](https://nestjs.com)
+[![NestJS](https://img.shields.io/badge/NestJS-11.x-E0234E?logo=nestjs)](https://nestjs.com)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript)](https://www.typescriptlang.org)
-[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-339933?logo=node.js)](https://nodejs.org)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20-339933?logo=node.js)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-Unlicense-blue.svg)](LICENSE)
 
 ---
@@ -56,9 +56,9 @@ The following must be installed in the consuming microservice:
 
 ```json
 {
-  "@nestjs/common": "^10.0.0",
-  "@nestjs/core": "^10.0.0",
-  "@nestjs/microservices": "^10.0.0",
+  "@nestjs/common": "^11.0.0",
+  "@nestjs/core": "^11.0.0",
+  "@nestjs/microservices": "^11.0.0",
   "class-transformer": "^0.5.0",
   "class-validator": "^0.14.0",
   "nats": "^2.0.0"
@@ -67,7 +67,7 @@ The following must be installed in the consuming microservice:
 
 ### Requirements
 
-- Node.js >= 18
+- Node.js >= 20
 - NATS server >= 2.10 with JetStream enabled
 
 ---
