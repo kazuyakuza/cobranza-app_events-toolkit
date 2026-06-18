@@ -35,6 +35,11 @@ export class MockProducerService {
     return this.published.at(-1);
   }
 
+  /** Returns all published events matching the given NATS subject. */
+  getPublishedEventsBySubject(subject: string): ReadonlyArray<PublishedEvent> {
+    return this.published.filter((entry) => entry.subject === subject);
+  }
+
   /** Returns all published subject strings in insertion order. */
   getPublishedSubjects(): string[] {
     return this.published.map((entry) => entry.subject);

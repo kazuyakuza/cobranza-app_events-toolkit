@@ -96,4 +96,20 @@ describe('MockProducerService', () => {
     expect(service.count).toBe(0);
     expect(service.getPublishedEvents()).toEqual([]);
   });
+
+  describe('getPublishedEventsBySubject', () => {
+    it('returns events matching the subject', async () => {
+      await service.publish('platform.service.register.v1', createTestEnvelope());
+      await service.publish('platform.service.heartbeat.v1', createTestEnvelope());
+      await service.publish('platform.service.register.v1', createTestEnvelope());
+
+      const result = service.getPublishedEventsBySubject('platform.service.register.v1');
+      expect(result.length).toBe(2);
+    });
+
+    it('returns empty array when no events match', () => {
+      const result = service.getPublishedEventsBySubject('nonexistent.subject');
+      expect(result).toEqual([]);
+    });
+  });
 });
