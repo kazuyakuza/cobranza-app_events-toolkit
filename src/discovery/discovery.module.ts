@@ -4,9 +4,13 @@ import { DiscoveryService } from './discovery.service';
 
 /** Resolved options used internally by DiscoveryModule providers. */
 export interface DiscoveryModuleOptions {
+  /** Whether the discovery subsystem is enabled. */
   enabled: boolean;
+  /** Whether to register the service manifest on application startup. */
   registerOnStartup: boolean;
+  /** Heartbeat interval in minutes. 0 disables heartbeat. */
   heartbeatIntervalMinutes: number;
+  /** Whether to include the full manifest payload in heartbeat messages. */
   includeFullManifestInHeartbeat: boolean;
 }
 
@@ -30,14 +34,18 @@ function resolveDiscoveryOptions(userOptions: EventsToolkitDiscoveryOptions): Di
 
 /** Asynchronous options for DiscoveryModule.forRootAsync. */
 export interface DiscoveryModuleAsyncOptions {
+  /** Additional NestJS modules to import alongside the discovery module. */
   imports?: Array<Type<unknown> | DynamicModule | Promise<DynamicModule>>;
+  /** Factory that resolves discovery options at runtime. */
   useFactory: (...args: unknown[]) => EventsToolkitDiscoveryOptions | Promise<EventsToolkitDiscoveryOptions>;
+  /** Tokens to inject into the factory function. */
   inject?: Array<string | symbol | Type<unknown>>;
 }
 
 /** NestJS dynamic module for service discovery and manifest registration. */
 @Module({})
 export class DiscoveryModule {
+  /** Registers the discovery module with synchronous options. */
   static forRoot(options: EventsToolkitDiscoveryOptions): DynamicModule {
     const resolvedOptions = resolveDiscoveryOptions(options);
     const providers = [{ provide: DISCOVERY_MODULE_OPTIONS, useValue: resolvedOptions }, DiscoveryService];
@@ -51,6 +59,7 @@ export class DiscoveryModule {
     };
   }
 
+  /** Registers the discovery module with asynchronous options resolved via a factory. */
   static forRootAsync(asyncOptions: DiscoveryModuleAsyncOptions): DynamicModule {
     const providers = [
       {

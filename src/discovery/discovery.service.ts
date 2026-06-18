@@ -3,6 +3,7 @@ import { DISCOVERY_MODULE_OPTIONS } from './discovery-service-options.interface'
 import { DiscoveryModuleOptions } from './discovery.module';
 import { EventLoggerService } from '../logging/event-logger.service';
 
+/** Handles service manifest registration and heartbeat emission for discovery. */
 @Injectable()
 export class DiscoveryService implements OnModuleInit {
   private readonly resolvedOptions: DiscoveryModuleOptions;
@@ -16,6 +17,7 @@ export class DiscoveryService implements OnModuleInit {
     this.logger = logger ?? new EventLoggerService();
   }
 
+  /** Emits a discovery lifecycle event on startup when the subsystem is enabled and registration is active. */
   onModuleInit(): void {
     if (!this.resolvedOptions.enabled) {
       return;
