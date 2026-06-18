@@ -10,8 +10,11 @@ export interface SchemaGeneratorOptions {
 
 /** Resolved options with defaults applied. */
 export interface ResolvedSchemaGeneratorOptions {
+  /** Directory path where schema JSON files are persisted. */
   readonly schemaDir: string;
+  /** Whether to regenerate all schemas even if cached files exist. */
   readonly forceRegenerate: boolean;
+  /** JSON Schema draft version URI used in $schema references. */
   readonly schemaDraftUri: string;
 }
 

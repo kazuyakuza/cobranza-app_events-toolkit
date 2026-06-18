@@ -6,7 +6,9 @@ import type { ResolvedSchemaGeneratorOptions } from './schema-generator-options.
 
 /** Parameters for persisting a single schema. */
 interface PersistSchemaParams {
+  /** Schema reference name used as the output filename. */
   readonly name: string;
+  /** JSON Schema object to persist. */
   readonly schema: JsonSchemaObject;
 }
 
@@ -68,12 +70,14 @@ export class SchemaPersister {
     }
   }
 
+  /** Ensure the schema output directory exists, creating it recursively if needed. */
   private ensureDir(): void {
     if (!existsSync(this.schemaDir)) {
       mkdirSync(this.schemaDir, { recursive: true });
     }
   }
 
+  /** Read and parse a JSON file, returning undefined if it does not exist. */
   private readJsonFile<T>(filePath: string): T | undefined {
     if (!existsSync(filePath)) return undefined;
     try {
@@ -83,6 +87,7 @@ export class SchemaPersister {
     }
   }
 
+  /** Serialize content as pretty-printed JSON and write it to the given path. */
   private writeJsonFile(filePath: string, content: unknown): void {
     try {
       writeFileSync(filePath, JSON.stringify(content, null, 2), 'utf-8');
@@ -91,6 +96,7 @@ export class SchemaPersister {
     }
   }
 
+  /** Compute a truncated SHA-256 hex hash for cache validation. */
   private computeHash(content: string): string {
     return createHash('sha256').update(content).digest('hex').slice(0, 16);
   }

@@ -10,8 +10,11 @@ import { SchemaPersister } from './schema-persister';
 
 /** Generates JSON Schemas from class-validator-decorated DTO classes and persists them to disk. */
 export class SchemaGenerator {
+  /** Resolved generator configuration with defaults applied. */
   private readonly options: ResolvedSchemaGeneratorOptions;
+  /** Handles filesystem operations for schema persistence. */
   private readonly persister: SchemaPersister;
+  /** In-memory cache of generated schemas, populated lazily. */
   private schemaCache: SchemaCollection | undefined;
 
   constructor(options?: SchemaGeneratorOptions) {
