@@ -6,6 +6,7 @@ import { MANIFEST_SERVICE_DEPS_TOKEN } from './manifest-deps.interface';
 import { ManifestServiceDepsProvider } from './manifest-deps.provider';
 import { SchemaGenerator } from './utils/schema-generator';
 import { ServiceInfo } from './service-info.interface';
+import { resolveServiceInfo } from './service-info.resolver';
 
 /** Resolved options used internally by DiscoveryModule providers. */
 export interface DiscoveryModuleOptions {
@@ -18,20 +19,20 @@ export interface DiscoveryModuleOptions {
   /** Whether to include the full manifest payload in heartbeat messages. */
   includeFullManifestInHeartbeat: boolean;
   /** Service identity metadata for the discovery manifest. */
-  service?: ServiceInfo;
+  service: ServiceInfo;
   /** Directory path for schema persistence. */
   schemaDir: string;
   /** Force schema regeneration on startup. */
   forceRegenerateSchemas: boolean;
 }
 
-const DEFAULT_DISCOVERY_OPTIONS: DiscoveryModuleOptions = {
-  enabled: true,
-  registerOnStartup: true,
-  heartbeatIntervalMinutes: 0,
-  includeFullManifestInHeartbeat: false,
+const DEFAULT_DISCOVERY_OPTIONS = {
+  enabled: true as const,
+  registerOnStartup: true as const,
+  heartbeatIntervalMinutes: 0 as const,
+  includeFullManifestInHeartbeat: false as const,
   schemaDir: '.events-toolkit/schemas',
-  forceRegenerateSchemas: false,
+  forceRegenerateSchemas: false as const,
 };
 
 const MANIFEST_DEPS_FACTORY = {
@@ -47,7 +48,7 @@ function resolveDiscoveryOptions(userOptions: EventsToolkitDiscoveryOptions): Di
       userOptions.heartbeatIntervalMinutes ?? DEFAULT_DISCOVERY_OPTIONS.heartbeatIntervalMinutes,
     includeFullManifestInHeartbeat:
       userOptions.includeFullManifestInHeartbeat ?? DEFAULT_DISCOVERY_OPTIONS.includeFullManifestInHeartbeat,
-    service: userOptions.service,
+    service: resolveServiceInfo(userOptions.service),
     schemaDir: userOptions.schemaDir ?? DEFAULT_DISCOVERY_OPTIONS.schemaDir,
     forceRegenerateSchemas: userOptions.forceRegenerateSchemas ?? DEFAULT_DISCOVERY_OPTIONS.forceRegenerateSchemas,
   };

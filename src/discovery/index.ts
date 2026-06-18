@@ -10,6 +10,9 @@ export { ManifestService } from './manifest.service';
 export { ManifestEntryBuilder } from './manifest-entry.builder';
 export { ServiceManifestDto, ManifestConsumeEntry, ManifestProduceEntry, ManifestEntryBase } from './dto';
 export { ServiceInfo } from './service-info.interface';
+export { ServiceInfoOverrides } from './service-info-overrides.interface';
+export { resolveServiceInfo } from './service-info.resolver';
+export { readPackageInfo, PackageInfo } from './package-info-reader.utils';
 export { MANIFEST_SERVICE_DEPS_TOKEN, ManifestServiceDeps } from './manifest-deps.interface';
 
 // Schema generation utilities

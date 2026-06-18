@@ -1,4 +1,4 @@
-import { ServiceInfo } from './service-info.interface';
+import { ServiceInfoOverrides } from './service-info-overrides.interface';
 
 /** Discovery subsystem configuration for EventsToolkitModule. */
 export interface EventsToolkitDiscoveryOptions {
@@ -10,8 +10,8 @@ export interface EventsToolkitDiscoveryOptions {
   heartbeatIntervalMinutes?: number;
   /** Include full manifest payload in heartbeat messages. Default: false. */
   includeFullManifestInHeartbeat?: boolean;
-  /** Service identity metadata for the discovery manifest. */
-  service?: ServiceInfo;
+  /** Service identity overrides for the discovery manifest. Auto-resolved from package.json if omitted. */
+  service?: ServiceInfoOverrides;
   /** Directory path where generated JSON Schemas are persisted. Default: '.events-toolkit/schemas'. */
   schemaDir?: string;
   /** When true, regenerate all schemas on startup even if cached files exist. Default: false. */

@@ -29,9 +29,7 @@ export class DiscoveryService implements OnModuleInit {
     if (!this.resolvedOptions.registerOnStartup) {
       return;
     }
-    const manifest: ServiceManifestDto = this.manifestService.generateManifest(
-      this.resolvedOptions.service ?? { name: 'unknown', version: '0.0.0' },
-    );
+    const manifest: ServiceManifestDto = this.manifestService.generateManifest(this.resolvedOptions.service);
     this.schemaGenerator.generateSchemasForManifest(manifest);
     const resolvedLogger = this.logger ?? new EventLoggerService();
     resolvedLogger.logDiscoveryManifest(manifest as unknown as Record<string, unknown>);
