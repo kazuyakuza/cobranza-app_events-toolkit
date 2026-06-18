@@ -142,10 +142,12 @@ async handleUpload(dto: UploadDto, context: EventContext): Promise<PaymentProofU
 
 ```typescript
 @EmitEvent('payment.proof.uploaded', { version: '1' })
-async handleUpload(dto: UploadDto, context: EventContext): Promise<PaymentProofUploadedData> {
+handleUpload(dto: UploadDto, context: EventContext): PaymentProofUploadedData {
   // payloadSchemaRef resolves to "PaymentProofUploadedData" from the return type
 }
 ```
+
+> **Note for async methods:** TypeScript's `design:returntype` metadata resolves to `Promise` for `async` methods. Since `Promise` is not unwrapped by the auto-resolution logic, the resolved name would be `"Promise"` rather than the inner type. For async producers/consumers, always provide an explicit `payloadSchemaRef` to ensure correct schema resolution.
 
 ---
 
@@ -203,7 +205,7 @@ The `SchemaGenerator` uses `class-validator-jsonschema` to convert `class-valida
 
 ### Process
 
-1. On module init (or first access), `generateSchemasForManifest(manifest)` is called.
+1. On module init when `registerOnStartup` is `true`, `generateSchemasForManifest(manifest)` is called.
 2. It extracts unique `payloadSchemaRef` values from all manifest entries.
 3. It calls `validationMetadatasToSchemas()` to generate schemas from all registered `class-validator` decorated classes.
 4. It filters to only schemas matching manifest references.
@@ -217,7 +219,7 @@ The `SchemaPersister` writes generated schemas to disk:
 - **Default directory**: `.events-toolkit/schemas`
 - **Files**: Each schema is written as `<SchemaName>.json` (e.g., `PaymentProofUploadedData.json`)
 - **Index file**: `schema-manifest.json` lists all available schemas with their file paths
-- **Cache validation**: Uses SHA-256 hashes to detect changes and avoid unnecessary writes
+- **Change tracking**: Stores a SHA-256 hash of each schema in `schema-manifest.json` for change tracking and cache validation
 
 Example generated schema file (`.events-toolkit/schemas/PaymentProofUploadedData.json`):
 
@@ -328,7 +330,8 @@ Heartbeat events are lightweight liveness signals. When `includeFullManifestInHe
   "data": {
     "name": "payment-service",
     "version": "1.0.0",
-    "instanceId": "inst_abc123def456"
+    "instanceId": "inst_abc123def456",
+    "timestamp": "2026-06-18T01:35:00.000Z"
   }
 }
 ```
@@ -352,7 +355,8 @@ Heartbeat events are lightweight liveness signals. When `includeFullManifestInHe
   "data": {
     "name": "payment-service",
     "version": "1.0.0",
-    "instanceId": "inst_abc123def456"
+    "instanceId": "inst_abc123def456",
+    "timestamp": "2026-06-18T02:00:00.000Z"
   }
 }
 ```

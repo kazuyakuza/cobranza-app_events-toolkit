@@ -713,6 +713,10 @@ src/
 │   ├── consumer.module.ts
 │   ├── consumer.service.ts
 │   └── jetstream-consumer.service.ts
+├── discovery/                    # Service discovery, manifest generation, schema publishing
+│   ├── dto/                      # Manifest DTOs
+│   ├── events/                   # Platform event publisher and subjects
+│   └── utils/                    # Schema generator and persister
 ├── request-reply/              # RequestReplyService
 ├── outbox/                     # OutboxModule, OutboxService, SqliteOutboxRepository, PostgresOutboxRepository
 └── logging/                    # EventLoggerService (Winston)
