@@ -9,6 +9,7 @@ import { EventLoggerService } from '../logging/event-logger.service';
 /** Handles service manifest registration and heartbeat emission for discovery. */
 @Injectable()
 export class DiscoveryService implements OnModuleInit {
+  @Inject(DISCOVERY_MODULE_OPTIONS)
   private readonly resolvedOptions: DiscoveryModuleOptions;
 
   @Optional()
@@ -16,12 +17,9 @@ export class DiscoveryService implements OnModuleInit {
   private readonly logger: EventLoggerService | undefined;
 
   constructor(
-    @Inject(DISCOVERY_MODULE_OPTIONS) options: DiscoveryModuleOptions,
     private readonly manifestService: ManifestService,
     private readonly schemaGenerator: SchemaGenerator,
-  ) {
-    this.resolvedOptions = options;
-  }
+  ) {}
 
   /** Emits a discovery lifecycle event on startup when the subsystem is enabled and registration is active. */
   onModuleInit(): void {

@@ -1,5 +1,5 @@
 import { validationMetadatasToSchemas } from 'class-validator-jsonschema';
-import type { SchemaCollection, JsonSchemaObject } from './schema-types.interface';
+import type { SchemaCollection, JsonSchemaObject, SchemaManifest, SchemaManifestEntry } from './schema-types.interface';
 import type { ServiceManifestDto } from '../dto/service-manifest.dto';
 import {
   SchemaGeneratorOptions,
@@ -29,24 +29,17 @@ export class SchemaGenerator {
     return filtered;
   }
 
-  /** Generate a single named schema by class name. */
+  /** Generate a single named schema by class name and persist it. */
   generateSchema(schemaName: string): JsonSchemaObject | undefined {
     const all = this.generateAllSchemas();
     const raw = all[schemaName];
     if (!raw) return undefined;
     const enriched = this.enrichSchema(raw, schemaName);
-    this.persister.persistSchema({ name: schemaName, schema: enriched });
+    const entry = this.persister.persistSchema({ name: schemaName, schema: enriched });
+    this.updateManifestEntry(schemaName, entry);
+    if (!this.schemaCache) this.schemaCache = {};
+    this.schemaCache[schemaName] = enriched;
     return enriched;
-  }
-
-  /** Generate JSON Schemas for all registered class-validator decorated classes. */
-  generateAllSchemas(): SchemaCollection {
-    const raw = validationMetadatasToSchemas() as Record<string, Record<string, unknown>>;
-    const result: SchemaCollection = {};
-    for (const [name, schema] of Object.entries(raw)) {
-      result[name] = this.enrichSchema(schema, name);
-    }
-    return result;
   }
 
   /** Get a previously generated schema from cache, or read from disk. */
@@ -68,27 +61,27 @@ export class SchemaGenerator {
     return this.generateSchemasForManifest(manifest);
   }
 
+  /** Generate JSON Schemas for all registered class-validator decorated classes. */
+  private generateAllSchemas(): SchemaCollection {
+    const raw = validationMetadatasToSchemas() as Record<string, Record<string, unknown>>;
+    const result: SchemaCollection = {};
+    for (const [name, schema] of Object.entries(raw)) {
+      result[name] = this.enrichSchema(schema, name);
+    }
+    return result;
+  }
+
   /** Extract unique payload schema references from a manifest. */
   private extractSchemaRefs(manifest: ServiceManifestDto): Set<string> {
-    const refs = new Set<string>();
-    for (const entry of manifest.consumes) {
-      if (entry.payloadSchemaRef) refs.add(entry.payloadSchemaRef);
-    }
-    for (const entry of manifest.produces) {
-      if (entry.payloadSchemaRef) refs.add(entry.payloadSchemaRef);
-    }
-    return refs;
+    const allEntries = [...manifest.consumes, ...manifest.produces];
+    const refs = allEntries.map((entry) => entry.payloadSchemaRef).filter((ref): ref is string => Boolean(ref));
+    return new Set(refs);
   }
 
   /** Filter schemas to only those matching the given schema references. */
   private filterSchemas(schemas: SchemaCollection, refs: Set<string>): SchemaCollection {
-    const filtered: SchemaCollection = {};
-    for (const [name, schema] of Object.entries(schemas)) {
-      if (refs.has(name)) {
-        filtered[name] = schema;
-      }
-    }
-    return filtered;
+    const filteredEntries = Object.entries(schemas).filter(([name]) => refs.has(name));
+    return Object.fromEntries(filteredEntries);
   }
 
   /** Enrich a raw JSON Schema with $schema header and title. */
@@ -104,12 +97,27 @@ export class SchemaGenerator {
   private loadSchemasFromDisk(): SchemaCollection {
     const manifest = this.persister.readManifest();
     if (!manifest) return {};
-    const result: SchemaCollection = {};
-    for (const name of Object.keys(manifest.schemas)) {
-      const schema = this.persister.readSchema(name) as JsonSchemaObject | undefined;
-      if (schema) result[name] = schema;
-    }
+    const entries = Object.keys(manifest.schemas)
+      .map((name) => [name, this.persister.readSchema(name)] as const)
+      .filter(([, schema]) => Boolean(schema));
+    const result = Object.fromEntries(entries) as SchemaCollection;
     this.schemaCache = result;
     return result;
+  }
+
+  /** Update the manifest index with a new schema entry. */
+  private updateManifestEntry(name: string, entry: SchemaManifestEntry): void {
+    const manifest = this.persister.readManifest() ?? this.createEmptyManifest();
+    const updatedSchemas = { ...manifest.schemas, [name]: entry };
+    this.persister.writeManifest({ ...manifest, schemas: updatedSchemas });
+  }
+
+  /** Create an empty schema manifest for the configured schema directory. */
+  private createEmptyManifest(): SchemaManifest {
+    return {
+      generatedAt: new Date().toISOString(),
+      schemaDir: this.options.schemaDir,
+      schemas: {},
+    };
   }
 }

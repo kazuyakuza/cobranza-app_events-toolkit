@@ -25,29 +25,35 @@ export class SchemaPersister {
     for (const [name, schema] of Object.entries(schemas)) {
       entries[name] = this.persistSchema({ name, schema });
     }
-    this.writeManifest(entries);
+    const manifest: SchemaManifest = {
+      generatedAt: new Date().toISOString(),
+      schemaDir: this.schemaDir,
+      schemas: entries,
+    };
+    this.writeManifest(manifest);
   }
 
   /** Persist a single schema and return its manifest entry. */
   persistSchema(params: PersistSchemaParams): SchemaManifestEntry {
-    const content = JSON.stringify(params.schema, null, 2);
     const file = `${params.name}.json`;
-    writeFileSync(join(this.schemaDir, file), content, 'utf-8');
-    return { file, hash: this.computeHash(content) };
+    this.writeJsonFile(join(this.schemaDir, file), params.schema);
+    const rawContent = JSON.stringify(params.schema);
+    return { file, hash: this.computeHash(rawContent) };
+  }
+
+  /** Write the schema manifest index to disk. */
+  writeManifest(manifest: SchemaManifest): void {
+    this.writeJsonFile(join(this.schemaDir, 'schema-manifest.json'), manifest);
   }
 
   /** Read a single schema from disk, or undefined if not found. */
   readSchema(name: string): Record<string, unknown> | undefined {
-    const filePath = join(this.schemaDir, `${name}.json`);
-    if (!existsSync(filePath)) return undefined;
-    return JSON.parse(readFileSync(filePath, 'utf-8'));
+    return this.readJsonFile<Record<string, unknown>>(join(this.schemaDir, `${name}.json`));
   }
 
   /** Read the schema manifest index from disk, or undefined if not found. */
   readManifest(): SchemaManifest | undefined {
-    const manifestPath = join(this.schemaDir, 'schema-manifest.json');
-    if (!existsSync(manifestPath)) return undefined;
-    return JSON.parse(readFileSync(manifestPath, 'utf-8'));
+    return this.readJsonFile<SchemaManifest>(join(this.schemaDir, 'schema-manifest.json'));
   }
 
   /** Check whether a schema file exists on disk. */
@@ -68,13 +74,21 @@ export class SchemaPersister {
     }
   }
 
-  private writeManifest(entries: Record<string, SchemaManifestEntry>): void {
-    const manifest: SchemaManifest = {
-      generatedAt: new Date().toISOString(),
-      schemaDir: this.schemaDir,
-      schemas: entries,
-    };
-    writeFileSync(join(this.schemaDir, 'schema-manifest.json'), JSON.stringify(manifest, null, 2), 'utf-8');
+  private readJsonFile<T>(filePath: string): T | undefined {
+    if (!existsSync(filePath)) return undefined;
+    try {
+      return JSON.parse(readFileSync(filePath, 'utf-8')) as T;
+    } catch (error) {
+      throw new Error(`Failed to parse schema file ${filePath}: ${(error as Error).message}`);
+    }
+  }
+
+  private writeJsonFile(filePath: string, content: unknown): void {
+    try {
+      writeFileSync(filePath, JSON.stringify(content, null, 2), 'utf-8');
+    } catch (error) {
+      throw new Error(`Failed to write schema file ${filePath}: ${(error as Error).message}`);
+    }
   }
 
   private computeHash(content: string): string {

@@ -49,10 +49,6 @@
     "nats": "^2.0.0"
   },
   "dependencies": {
-    "@types/babel__generator": "^7.27.0",
-    "@types/babel__template": "^7.4.4",
-    "@types/istanbul-lib-report": "^3.0.3",
-    "@types/yargs-parser": "^21.0.3",
     "better-sqlite3": "^9.6.0",
     "reflect-metadata": "^0.2.2",
     "uuid": "^10.0.0",
@@ -62,6 +58,7 @@
     "@jest/globals": "^29.7.0",
     "@nestjs/testing": "^10.0.0",
     "@types/better-sqlite3": "^7.0.0",
+    "class-validator-jsonschema": "^5.0.0",
     "@types/jest": "^29.0.0",
     "@types/node": "^20.0.0",
     "@types/uuid": "^10.0.0",
