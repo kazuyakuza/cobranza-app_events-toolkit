@@ -292,7 +292,7 @@ The method returns a `SendAsyncRequestThroughOutboxResult` with the event's `cor
 Response handlers typically do **not** need the outbox pattern unless they perform other side effects that require transactional safety. Use `RequestReplyService.sendResponse()` or `ProducerService.publish()` directly:
 
 ```typescript
-@OnEvent({ domain: 'credit', entity: 'check', action: 'requested' })
+@OnEvent('credit.check.requested', { version: '1' })
 async onCreditCheckRequested(event: EventEnvelope<CreditCheckRequestedData>): Promise<void> {
   if (!this.requestReply.isRequestReplyMessage(event)) { return; }
 

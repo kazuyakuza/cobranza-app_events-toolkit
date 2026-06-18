@@ -10,24 +10,6 @@ import { EMIT_EVENT_METADATA, EmitEventMetadata } from '../producer/decorators/e
 import { ON_REQUEST_REPLY_METADATA, OnRequestReplyMetadata } from '../consumer/decorators/on-request-reply.decorator';
 import { ManifestEntryBuilder } from './manifest-entry.builder';
 
-/** Generic callable type used for prototype method access. */
-type AnyFunction = (...args: unknown[]) => unknown;
-
-/** Parameters for resolving a payload schema reference from method metadata. */
-interface PayloadSchemaRefParams {
-  /** Class prototype that owns the method. */
-  prototype: object;
-  /** Name of the method to inspect. */
-  methodName: string;
-  /** Explicit schema reference override from decorator options. */
-  explicitRef?: string;
-  /** When true, prefer the return type over the first parameter type. */
-  preferReturnType?: boolean;
-}
-
-/** Class names treated as generic wrappers and excluded from schema reference resolution. */
-const GENERIC_WRAPPER_TYPES = new Set(['EventEnvelope', 'EventBase', 'Object']);
-
 /**
  * Scans NestJS providers and controllers for event decorator metadata
  * and assembles a {@link ServiceManifestDto} describing the service's event contract.
@@ -105,111 +87,28 @@ export class ManifestService {
     );
   }
 
-  /**
-   * Builds a consume entry from @OnEvent decorator metadata on the given method.
-   *
-   * @returns The consume entry, or null if the method has no @OnEvent decorator.
-   */
   private buildOnEventEntry(instance: object, methodName: string): ManifestConsumeEntry | null {
-    const methodRef = (Object.getPrototypeOf(instance) as Record<string, AnyFunction>)[methodName];
+    const prototype = Object.getPrototypeOf(instance);
+    const methodRef = (prototype as Record<string, (...args: unknown[]) => unknown>)[methodName];
     const metadata = this.deps.reflector.get<OnEventMetadata>(ON_EVENT_METADATA, methodRef);
     if (!metadata) return null;
-    const payloadSchemaRef = this.extractPayloadSchemaRef({
-      prototype: Object.getPrototypeOf(instance),
-      methodName,
-      explicitRef: metadata.payloadSchemaRef,
-    });
-    return this.entryBuilder.buildOnEventEntry(metadata, methodName, payloadSchemaRef);
+    return this.entryBuilder.buildOnEventEntry(metadata, methodName, prototype);
   }
 
-  /**
-   * Builds a consume entry from @OnRequestReply decorator metadata on the given method.
-   *
-   * @returns The consume entry, or null if the method has no @OnRequestReply decorator.
-   */
   private buildOnRequestReplyEntry(instance: object, methodName: string): ManifestConsumeEntry | null {
-    const methodRef = (Object.getPrototypeOf(instance) as Record<string, AnyFunction>)[methodName];
+    const prototype = Object.getPrototypeOf(instance);
+    const methodRef = (prototype as Record<string, (...args: unknown[]) => unknown>)[methodName];
     const metadata = this.deps.reflector.get<OnRequestReplyMetadata>(ON_REQUEST_REPLY_METADATA, methodRef);
     if (!metadata) return null;
-    const payloadSchemaRef = this.extractPayloadSchemaRef({
-      prototype: Object.getPrototypeOf(instance),
-      methodName,
-      explicitRef: metadata.payloadSchemaRef,
-    });
-    return this.entryBuilder.buildOnRequestReplyEntry(metadata, methodName, payloadSchemaRef);
+    return this.entryBuilder.buildOnRequestReplyEntry(metadata, methodName, prototype);
   }
 
-  /**
-   * Builds a produce entry from @EmitEvent decorator metadata on the given method.
-   *
-   * @returns The produce entry, or null if the method has no @EmitEvent decorator.
-   */
   private buildEmitEventEntry(instance: object, methodName: string): ManifestProduceEntry | null {
-    const methodRef = (Object.getPrototypeOf(instance) as Record<string, AnyFunction>)[methodName];
+    const prototype = Object.getPrototypeOf(instance);
+    const methodRef = (prototype as Record<string, (...args: unknown[]) => unknown>)[methodName];
     const metadata = this.deps.reflector.get<EmitEventMetadata>(EMIT_EVENT_METADATA, methodRef);
     if (!metadata) return null;
-    const payloadSchemaRef = this.extractPayloadSchemaRef({
-      prototype: Object.getPrototypeOf(instance),
-      methodName,
-      explicitRef: metadata.payloadSchemaRef,
-      preferReturnType: true,
-    });
-    return this.entryBuilder.buildEmitEventEntry(metadata, methodName, payloadSchemaRef);
-  }
-
-  /**
-   * Resolves the payload schema reference for a method.
-   *
-   * Uses the explicit ref if provided, otherwise derives from parameter or return type metadata.
-   *
-   * @returns The resolved schema reference string.
-   */
-  private extractPayloadSchemaRef(params: PayloadSchemaRefParams): string {
-    if (params.explicitRef) {
-      return params.explicitRef;
-    }
-    if (params.preferReturnType) {
-      const returnTypeName = this.extractReturnTypeName(params.prototype, params.methodName);
-      if (returnTypeName) {
-        return returnTypeName;
-      }
-      return this.extractParamTypeName(params.prototype, params.methodName);
-    }
-    const paramTypeName = this.extractParamTypeName(params.prototype, params.methodName);
-    if (paramTypeName) {
-      return paramTypeName;
-    }
-    return this.extractReturnTypeName(params.prototype, params.methodName);
-  }
-
-  /** Extracts the class name of the first parameter type from TypeScript reflect metadata. */
-  private extractParamTypeName(prototype: object, methodName: string): string {
-    const paramTypes = Reflect.getMetadata('design:paramtypes', prototype, methodName);
-    if (!paramTypes || paramTypes.length === 0) {
-      return '';
-    }
-    return this.extractClassName(paramTypes[0]);
-  }
-
-  /** Extracts the class name of the return type from TypeScript reflect metadata. */
-  private extractReturnTypeName(prototype: object, methodName: string): string {
-    const returnType = Reflect.getMetadata('design:returntype', prototype, methodName);
-    if (!returnType) {
-      return '';
-    }
-    return this.extractClassName(returnType);
-  }
-
-  /** Extracts the class name from a type reference, filtering out generic wrapper types. */
-  private extractClassName(type: unknown): string {
-    if (typeof type !== 'function') {
-      return '';
-    }
-    const name = (type as AnyFunction).name;
-    if (!name || GENERIC_WRAPPER_TYPES.has(name)) {
-      return '';
-    }
-    return name;
+    return this.entryBuilder.buildEmitEventEntry(metadata, methodName, prototype);
   }
 
   /** Returns all non-null provider and controller instances from the NestJS discovery service. */

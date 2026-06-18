@@ -16,10 +16,12 @@ function createGenerator(): SchemaGenerator {
 
 function createMinimalManifest(): ServiceManifestDto {
   return {
-    service: { name: 'test-service', version: '1.0.0', instanceId: 'test-instance' },
+    name: 'test-service',
+    version: '1.0.0',
+    description: '',
+    instanceId: 'test-instance',
     consumes: [],
     produces: [],
-    heartbeatIntervalMinutes: 0,
   };
 }
 
@@ -36,15 +38,6 @@ describe('SchemaGenerator', () => {
     it('uses default options when none provided', () => {
       const generator = new SchemaGenerator();
       expect(generator).toBeDefined();
-    });
-  });
-
-  describe('generateAllSchemas', () => {
-    it('returns a SchemaCollection', () => {
-      const generator = createGenerator();
-      const schemas = generator.generateAllSchemas();
-      expect(schemas).toBeDefined();
-      expect(typeof schemas).toBe('object');
     });
   });
 

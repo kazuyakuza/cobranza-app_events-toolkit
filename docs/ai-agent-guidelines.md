@@ -111,7 +111,7 @@ import { EmitEvent, SubjectBuilder, EventContext } from '@cobranza-apps/events-t
 class PaymentController {
   constructor(private readonly subjectBuilder: SubjectBuilder) {}
 
-  @EmitEvent({ domain: 'payment', entity: 'proof', action: 'uploaded' })
+  @EmitEvent('payment.proof.uploaded', { version: '1' })
   async handleUpload(dto: UploadDto, context: EventContext): Promise<PaymentProofUploadedData> {
     return new PaymentProofUploadedData({ paymentAttemptId, fileUrl, amount });
   }
@@ -149,7 +149,7 @@ class PaymentService {
 import { OnEvent, EventEnvelope } from '@cobranza-apps/events-toolkit';
 
 class PaymentProofConsumer {
-  @OnEvent({ domain: 'payment', entity: 'proof', action: 'uploaded' })
+  @OnEvent('payment.proof.uploaded', { version: '1' })
   async onProofUploaded(event: EventEnvelope<PaymentProofUploadedData>): Promise<void> {
     const { data, company_id, correlation_id } = event;
     await this.processProof(data);
@@ -162,7 +162,7 @@ For business errors that should route to DLQ:
 ```typescript
 import { EventConsumerException } from '@cobranza-apps/events-toolkit';
 
-@OnEvent({ domain: 'payment', entity: 'proof', action: 'uploaded' })
+@OnEvent('payment.proof.uploaded', { version: '1' })
 async onProofUploaded(event: EventEnvelope<PaymentProofUploadedData>): Promise<void> {
   if (event.data.amount <= 0) {
     throw new EventConsumerException({

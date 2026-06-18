@@ -226,7 +226,7 @@ import { EventContext } from '@cobranza-apps/events-toolkit';
 class CreditCheckConsumer {
   constructor(private readonly requestReply: RequestReplyService) {}
 
-  @OnEvent({ domain: 'credit', entity: 'check', action: 'requested' })
+  @OnEvent('credit.check.requested', { version: '1' })
   async onCreditCheckRequested(event: EventEnvelope<CreditCheckRequestedData>): Promise<void> {
     if (!this.requestReply.isRequestReplyMessage(event)) {
       return;
@@ -262,7 +262,7 @@ class CreditCheckConsumer {
 import { OnRequestReply, EventEnvelope, EventContext } from '@cobranza-apps/events-toolkit';
 
 class DebtServiceResponseHandler {
-  @OnRequestReply({ eventType: 'credit.check.completed' })
+  @OnRequestReply('credit.check.completed')
   async handleCreditCheckResponse(
     event: EventEnvelope<CreditCheckResultData>,
     context: EventContext,
@@ -416,7 +416,7 @@ All request-reply handlers MUST be idempotent.
 ```typescript
 private readonly processedRequests = new Map<string, ResponseData>();
 
-@OnEvent({ domain: 'credit', entity: 'check', action: 'requested' })
+@OnEvent('credit.check.requested', { version: '1' })
 async onCreditCheckRequested(event: EventEnvelope<CreditCheckRequestedData>): Promise<void> {
   const idempotencyKey = event.correlation_id;
 
@@ -494,7 +494,7 @@ If a request-reply consumer encounters a business error that should route to the
 ```typescript
 import { EventConsumerException } from '@cobranza-apps/events-toolkit';
 
-@OnEvent({ domain: 'credit', entity: 'check', action: 'requested' })
+@OnEvent('credit.check.requested', { version: '1' })
 async onCreditCheckRequested(event: EventEnvelope<CreditCheckRequestedData>): Promise<void> {
   if (isInvalidRequest(event.data)) {
     throw new EventConsumerException({

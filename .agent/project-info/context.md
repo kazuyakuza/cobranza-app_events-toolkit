@@ -8,6 +8,16 @@ The project is actively implementing request-reply communication patterns. Task 
 
 ## Recent Changes
 
+### 2026-06-18 — Task 4: Enhance Existing Decorators
+- Decorators (`@OnEvent`, `@EmitEvent`, `@OnRequestReply`) now accept `eventType: string` as the first argument instead of the old object-based signature `{ domain, entity, action }`.
+- Rich metadata fields (`description`, `tags`, `payloadSchemaRef`, `payloadExample`) added to all three decorators via optional second argument.
+- `ManifestEntryBase` DTO now includes `payloadExample` field for discovery manifest documentation.
+- Explorers and `EmitEventInterceptor` updated to use the new metadata shapes.
+- `ManifestEntryBuilder` extracted from `ManifestService` to keep the service under the 200-line limit.
+- Payload schema reference extraction (reflection helpers) moved into `ManifestEntryBuilder`.
+- Updated all documentation examples in `README.md`, `docs/ai-agent-guidelines.md`, `docs/request-reply-patterns.md`, `docs/outbox-configuration.md`, and `docs/event-messaging-convention.md`.
+- Branch: `feat/event-discovery-module`.
+
 ### 2026-06-12 — Project Info Initialization
 - `brief.md` defined with full project scope, objectives, technical decisions, and folder structure.
 - `docs/event-messaging-convention.md` created — the definitive event standard for the platform.

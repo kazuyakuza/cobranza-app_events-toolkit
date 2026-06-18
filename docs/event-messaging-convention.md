@@ -155,13 +155,38 @@ All messages published to JetStream **must** follow this JSON structure:
 
 ## 4. Good Practices
 
-### 4.1 Idempotency & Deduplication
+### 4.1 Decorator Signature Convention
+
+The toolkit provides three event decorators that now accept the event type as a **string first argument**, followed by an optional options object:
+
+```typescript
+@EmitEvent('payment.proof.uploaded', { version: '1', description: 'Proof was uploaded' })
+@OnEvent('payment.proof.uploaded', { version: '1', tags: ['proof'] })
+@OnRequestReply('credit.check.completed', { companyId: '550e8400-e29b-41d4-a716-446655440000' })
+```
+
+The options object supports rich metadata for discovery manifests:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `version` | `string?` | Major version (default: `'1'`) |
+| `description` | `string?` | Human-readable description |
+| `tags` | `string[]?` | Arbitrary categorization tags |
+| `payloadSchemaRef` | `string?` | Explicit payload schema class name |
+| `payloadExample` | `Record<string, unknown>?` | Example payload for documentation |
+| `companyId` | `string?` | Tenant filter (`@OnRequestReply` only) |
+
+The old object-based signature (`@OnEvent({ domain, entity, action })`) has been replaced by the string-first-arg format shown above.
+
+### 4.2 Idempotency & Deduplication
+
+
 
 - All consumers **must** be idempotent.
 - Use `id` + `correlation_id` combination to detect and ignore duplicates.
 - Leverage JetStream `dedupe_window` when appropriate.
 
-### 4.2 Request-Reply Patterns
+### 4.3 Request-Reply Patterns
 
 The toolkit supports two request-reply patterns over NATS JetStream:
 
@@ -200,7 +225,7 @@ Quick reference:
 
 For detailed examples, correlation ID management, timeout handling, and idempotency requirements, see [Request-Reply Patterns](request-reply-patterns.md).
 
-### 4.3 Dead Letter Queue (DLQ)
+### 4.4 Dead Letter Queue (DLQ)
 
 Failed messages that cannot be processed are forwarded to a Dead Letter Queue subject for inspection and reprocessing.
 
@@ -297,7 +322,7 @@ await nc.jetStreamManager.streams.add({
 });
 ```
 
-### 4.4 Additional Recommendations
+### 4.5 Additional Recommendations
 
 - Publish events **after** successful database transaction (Outbox Pattern).
 - Keep events small (< 256KB ideally).
