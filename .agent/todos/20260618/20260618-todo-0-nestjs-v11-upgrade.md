@@ -2,7 +2,7 @@
 
 ## Tasks
 
-### Upgrade NestJS to v11
+### Upgrade NestJS to v11 [DONE]
 1. Update `package.json` peer dependencies (`@nestjs/common`, `@nestjs/core`, `@nestjs/microservices`) to `^11.0.0`
 2. Update `package.json` devDependencies (`@nestjs/testing`) to `^11.0.0`
 3. Update `package.json` Node.js engine requirement from `>=18.0.0` to `>=20.0.0`
