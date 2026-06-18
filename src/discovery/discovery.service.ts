@@ -7,6 +7,11 @@ import { ServiceManifestDto } from './dto/service-manifest.dto';
 import { EventLoggerService } from '../logging/event-logger.service';
 import { DiscoveryEventPublisher } from './events/discovery-event-publisher.service';
 
+/**
+ * Core discovery service that manages the service lifecycle:
+ * manifest generation on init, registration and heartbeat publishing on bootstrap,
+ * and graceful shutdown publishing on destroy.
+ */
 @Injectable()
 export class DiscoveryService implements OnModuleInit, OnApplicationBootstrap, OnModuleDestroy {
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
@@ -27,6 +32,7 @@ export class DiscoveryService implements OnModuleInit, OnApplicationBootstrap, O
 
   constructor(private readonly eventPublisher: DiscoveryEventPublisher) {}
 
+  /** Generates and caches the service manifest, then logs it on module initialization. */
   onModuleInit(): void {
     if (!this.resolvedOptions.enabled) {
       return;
@@ -46,6 +52,7 @@ export class DiscoveryService implements OnModuleInit, OnApplicationBootstrap, O
     });
   }
 
+  /** Publishes the registration event and starts the periodic heartbeat. */
   async onApplicationBootstrap(): Promise<void> {
     if (!this.shouldPublishEvents()) {
       return;
@@ -55,6 +62,7 @@ export class DiscoveryService implements OnModuleInit, OnApplicationBootstrap, O
     this.startHeartbeat(manifest);
   }
 
+  /** Stops the heartbeat timer and publishes a shutdown event. */
   onModuleDestroy(): void {
     this.stopHeartbeat();
     if (!this.shouldPublishEvents()) {
@@ -67,10 +75,12 @@ export class DiscoveryService implements OnModuleInit, OnApplicationBootstrap, O
     void this.eventPublisher.publishShutdown(manifest);
   }
 
+  /** Whether both discovery is enabled and startup registration is active. */
   private shouldPublishEvents(): boolean {
     return this.resolvedOptions.enabled && this.resolvedOptions.registerOnStartup;
   }
 
+  /** Returns the cached manifest or generates and caches a new one. */
   private getOrGenerateManifest(): ServiceManifestDto {
     if (this.cachedManifest) {
       return this.cachedManifest;
@@ -79,6 +89,7 @@ export class DiscoveryService implements OnModuleInit, OnApplicationBootstrap, O
     return this.cachedManifest;
   }
 
+  /** Starts a periodic heartbeat timer based on the configured interval. */
   private startHeartbeat(manifest: ServiceManifestDto): void {
     const intervalMinutes = this.resolvedOptions.heartbeatIntervalMinutes;
     if (intervalMinutes <= 0) {
@@ -90,6 +101,7 @@ export class DiscoveryService implements OnModuleInit, OnApplicationBootstrap, O
     }, intervalMs);
   }
 
+  /** Clears the heartbeat timer if one is running. */
   private stopHeartbeat(): void {
     if (this.heartbeatTimer) {
       clearInterval(this.heartbeatTimer);
@@ -97,6 +109,7 @@ export class DiscoveryService implements OnModuleInit, OnApplicationBootstrap, O
     }
   }
 
+  /** Emits a single heartbeat event, optionally including the full manifest. */
   private async emitHeartbeat(manifest: ServiceManifestDto): Promise<void> {
     const payloadManifest = this.resolvedOptions.includeFullManifestInHeartbeat
       ? this.getOrGenerateManifest()

@@ -32,6 +32,13 @@ interface BuildPlatformEnvelopeParams {
   producerName: string;
 }
 
+/**
+ * Publishes platform-level discovery events (register, heartbeat, shutdown)
+ * via the NATS {@link ProducerService}.
+ *
+ * Falls back to silent no-op when no producer is available, ensuring
+ * lifecycle hooks never fail due to missing infrastructure.
+ */
 @Injectable()
 export class DiscoveryEventPublisher {
   constructor(
@@ -39,6 +46,7 @@ export class DiscoveryEventPublisher {
     @Inject(DISCOVERY_MODULE_OPTIONS) private readonly options: DiscoveryModuleOptions,
   ) {}
 
+  /** Publishes a `platform.service.register.v1` event carrying the full service manifest. */
   async publishRegistration(manifest: ServiceManifestDto): Promise<void> {
     const envelope = this.buildEnvelope({
       subject: PLATFORM_REGISTER_SUBJECT,
@@ -49,6 +57,7 @@ export class DiscoveryEventPublisher {
     await this.publishOrLog(PLATFORM_REGISTER_SUBJECT, envelope);
   }
 
+  /** Publishes a `platform.service.heartbeat.v1` liveness event. */
   async publishHeartbeat(manifest: ServiceManifestDto): Promise<void> {
     const payload = this.buildHeartbeatPayload(manifest);
     const envelope = this.buildEnvelope({
@@ -60,6 +69,7 @@ export class DiscoveryEventPublisher {
     await this.publishOrLog(PLATFORM_HEARTBEAT_SUBJECT, envelope);
   }
 
+  /** Publishes a `platform.service.shutdown.v1` graceful-shutdown event. */
   async publishShutdown(manifest: ServiceManifestDto): Promise<void> {
     const payload = this.buildShutdownPayload(manifest);
     const envelope = this.buildEnvelope({
@@ -71,6 +81,7 @@ export class DiscoveryEventPublisher {
     await this.publishOrLog(PLATFORM_SHUTDOWN_SUBJECT, envelope);
   }
 
+  /** Builds the heartbeat payload, optionally embedding the full manifest. */
   private buildHeartbeatPayload(manifest: ServiceManifestDto): ServiceHeartbeatPayload {
     const payload: ServiceHeartbeatPayload = {
       name: manifest.name,
@@ -84,6 +95,7 @@ export class DiscoveryEventPublisher {
     return payload;
   }
 
+  /** Builds the shutdown payload from the service manifest. */
   private buildShutdownPayload(manifest: ServiceManifestDto): ServiceShutdownPayload {
     return {
       name: manifest.name,
@@ -93,6 +105,7 @@ export class DiscoveryEventPublisher {
     };
   }
 
+  /** Wraps the payload in a standard {@link EventEnvelope} with platform actor metadata. */
   private buildEnvelope(params: BuildPlatformEnvelopeParams): EventEnvelope<unknown> {
     return new EventEnvelope<unknown>({
       id: generateEventId(),
@@ -108,6 +121,7 @@ export class DiscoveryEventPublisher {
     });
   }
 
+  /** Publishes the envelope via the producer, or silently skips if unavailable. */
   private async publishOrLog(subject: string, envelope: EventEnvelope<unknown>): Promise<void> {
     if (!this.producerService) {
       return;
