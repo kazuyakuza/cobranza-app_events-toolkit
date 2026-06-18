@@ -5,6 +5,7 @@
 
 export { DiscoveryModule, DiscoveryModuleOptions } from './discovery.module';
 export { DiscoveryService } from './discovery.service';
+export { DiscoveryController } from './discovery.controller';
 export { DISCOVERY_MODULE_OPTIONS, EventsToolkitDiscoveryOptions } from './discovery-service-options.interface';
 
 // Event publishers and platform event types

@@ -75,6 +75,11 @@ export class DiscoveryService implements OnModuleInit, OnApplicationBootstrap, O
     void this.eventPublisher.publishShutdown(manifest);
   }
 
+  /** Returns the service manifest, generating it on first access if not yet cached. */
+  getManifest(): ServiceManifestDto {
+    return this.getOrGenerateManifest();
+  }
+
   /** Whether both discovery is enabled and startup registration is active. */
   private shouldPublishEvents(): boolean {
     return this.resolvedOptions.enabled && this.resolvedOptions.registerOnStartup;

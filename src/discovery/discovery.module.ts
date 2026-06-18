@@ -8,6 +8,7 @@ import { SchemaGenerator } from './utils/schema-generator';
 import { ServiceInfo } from './service-info.interface';
 import { resolveServiceInfo } from './service-info.resolver';
 import { DiscoveryEventPublisher } from './events/discovery-event-publisher.service';
+import { DiscoveryController } from './discovery.controller';
 
 /** Resolved options used internally by DiscoveryModule providers. */
 export interface DiscoveryModuleOptions {
@@ -105,6 +106,7 @@ export class DiscoveryModule {
       global: true,
       providers,
       exports: exported,
+      controllers: [DiscoveryController],
     };
   }
 
@@ -130,6 +132,7 @@ export class DiscoveryModule {
       providers,
       exports: exported,
       imports: asyncOptions.imports ?? [],
+      controllers: [DiscoveryController],
     };
   }
 }
