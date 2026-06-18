@@ -5,11 +5,17 @@ export const ON_REQUEST_REPLY_METADATA = 'on_request_reply_metadata';
 
 /** Internal stored metadata shape for @OnRequestReply. */
 export interface OnRequestReplyMetadata {
+  /** Event type identifier for the request-reply subject (e.g., 'payment.proof.uploaded'). */
   eventType: string;
+  /** Optional tenant identifier to filter responses by company_id. */
   companyId?: string;
+  /** Human-readable description for discovery manifests. */
   description?: string;
+  /** Arbitrary tags for categorization in discovery manifests. */
   tags?: string[];
+  /** Explicit payload schema reference (e.g., 'PaymentProofUploadedData'). */
   payloadSchemaRef?: string;
+  /** Example payload object for documentation in discovery manifests. */
   payloadExample?: Record<string, unknown>;
 }
 

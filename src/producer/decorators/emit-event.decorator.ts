@@ -5,11 +5,17 @@ export const EMIT_EVENT_METADATA = 'emit_event_metadata';
 
 /** Internal stored metadata shape for @EmitEvent. */
 export interface EmitEventMetadata {
+  /** NATS event type identifier (e.g., 'payment.proof.uploaded'). */
   eventType: string;
+  /** Major semantic version string (defaults to '1'). */
   version?: string;
+  /** Human-readable description for discovery manifests. */
   description?: string;
+  /** Arbitrary tags for categorization in discovery manifests. */
   tags?: string[];
+  /** Explicit payload schema reference (e.g., 'PaymentProofUploadedEvent'). */
   payloadSchemaRef?: string;
+  /** Example payload object for documentation in discovery manifests. */
   payloadExample?: Record<string, unknown>;
 }
 

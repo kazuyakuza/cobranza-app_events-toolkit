@@ -34,7 +34,10 @@ export class ManifestEntryBuilder {
   /**
    * Builds a consume entry from @OnEvent decorator metadata.
    *
-   * @returns The consume entry.
+   * @param metadata - Stored metadata from the @OnEvent decorator.
+   * @param methodName - Name of the decorated handler method.
+   * @param prototype - Class prototype that owns the handler method.
+   * @returns The consume entry for the discovery manifest.
    */
   buildOnEventEntry(metadata: OnEventMetadata, methodName: string, prototype: object): ManifestConsumeEntry {
     const payloadSchemaRef = this.extractPayloadSchemaRef({
@@ -58,7 +61,10 @@ export class ManifestEntryBuilder {
   /**
    * Builds a consume entry from @OnRequestReply decorator metadata.
    *
-   * @returns The consume entry.
+   * @param metadata - Stored metadata from the @OnRequestReply decorator.
+   * @param methodName - Name of the decorated handler method.
+   * @param prototype - Class prototype that owns the handler method.
+   * @returns The consume entry for the discovery manifest.
    */
   buildOnRequestReplyEntry(
     metadata: OnRequestReplyMetadata,
@@ -85,7 +91,10 @@ export class ManifestEntryBuilder {
   /**
    * Builds a produce entry from @EmitEvent decorator metadata.
    *
-   * @returns The produce entry.
+   * @param metadata - Stored metadata from the @EmitEvent decorator.
+   * @param methodName - Name of the decorated emitter method.
+   * @param prototype - Class prototype that owns the emitter method.
+   * @returns The produce entry for the discovery manifest.
    */
   buildEmitEventEntry(metadata: EmitEventMetadata, methodName: string, prototype: object): ManifestProduceEntry {
     const payloadSchemaRef = this.extractPayloadSchemaRef({
@@ -110,6 +119,9 @@ export class ManifestEntryBuilder {
    * Resolves the payload schema reference for a method.
    *
    * Uses the explicit ref if provided, otherwise derives from parameter or return type metadata.
+   *
+   * @param params - Resolution parameters including prototype, method name, and optional overrides.
+   * @returns The resolved schema reference string, or empty string if none found.
    */
   private extractPayloadSchemaRef(params: PayloadSchemaRefParams): string {
     if (params.explicitRef) {
