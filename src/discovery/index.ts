@@ -6,6 +6,16 @@
 export { DiscoveryModule, DiscoveryModuleOptions } from './discovery.module';
 export { DiscoveryService } from './discovery.service';
 export { DISCOVERY_MODULE_OPTIONS, EventsToolkitDiscoveryOptions } from './discovery-service-options.interface';
+
+// Event publishers and platform event types
+export { DiscoveryEventPublisher } from './events/discovery-event-publisher.service';
+export {
+  PLATFORM_REGISTER_SUBJECT,
+  PLATFORM_HEARTBEAT_SUBJECT,
+  PLATFORM_SHUTDOWN_SUBJECT,
+} from './events/platform-event-subjects';
+export { PlatformEventType } from './events/platform-event-types';
+export type { ServiceHeartbeatPayload, ServiceShutdownPayload } from './events/discovery-payloads.interface';
 export { ManifestService } from './manifest.service';
 export { ManifestEntryBuilder } from './manifest-entry.builder';
 export { ServiceManifestDto, ManifestConsumeEntry, ManifestProduceEntry, ManifestEntryBase } from './dto';

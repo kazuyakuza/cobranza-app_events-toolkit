@@ -7,6 +7,7 @@ import { ManifestServiceDepsProvider } from './manifest-deps.provider';
 import { SchemaGenerator } from './utils/schema-generator';
 import { ServiceInfo } from './service-info.interface';
 import { resolveServiceInfo } from './service-info.resolver';
+import { DiscoveryEventPublisher } from './events/discovery-event-publisher.service';
 
 /** Resolved options used internally by DiscoveryModule providers. */
 export interface DiscoveryModuleOptions {
@@ -95,8 +96,9 @@ export class DiscoveryModule {
       ManifestService,
       MANIFEST_DEPS_FACTORY,
       SCHEMA_GENERATOR_PROVIDER,
+      DiscoveryEventPublisher,
     ];
-    const exported = [DiscoveryService, ManifestService, SchemaGenerator];
+    const exported = [DiscoveryService, ManifestService, SchemaGenerator, DiscoveryEventPublisher];
 
     return {
       module: DiscoveryModule,
@@ -118,8 +120,9 @@ export class DiscoveryModule {
       ManifestService,
       MANIFEST_DEPS_FACTORY,
       SCHEMA_GENERATOR_PROVIDER,
+      DiscoveryEventPublisher,
     ];
-    const exported = [DiscoveryService, ManifestService, SchemaGenerator];
+    const exported = [DiscoveryService, ManifestService, SchemaGenerator, DiscoveryEventPublisher];
 
     return {
       module: DiscoveryModule,
