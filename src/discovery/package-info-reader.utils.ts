@@ -8,7 +8,7 @@ export interface PackageInfo {
   description?: string;
 }
 
-const UNKNOWN_SERVICE = { name: 'unknown', version: '0.0.0' };
+const UNKNOWN_SERVICE = Object.freeze({ name: 'unknown', version: '0.0.0' });
 
 /** Reads service-relevant fields from the nearest package.json. */
 export function readPackageInfo(packageJsonPath?: string): PackageInfo {

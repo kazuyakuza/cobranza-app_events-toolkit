@@ -54,6 +54,25 @@ function resolveDiscoveryOptions(userOptions: EventsToolkitDiscoveryOptions): Di
   };
 }
 
+const SCHEMA_GENERATOR_PROVIDER = {
+  provide: SchemaGenerator,
+  useFactory: (moduleOptions: DiscoveryModuleOptions): SchemaGenerator =>
+    new SchemaGenerator({
+      schemaDir: moduleOptions.schemaDir,
+      forceRegenerate: moduleOptions.forceRegenerateSchemas,
+    }),
+  inject: [DISCOVERY_MODULE_OPTIONS],
+};
+
+function createAsyncOptionsResolver(
+  asyncOptions: DiscoveryModuleAsyncOptions,
+): (...args: unknown[]) => Promise<DiscoveryModuleOptions> {
+  return async (...args: unknown[]): Promise<DiscoveryModuleOptions> => {
+    const userOptions = await asyncOptions.useFactory(...args);
+    return resolveDiscoveryOptions(userOptions);
+  };
+}
+
 /** Asynchronous options for DiscoveryModule.forRootAsync. */
 export interface DiscoveryModuleAsyncOptions {
   /** Additional NestJS modules to import alongside the discovery module. */
@@ -70,22 +89,12 @@ export class DiscoveryModule {
   /** Registers the discovery module with synchronous options. */
   static forRoot(options: EventsToolkitDiscoveryOptions): DynamicModule {
     const resolvedOptions = resolveDiscoveryOptions(options);
-    const schemaGeneratorFactory = {
-      provide: SchemaGenerator,
-      useFactory: (moduleOptions: DiscoveryModuleOptions): SchemaGenerator =>
-        new SchemaGenerator({
-          schemaDir: moduleOptions.schemaDir,
-          forceRegenerate: moduleOptions.forceRegenerateSchemas,
-        }),
-      inject: [DISCOVERY_MODULE_OPTIONS],
-    };
-
     const providers = [
       { provide: DISCOVERY_MODULE_OPTIONS, useValue: resolvedOptions },
       DiscoveryService,
       ManifestService,
       MANIFEST_DEPS_FACTORY,
-      schemaGeneratorFactory,
+      SCHEMA_GENERATOR_PROVIDER,
     ];
     const exported = [DiscoveryService, ManifestService, SchemaGenerator];
 
@@ -99,29 +108,16 @@ export class DiscoveryModule {
 
   /** Registers the discovery module with asynchronous options resolved via a factory. */
   static forRootAsync(asyncOptions: DiscoveryModuleAsyncOptions): DynamicModule {
-    const schemaGeneratorFactory = {
-      provide: SchemaGenerator,
-      useFactory: (moduleOptions: DiscoveryModuleOptions): SchemaGenerator =>
-        new SchemaGenerator({
-          schemaDir: moduleOptions.schemaDir,
-          forceRegenerate: moduleOptions.forceRegenerateSchemas,
-        }),
-      inject: [DISCOVERY_MODULE_OPTIONS],
-    };
-
     const providers = [
       {
         provide: DISCOVERY_MODULE_OPTIONS,
-        useFactory: async (...args: unknown[]): Promise<DiscoveryModuleOptions> => {
-          const userOptions = await asyncOptions.useFactory(...args);
-          return resolveDiscoveryOptions(userOptions);
-        },
+        useFactory: createAsyncOptionsResolver(asyncOptions),
         inject: asyncOptions.inject ?? [],
       },
       DiscoveryService,
       ManifestService,
       MANIFEST_DEPS_FACTORY,
-      schemaGeneratorFactory,
+      SCHEMA_GENERATOR_PROVIDER,
     ];
     const exported = [DiscoveryService, ManifestService, SchemaGenerator];
 
