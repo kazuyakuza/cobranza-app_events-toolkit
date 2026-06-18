@@ -20,17 +20,20 @@ Replace `<user-name>` with your GitHub username and `<token>` with your personal
 
 ## Step 3: Configure the Credential Helper
 
-Run the following command in your terminal to configure Git to use the credential helper that reads from the `.git-credentials` file:
+Run the following commands in your terminal to configure Git to use the credential helper that reads from the `.git-credentials` file:
 
 ```bash
-git config --local credential.helper "store --file .git-credentials"
+git config --local credential.helper ""
+git config --local --add credential.helper "store --file .git-credentials"
 ```
 
-Note: if you got error likes `fatal: --local can only be used inside a git repository` or `fatal: detected dubious ownership in repository at ...`, then:
+Note-1: if you got error likes `fatal: --local can only be used inside a git repository` or `fatal: detected dubious ownership in repository at ...`, then:
 
 ```bash
 git config --global --add safe.directory <project-path>
 ```
+
+Note-2: the 1st cmd prevents global/system git config overwrites local config.
 
 ## Step 4: Set the Remote URL
 
