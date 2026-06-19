@@ -6,8 +6,7 @@ __tests__/
 *.spec.ts
 
 # Development configs
-tsconfig.json
-tsconfig.build.json
+tsconfig*.json
 .prettierrc
 .prettierignore
 .eslintrc*
