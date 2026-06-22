@@ -1,15 +1,14 @@
 name: Publish Package to NPM
-description: This workflow publishes the package to NPM when a pull request is merged into the main branch.
+description: This workflow publishes the package to NPM when a push is made to the main branch.
 
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches:
       - main
 
 jobs:
   publish:
-    if: github.event.pull_request.merged == true && vars.PREVENT_PUBLISH != 'true'
+    if: vars.PREVENT_PUBLISH != 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -35,12 +34,31 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
+      - name: Check published version
+        id: check_version
+        shell: bash
+        run: |
+          LOCAL_VERSION=$(node -p "require('./package.json').version")
+          PUBLISHED_VERSION=$(npm view @cobranza-apps/events-toolkit version 2>/dev/null || echo "")
+          if [ -z "$PUBLISHED_VERSION" ]; then
+            echo "Package not published yet. Proceeding with publish."
+            echo "should_publish=true" >> $GITHUB_OUTPUT
+          elif [ "$PUBLISHED_VERSION" = "$LOCAL_VERSION" ]; then
+            echo "Published version ($PUBLISHED_VERSION) matches local version ($LOCAL_VERSION). Skipping publish."
+            echo "should_publish=false" >> $GITHUB_OUTPUT
+          else
+            echo "Published version ($PUBLISHED_VERSION) differs from local version ($LOCAL_VERSION). Proceeding with publish."
+            echo "should_publish=true" >> $GITHUB_OUTPUT
+          fi
       - name: Publish to NPM
+        if: steps.check_version.outputs.should_publish == 'true'
         run: npm publish --access ${{ vars.PRIVATE_PUBLISH == 'true' && 'restricted' || 'public' }}
       - name: Get package version
         id: get_version
+        if: steps.check_version.outputs.should_publish == 'true'
         run: echo "PACKAGE_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
       - name: Create GitHub Release
+        if: steps.check_version.outputs.should_publish == 'true'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.get_version.outputs.PACKAGE_VERSION }}
