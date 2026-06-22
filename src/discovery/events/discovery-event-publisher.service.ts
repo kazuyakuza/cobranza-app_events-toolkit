@@ -128,7 +128,7 @@ export class DiscoveryEventPublisher {
     }
     try {
       await this.producerService.publish(subject, envelope);
-    } catch (_error: unknown) {
+    } catch {
       // Best-effort: silent skip during lifecycle hooks
     }
   }

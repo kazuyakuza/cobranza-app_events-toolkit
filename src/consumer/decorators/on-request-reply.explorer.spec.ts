@@ -3,6 +3,8 @@ import { DiscoveryService, Reflector } from '@nestjs/core';
 import { RequestReplyConsumerService } from '../request-reply-consumer.service';
 import { OnRequestReplyExplorer } from './on-request-reply.explorer';
 import { OnRequestReply } from './on-request-reply.decorator';
+import { ActorType } from '../../common/envelope/actor-type.enum';
+import { EventEnvelope } from '../../common/envelope/event-envelope.class';
 import { OnRequestReplyExplorerDeps } from './on-request-reply-explorer-deps.interface';
 
 class SampleConsumer {
@@ -129,7 +131,7 @@ describe('OnRequestReplyExplorer', () => {
       const handler = requestReplyConsumerService.getHandler('payment.proof.uploaded', 'tenant-1');
       expect(handler).toBeDefined();
 
-      const event = new (await import('../../common/envelope/event-envelope.class')).EventEnvelope({
+      const event = new EventEnvelope({
         id: 'evt_test',
         type: 'payment.proof.uploaded',
       });
@@ -138,7 +140,7 @@ describe('OnRequestReplyExplorer', () => {
         version: '1.0.0',
         producer: 'payment-service',
         companyId: 'tenant-1',
-        actorType: (await import('../../common/envelope/actor-type.enum')).ActorType.CLIENT,
+        actorType: ActorType.CLIENT,
         actorId: 'user-123',
         correlationId: '660e8400-e29b-41d4-a716-446655440001',
       };
