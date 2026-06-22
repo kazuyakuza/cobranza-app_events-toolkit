@@ -5,14 +5,14 @@
 | Category | Technology | Purpose |
 |----------|-----------|---------|
 | **Runtime** | Node.js >= 20 | JavaScript runtime |
-| **Language** | TypeScript 5.x | Static typing, decorators |
-| **Framework** | NestJS 11.x | Module system, DI, decorators |
+| **Language** | TypeScript 5.9.x | Static typing, decorators |
+| **Framework** | NestJS 11.1.x | Module system, DI, decorators |
 | **Validation** | `class-validator` 0.14.x | Runtime validation via decorators |
-| **Transformation** | `class-transformer` 0.5.x | Plain object -> class instance |
-| **UUID** | `uuid` 9.x | UUIDv7 generation for event IDs |
-| **Logging** | `winston` 3.x | Structured logging |
-| **Messaging** | `nats` 2.x + `@nestjs/microservices` | NATS client + NestJS integration |
-| **Outbox DB** | `better-sqlite3` | Synchronous SQLite for file-based outbox |
+| **Transformation** | `class-transformer` 0.5.1 | Plain object -> class instance |
+| **UUID** | `uuid` 14.x | UUIDv7 generation for event IDs |
+| **Logging** | `winston` 3.19.x | Structured logging |
+| **Messaging** | `nats` 2.29.x + `@nestjs/microservices` | NATS client + NestJS integration |
+| **Outbox DB** | `better-sqlite3` 12.x | Synchronous SQLite for file-based outbox |
 | **Package Manager** | npm or pnpm | Dependency management |
 | **Testing** | Jest (`@nestjs/testing`) | Unit and integration tests |
 | **Linting** | ESLint + Prettier | Code style enforcement |
@@ -57,26 +57,26 @@ npm run test:e2e
     "format": "prettier --write src/"
   },
   "peerDependencies": {
-    "@nestjs/common": "^11.0.0",
-    "@nestjs/microservices": "^11.0.0",
-    "class-transformer": "^0.5.0",
+    "@nestjs/common": "^11.1.0",
+    "@nestjs/microservices": "^11.1.0",
+    "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
-    "nats": "^2.0.0"
+    "nats": "^2.29.0"
   },
   "dependencies": {
-    "uuid": "^9.0.0",
-    "winston": "^3.0.0",
-    "better-sqlite3": "^9.0.0"
+    "uuid": "^14.0.0",
+    "winston": "^3.19.0",
+    "better-sqlite3": "^12.0.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.0.0",
-    "@types/uuid": "^9.0.0",
-    "@nestjs/testing": "^11.0.0",
-    "typescript": "^5.0.0",
-    "jest": "^29.0.0",
+    "@types/uuid": "^14.0.0",
+    "@nestjs/testing": "^11.1.0",
+    "typescript": "^5.9.0",
+    "jest": "^30.0.0",
     "ts-jest": "^29.0.0",
-    "eslint": "^8.0.0",
-    "prettier": "^3.0.0"
+    "eslint": "^8.57.0",
+    "prettier": "^3.8.0"
   }
 }
 ```
@@ -170,7 +170,7 @@ await this.outboxService.saveToOutbox(eventEnvelope);
 
 ## 7. Version Compatibility
 
-- NestJS 11.x (peer dependency — consumer microservice chooses exact version).
+- NestJS 11.1.x (peer dependency — consumer microservice chooses exact version).
 - Node.js >= 20.
 - NATS server >= 2.10 with JetStream enabled.
 - SQLite 3.x (via `better-sqlite3`).

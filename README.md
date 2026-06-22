@@ -56,12 +56,12 @@ The following must be installed in the consuming microservice:
 
 ```json
 {
-  "@nestjs/common": "^11.0.0",
-  "@nestjs/core": "^11.0.0",
-  "@nestjs/microservices": "^11.0.0",
-  "class-transformer": "^0.5.0",
+  "@nestjs/common": "^11.1.0",
+  "@nestjs/core": "^11.1.0",
+  "@nestjs/microservices": "^11.1.0",
+  "class-transformer": "^0.5.1",
   "class-validator": "^0.14.0",
-  "nats": "^2.0.0"
+  "nats": "^2.29.0"
 }
 ```
 
