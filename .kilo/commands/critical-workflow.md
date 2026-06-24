@@ -25,7 +25,7 @@ It is **EXTREMELY IMPORTANT** that all AI agents follow this workflow step by st
   - **Other Formats**: Ask user for clarification.
 - **Plan Agent**:
   1. Receives requests, creates/reads TODO file.
-  2. Generates a global plan file for steps 2–6 where **each TODO task gets its own 4.1–4.6 cycle**; do not question this and add 4.x cycle per task. Include a global and per task pre-analysis.
+  2. Generates a global plan file for steps 2–6 where **each TODO task gets its own 4.1–4.6 cycle**; do not question this and add 4.x cycle per task. Include a global and per task pre-analysis, including specially technical & architecture decisions.
   3. Do **NOT** call `plan_exit`. Do not question this and you **MUST** proceed in this way:
       - auto-approve global plan **ONLY** if request or TODO file includes string: "Don't request me to approve plans".
       - otherwise you **MUST** present the global plan to the user using the `question` tool, including global plan file path and options:
@@ -90,7 +90,7 @@ Assign to architect sub-agent (`subagent_type: "architect"`).
 - Identify task ambiguities; analyze project status; research required techs, frameworks, libs, dependencies, and/or APIs.
 - Generate implementation plan:
   1. Think high-level approach to implement the TODO task, including steps for: git handling, code writing, console cmds (if required), test build (if exists), code review, unit test (if testing suite exists), docs updates.
-  2. Use the high-level approach to define an extensive and complete implementation plan, composed by very tiny and very detailed steps; include clear file names/paths, structure, code snippets, terminal cmd details, etc.
+  2. Use the high-level approach to define an extensive and complete implementation plan, composed by very tiny and very detailed steps; include clear file names/paths, structure, code snippets, terminal cmd details, technical & architecture decisions, etc.
   3. [CRITICAL] Save to `.kilo/plans/<YYYYMMDD>-<plan-name>.md`.
   4. Compare to original task; redo if incorrect. Otherwise, return plan path.
 - **Plan Agent present plan to user for approval**.
