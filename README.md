@@ -817,6 +817,7 @@ Full documentation: [`docs/testing-utilities.md`](docs/testing-utilities.md)
 
 ## Related Documentation
 
+- [Changelog](CHANGELOG.md) — Notable release changes and upgrade notes
 - [Event & Messaging Convention](docs/event-messaging-convention.md) — Full event standard specification
 - [Outbox Configuration](docs/outbox-configuration.md) — SQLite vs Postgres setup, service options, and migration guide
 - [Outbox Usage Guidelines](docs/outbox-usage-guidelines.md) — Decision trees for outbox backend, transactional vs normal, and request-reply patterns
