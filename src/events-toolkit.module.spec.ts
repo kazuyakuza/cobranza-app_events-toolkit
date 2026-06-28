@@ -2,9 +2,6 @@ import { DynamicModule } from '@nestjs/common';
 import { JetStreamClient, NatsConnection } from 'nats';
 import { EventsToolkitModule } from './events-toolkit.module';
 import { JETSTREAM_TOKEN } from './producer/producer.module';
-import { ProducerService } from './producer/producer.service';
-import { ConsumerService } from './consumer/consumer.service';
-import { OutboxService } from './outbox/outbox.service';
 import { EventLoggerService } from './logging/event-logger.service';
 
 jest.mock('nats', () => ({
@@ -36,14 +33,15 @@ type Provider = Record<string, unknown>;
 
 describe('EventsToolkitModule', () => {
   describe('forRoot', () => {
-    it('should return a DynamicModule with expected exports', async () => {
+    it('should expose sub-module services via global imports instead of exports', async () => {
       const module = await EventsToolkitModule.forRoot({
         nats: { connection: { jetstream: () => mockJetStream } as unknown as NatsConnection },
       });
-      expect(module.exports).toContain(ProducerService);
-      expect(module.exports).toContain(ConsumerService);
-      expect(module.exports).toContain(OutboxService);
-      expect(module.exports).toContain(EventLoggerService);
+      const importNames = (module.imports ?? []).map((m) => (m as { module?: { name?: string } }).module?.name);
+      expect(importNames.some(n => n === 'ProducerModule')).toBe(true);
+      expect(importNames.some(n => n === 'ConsumerModule')).toBe(true);
+      expect(importNames.some(n => n === 'DiscoveryModule')).toBe(true);
+      expect(module.exports ?? []).toHaveLength(0);
     });
 
     it('should be a global module', async () => {
@@ -111,16 +109,15 @@ describe('EventsToolkitModule', () => {
   });
 
   describe('forRootAsync', () => {
-    it('should return a DynamicModule with expected exports', () => {
+    it('should expose sub-module services via global imports instead of exports', () => {
       const module = EventsToolkitModule.forRootAsync({
-        useFactory: async () => ({
-          nats: { servers: ['nats://localhost:4222'] },
-        }),
+        useFactory: async () => ({ nats: { servers: ['nats://localhost:4222'] } }),
       });
-      expect(module.exports).toContain(ProducerService);
-      expect(module.exports).toContain(ConsumerService);
-      expect(module.exports).toContain(OutboxService);
-      expect(module.exports).toContain(EventLoggerService);
+      const importNames = (module.imports ?? []).map((m) => (m as { module?: { name?: string } }).module?.name);
+      expect(importNames.some(n => n === 'ProducerModule')).toBe(true);
+      expect(importNames.some(n => n === 'ConsumerModule')).toBe(true);
+      expect(importNames.some(n => n === 'OutboxModule')).toBe(true);
+      expect(module.exports ?? []).toHaveLength(0);
     });
 
     it('should be a global module', () => {

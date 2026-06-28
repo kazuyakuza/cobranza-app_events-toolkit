@@ -5,10 +5,6 @@ import { ConsumerModule, ConsumerModuleOptions } from './consumer/consumer.modul
 import { OutboxModuleOptions } from './outbox/outbox.types';
 import { OutboxModule } from './outbox/outbox.module';
 import { EventLoggerService, EventLoggerOptions } from './logging/event-logger.service';
-import { ProducerService } from './producer/producer.service';
-import { ConsumerService } from './consumer/consumer.service';
-import { OutboxService } from './outbox/outbox.service';
-import { DiscoveryService } from './discovery/discovery.service';
 import { DiscoveryModule } from './discovery/discovery.module';
 import {
   EventsToolkitModuleOptions,
@@ -105,7 +101,6 @@ export class EventsToolkitModule implements OnModuleDestroy {
       global: true,
       imports,
       providers: [loggingProvider],
-      exports: [ProducerService, ConsumerService, OutboxService, EventLoggerService, DiscoveryService],
     };
   }
 
@@ -131,7 +126,6 @@ export class EventsToolkitModule implements OnModuleDestroy {
       global: true,
       imports,
       providers: [optionsProvider, jetStreamProvider, loggingProvider],
-      exports: [ProducerService, ConsumerService, OutboxService, EventLoggerService, DiscoveryService],
     };
   }
 
