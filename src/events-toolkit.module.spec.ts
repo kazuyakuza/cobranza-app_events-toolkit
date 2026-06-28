@@ -38,9 +38,9 @@ describe('EventsToolkitModule', () => {
         nats: { connection: { jetstream: () => mockJetStream } as unknown as NatsConnection },
       });
       const importNames = (module.imports ?? []).map((m) => (m as { module?: { name?: string } }).module?.name);
-      expect(importNames.some(n => n === 'ProducerModule')).toBe(true);
-      expect(importNames.some(n => n === 'ConsumerModule')).toBe(true);
-      expect(importNames.some(n => n === 'DiscoveryModule')).toBe(true);
+      expect(importNames.some((n) => n === 'ProducerModule')).toBe(true);
+      expect(importNames.some((n) => n === 'ConsumerModule')).toBe(true);
+      expect(importNames.some((n) => n === 'DiscoveryModule')).toBe(true);
       expect(module.exports ?? []).toHaveLength(0);
     });
 
@@ -114,9 +114,9 @@ describe('EventsToolkitModule', () => {
         useFactory: async () => ({ nats: { servers: ['nats://localhost:4222'] } }),
       });
       const importNames = (module.imports ?? []).map((m) => (m as { module?: { name?: string } }).module?.name);
-      expect(importNames.some(n => n === 'ProducerModule')).toBe(true);
-      expect(importNames.some(n => n === 'ConsumerModule')).toBe(true);
-      expect(importNames.some(n => n === 'OutboxModule')).toBe(true);
+      expect(importNames.some((n) => n === 'ProducerModule')).toBe(true);
+      expect(importNames.some((n) => n === 'ConsumerModule')).toBe(true);
+      expect(importNames.some((n) => n === 'OutboxModule')).toBe(true);
       expect(module.exports ?? []).toHaveLength(0);
     });
 
