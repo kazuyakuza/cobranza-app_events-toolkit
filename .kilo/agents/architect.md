@@ -6,7 +6,17 @@ permission:
   edit:
     "*.md": allow
     "*": deny
-  bash: deny
+  bash:
+    "git log *": "allow"
+    "git shortlog *": "allow"
+    "git log *": "allow"
+    "git diff*": "allow"
+    "git ls-*": "allow"
+    "git show*": "allow"
+    "git status *": "allow"
+    "git range-diff *": "allow"
+    "npm run *": "allow"
+    "*": deny
   task: deny
   webfetch: allow
   mcp: allow

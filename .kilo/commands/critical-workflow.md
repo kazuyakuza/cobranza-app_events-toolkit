@@ -119,14 +119,16 @@ Assign to code-reviewer sub-agent (`subagent_type: "code-reviewer"`).
 
 Assign to docs-specialist sub-agent (`subagent_type: "docs-specialist"`).
 
-- Add code comments where needed.
-- Update/create project documentation (e.g., README, `/docs`).
+- Add comments in code's files where required (e.g. JSDoc, JavaDoc, etc.).
+- Update/create project documentation (e.g. README, `/docs`).
 
 #### 4.5. Verification
 
 Assign to architect sub-agent (`subagent_type: "architect"`).
 
-- Check implementation plan adherence; commit unstaged files.
+- Check implementation plan adherence.
+- Report diffs found.
+- Report if deviations from the original plan are acceptable.
 
 #### 4.6. Task Completion
 

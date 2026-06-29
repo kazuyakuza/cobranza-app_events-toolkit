@@ -6,17 +6,22 @@
   ],
   "permission": {
     "edit": {
-      "src/**": "allow",
       ".agent/project-info/**": "allow",
       ".agent/todos/**": "allow",
       ".agent/project-structure.md": "allow",
       ".kilo/plans/**": "allow",
       "docs/**": "allow",
-      ".gitignore": "allow",
-      ".kilocodeignore": "allow",
-      "CHANGELOG.md": "allow",
+      "src/**": "allow",
+      "test/**": "allow",
+      "__test__/**": "allow",
+      "*ignore*": "allow",
       "LICENSE": "allow",
-      "README.md": "allow",
+      "*.md": "allow",
+      "package*": "allow",
+      ".env.example*": "allow",
+      "docker*": "allow",
+      "eslint*": "allow",
+      "tsconfig*": "allow",
       "*": "ask"
     }
   }
