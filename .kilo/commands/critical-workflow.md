@@ -62,23 +62,23 @@ Assigns to implementer sub-agent (`subagent_type: "implementer"`).
 #### 4.0 Overall Process Management
 
 - **CRITICAL**: Each step (4.1–4.6) MUST be a separate `task` tool invocation. Do NOT assign the entire global plan or all 4.x steps for a task to a single sub-agent.
-- **Compliance Self-Check**: Before any 4.x sub-step, verify you are the Plan Agent orchestrating via `task` tool, the sub-step uses the correct `subagent_type`, and the task maps 1:1 to a single TODO item. If not, stop and re-read this workflow.
+- **Compliance Self-Check**: Before any 4.x sub-step, verify you are the Plan Agent orchestrating via `task` tool, the sub-step uses the correct `subagent_type` (MUST match the type specified in the workflow step description), and the task maps 1:1 to a single TODO item. If not, stop and re-read this workflow.
 - Process TODO tasks in file order. Before a new task, commit pending changes.
 - On failures: pause and invoke Ask Agent for user intervention.
-- **Context Passing**: on delegating via `task` tool, include relevant context (TODO file path, task description, plan path, constraints, global/task pre-analysis, etc) in the prompt. Sub-agents read project context files independently.
+- **Context Passing**: on delegating via `task` tool, include relevant context: TODO file path, task description, per task plan path, constraints, global/task pre-analysis, etc. in the prompt. Sub-agents MUST read project context files independently.
 
 #### Sub-Task Prompt Requirements
 
-Every `task` tool invocation MUST include (at least) instructions at the begin:
+In addition to the context (described above), every `task` tool invocation MUST include next instructions at the begin:
 
 ```text
 SUB-AGENT TASK — SINGLE DISCRETE STEP
 - You are executing exactly ONE step of a larger Critical Workflow plan.
 - Do ONLY what is described below. Do NOT execute subsequent steps.
-- Do NOT read or expand scope to the global plan for other tasks.
+- TOP PRIORITY: you MUST FOLLOW every single detail in <TODO file path>.
+- Do NOT read or expand scope to the plan for other tasks.
 - Tools preference: .kilo/rules/tool-selection-priority.md.
-- Follow [Gitignore Compliance Rule](../.kilo/rules/gitignore-compliance.md)
-- The subagent_type parameter MUST match the type specified in the workflow step description for this step.
+- Follow ../.kilo/rules/gitignore-compliance.md.
 - Signal completion with a clear summary: what was done, what was NOT done.
 - If anything is ambiguous or outside your assigned scope, return question to caller. Do NOT make assumptions.
 ```
@@ -89,7 +89,7 @@ Assign to architect sub-agent (`subagent_type: "architect"`).
 
 - Identify task ambiguities; analyze project status; research required techs, frameworks, libs, dependencies, and/or APIs.
 - Generate implementation plan:
-  1. Think high-level approach to implement the TODO task, including steps for: git handling, code writing, console cmds (if required), test build (if exists), code review, unit test (if testing suite exists), docs updates.
+  1. Think high-level approach to implement the TODO task, including steps for: git handling, code writing, console cmds (if required), test build (if exists), code review, unit test (if testing suite exists), docs updates, etc.
   2. Use the high-level approach to define an extensive and complete implementation plan, composed by very tiny and very detailed steps; include clear file names/paths, structure, code snippets, terminal cmd details, technical & architecture decisions, etc.
   3. [CRITICAL] Save to `.kilo/plans/<YYYYMMDD>-<plan-name>.md`.
   4. Compare to original task; redo if incorrect. Otherwise, return plan path.
@@ -103,8 +103,9 @@ Assign to architect sub-agent (`subagent_type: "architect"`).
 
 Assign to implementer sub-agent (`subagent_type: "implementer"`).
 
-- Follow steps from the implementation plan; check plan between steps.
+- MUST follow steps from the implementation plan generated in step 4.1; check plan between steps.
 - IMPORTANT: commit w/meaningful messages.
+- Must don't take self actions/decisions. Only follow implementation plan.
 
 #### 4.3. Code Review
 
@@ -119,7 +120,7 @@ Assign to code-reviewer sub-agent (`subagent_type: "code-reviewer"`).
 
 Assign to docs-specialist sub-agent (`subagent_type: "docs-specialist"`).
 
-- Add comments in code's files where required (e.g. JSDoc, JavaDoc, etc.).
+- Add comments in code's files (e.g. JSDoc, JavaDoc, etc.). Include details to guide AI agents, links to related documentation and/or example files.
 - Update/create project documentation (e.g. README, `/docs`).
 
 #### 4.5. Verification
@@ -129,6 +130,7 @@ Assign to architect sub-agent (`subagent_type: "architect"`).
 - Check implementation plan adherence.
 - Report diffs found.
 - Report if deviations from the original plan are acceptable.
+- If the deviations are not acceptable, propose changes in a new TODO file.
 
 #### 4.6. Task Completion
 
@@ -156,15 +158,12 @@ Plan Agent assigns implementer sub-agent (`subagent_type: "implementer"`).
 
 ### 6. Continuation
 
-- Check for remaining TODO files.
-- If any: propose user to proceed in new chat with
+Propose user to proceed with next TODO file in a new chat with
 
 ```text
 full read @AGENTS.md & follow /critical-workflow
 do @/.agent/todos/<file-path>
 ```
-
-- If none: work finished.
 
 ## Example (MUST READ)
 
