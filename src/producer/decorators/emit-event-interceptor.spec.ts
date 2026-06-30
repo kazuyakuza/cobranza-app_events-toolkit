@@ -61,7 +61,11 @@ describe('EmitEventInterceptor', () => {
 
     it('should emit event when @EmitEvent metadata is present', async () => {
       class WithMetadataProducer {
-        @EmitEvent('payment.proof.uploaded', { version: '1' }) handleUpload(): void {}
+        @EmitEvent('payment.proof.uploaded', {
+          version: '1',
+          description: 'Proof was uploaded',
+          payloadExample: { proofId: 'proof-123' },
+        }) handleUpload(): void {}
       }
       const handler = WithMetadataProducer.prototype.handleUpload;
       const data = { amount: 250 };
@@ -75,9 +79,13 @@ describe('EmitEventInterceptor', () => {
       });
     });
 
-    it('should emit event with default version when version is not specified', async () => {
+    it('should emit event with explicit version v1', async () => {
       class NoVersionProducer {
-        @EmitEvent('debt.schedule.processed') handleProcessed(): void {}
+        @EmitEvent('debt.schedule.processed', {
+          version: '1',
+          description: 'Schedule processed',
+          payloadExample: { scheduleId: 'sch-1' },
+        }) handleProcessed(): void {}
       }
       const handler = NoVersionProducer.prototype.handleProcessed;
       const data = { scheduleId: 'sch-1' };
@@ -93,7 +101,11 @@ describe('EmitEventInterceptor', () => {
 
     it('should skip emission when EventContext is not found in arguments', async () => {
       class NoContextProducer {
-        @EmitEvent('payment.proof.uploaded') handleUpload(): void {}
+        @EmitEvent('payment.proof.uploaded', {
+          version: '1',
+          description: 'Proof was uploaded',
+          payloadExample: { proofId: 'proof-123' },
+        }) handleUpload(): void {}
       }
       const handler = NoContextProducer.prototype.handleUpload;
       const context = createMockExecutionContext(handler, [{ plainData: true }]);
@@ -104,7 +116,11 @@ describe('EmitEventInterceptor', () => {
 
     it('should find EventContext among multiple arguments', async () => {
       class MultipleArgsProducer {
-        @EmitEvent('payment.proof.uploaded') handleUpload(): void {}
+        @EmitEvent('payment.proof.uploaded', {
+          version: '1',
+          description: 'Proof was uploaded',
+          payloadExample: { proofId: 'p-1' },
+        }) handleUpload(): void {}
       }
       const handler = MultipleArgsProducer.prototype.handleUpload;
       const data = { proofId: 'p-1' };
@@ -116,7 +132,11 @@ describe('EmitEventInterceptor', () => {
 
     it('should return the original handler return value', async () => {
       class ReturnValueProducer {
-        @EmitEvent('payment.proof.uploaded') handleUpload(): void {}
+        @EmitEvent('payment.proof.uploaded', {
+          version: '1',
+          description: 'Proof was uploaded',
+          payloadExample: { proofId: 'proof-123' },
+        }) handleUpload(): void {}
       }
       const handler = ReturnValueProducer.prototype.handleUpload;
       const returnValue = { id: 'evt-123', type: 'proof_uploaded' };

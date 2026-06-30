@@ -10,12 +10,19 @@ import { OnRequestReplyExplorerDeps } from './on-request-reply-explorer-deps.int
 class SampleConsumer {
   handlerInvoked = false;
 
-  @OnRequestReply('payment.proof.uploaded', { companyId: 'tenant-1' })
+  @OnRequestReply('payment.proof.uploaded', {
+    companyId: 'tenant-1',
+    description: 'Handles payment proof responses',
+    payloadExample: { proofId: 'proof-123' },
+  })
   handleProofUploaded(): void {
     this.handlerInvoked = true;
   }
 
-  @OnRequestReply('debt.schedule.created')
+  @OnRequestReply('debt.schedule.created', {
+    description: 'Handles debt schedule responses',
+    payloadExample: { scheduleId: 'sch-123' },
+  })
   handleScheduleCreated(): void {
     this.handlerInvoked = true;
   }
@@ -30,7 +37,11 @@ class ConsumerWithoutDecorator {
 class CompanyScopedConsumer {
   handlerInvoked = false;
 
-  @OnRequestReply('client.profile.updated', { companyId: 'tenant-2' })
+  @OnRequestReply('client.profile.updated', {
+    companyId: 'tenant-2',
+    description: 'Handles client profile responses',
+    payloadExample: { clientId: 'client-1' },
+  })
   handleUpdated(): void {
     this.handlerInvoked = true;
   }

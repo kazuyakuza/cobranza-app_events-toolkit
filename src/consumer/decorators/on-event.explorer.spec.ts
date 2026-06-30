@@ -11,12 +11,20 @@ import { EventContext } from '../../common/envelope/event-context.interface';
 class SampleConsumer {
   handlerInvoked = false;
 
-  @OnEvent('payment.proof.uploaded', { version: '1' })
+  @OnEvent('payment.proof.uploaded', {
+    version: '1',
+    description: 'Handles payment proof uploads',
+    payloadExample: { proofId: 'proof-123' },
+  })
   handleProofUploaded(): void {
     this.handlerInvoked = true;
   }
 
-  @OnEvent('debt.schedule.created')
+  @OnEvent('debt.schedule.created', {
+    version: '1',
+    description: 'Handles debt schedule creation',
+    payloadExample: { scheduleId: 'sch-123' },
+  })
   handleScheduleCreated(): void {
     this.handlerInvoked = true;
   }
@@ -31,7 +39,11 @@ class ConsumerWithoutDecorator {
 class CustomVersionConsumer {
   handlerInvoked = false;
 
-  @OnEvent('client.profile.updated', { version: '2' })
+  @OnEvent('client.profile.updated', {
+    version: '2',
+    description: 'Handles client profile updates',
+    payloadExample: { clientId: 'client-1' },
+  })
   handleUpdated(): void {
     this.handlerInvoked = true;
   }
@@ -71,7 +83,7 @@ describe('OnEventExplorer', () => {
       expect(consumerService.getHandler('company.*.debt.schedule.created.v1')).toBeDefined();
     });
 
-    it('should build wildcard subject with default version when not specified', () => {
+    it('should build wildcard subject with explicit version v1', () => {
       (discovery.getProviders as jest.Mock).mockReturnValue([{ instance: sampleHandler }]);
       (discovery.getControllers as jest.Mock).mockReturnValue([]);
 
