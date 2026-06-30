@@ -168,8 +168,8 @@ describe('ManifestEntryBuilder', () => {
   });
 
   describe('payloadSchemaRef auto-resolution from reflect metadata', () => {
-    interface SampleData {
-      readonly id: string;
+    class SampleData {
+      readonly id!: string;
     }
 
     class ConsumerWithParam {
@@ -177,6 +177,14 @@ describe('ManifestEntryBuilder', () => {
     }
 
     it('should resolve payloadSchemaRef from first parameter type for consumers', () => {
+      // Manually set design:paramtypes as TypeScript would with emitDecoratorMetadata
+      Reflect.defineMetadata(
+        'design:paramtypes',
+        [SampleData],
+        ConsumerWithParam.prototype,
+        'onEvent',
+      );
+
       const metadata = buildOnEventMetadata();
 
       const entry = builder.buildOnEventEntry(
@@ -195,6 +203,14 @@ describe('ManifestEntryBuilder', () => {
     }
 
     it('should resolve payloadSchemaRef from return type for producers', () => {
+      // Manually set design:returntype as TypeScript would with emitDecoratorMetadata
+      Reflect.defineMetadata(
+        'design:returntype',
+        SampleData,
+        ProducerWithReturn.prototype,
+        'handleEvent',
+      );
+
       const metadata = buildEmitEventMetadata();
 
       const entry = builder.buildEmitEventEntry(
