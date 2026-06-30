@@ -141,7 +141,11 @@ async handleUpload(dto: UploadDto, context: EventContext): Promise<PaymentProofU
 ### Without explicit `payloadSchemaRef` (auto-resolved):
 
 ```typescript
-@EmitEvent('payment.proof.uploaded', { version: '1' })
+@EmitEvent('payment.proof.uploaded', {
+  version: '1',
+  description: 'A payment proof file was uploaded',
+  payloadExample: { paymentAttemptId: 'uuid', fileUrl: 'https://...', amount: 100, currency: 'MXN' },
+})
 handleUpload(dto: UploadDto, context: EventContext): PaymentProofUploadedData {
   // payloadSchemaRef resolves to "PaymentProofUploadedData" from the return type
 }
@@ -457,6 +461,12 @@ async handleUpload(dto: UploadDto, context: EventContext): Promise<PaymentProofU
   description: 'Processes uploaded payment proofs',
   tags: ['payment', 'proof'],
   payloadSchemaRef: 'PaymentProofUploadedData',
+  payloadExample: {
+    paymentAttemptId: 'uuid',
+    fileUrl: 'https://...',
+    amount: 100,
+    currency: 'MXN',
+  },
 })
 async onProofUploaded(event: EventEnvelope<PaymentProofUploadedData>): Promise<void> {
   // ...
@@ -471,6 +481,11 @@ async onProofUploaded(event: EventEnvelope<PaymentProofUploadedData>): Promise<v
   description: 'Handles credit check completion responses',
   tags: ['credit'],
   payloadSchemaRef: 'CreditCheckResultData',
+  payloadExample: {
+    checkId: 'uuid',
+    approved: true,
+    score: 750,
+  },
 })
 async handleCreditCheckResponse(event: EventEnvelope<CreditCheckResultData>): Promise<void> {
   // ...
@@ -541,7 +556,7 @@ await nc.jetStreamManager.streams.add({
 
 ## Developer & AI Agent Guidelines for Event Discovery
 
-1. **Always annotate event decorators with `description` and `tags`** — these become part of the service manifest and improve discoverability.
+1. **Always annotate event decorators with `description`, `payloadExample`, and `tags`** — `description` and `payloadExample` are now **required** by the decorator option types (v0.8.0); `tags` remains optional but recommended. All three become part of the service manifest and improve discoverability.
 
 2. **Use `payloadSchemaRef` explicitly** when the auto-resolved type name doesn't match the DTO class name (e.g., when the type resolves to a generic wrapper).
 

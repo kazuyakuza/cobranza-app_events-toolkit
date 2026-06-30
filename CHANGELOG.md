@@ -5,6 +5,49 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.8.0] - 2026-06-29
+
+### Changed
+
+- **Breaking:** Decorator option interfaces (`EmitEventOptions`, `OnEventOptions`, `OnRequestReplyOptions`) now require the following fields to be provided explicitly:
+  - `version: string` — required on `@EmitEvent` and `@OnEvent` (not applicable to `@OnRequestReply`, which has no `version` field).
+  - `description: string` — required on all three decorators.
+  - `payloadExample: Record<string, unknown>` — required on all three decorators.
+- The second argument to `@EmitEvent()`, `@OnEvent()`, and `@OnRequestReply()` is now **required** (previously optional). Omitting it is now a compile-time error.
+- The corresponding `*Metadata` interfaces (`EmitEventMetadata`, `OnEventMetadata`, `OnRequestReplyMetadata`) mirror the same required fields, guaranteeing type safety for downstream consumers of the stored metadata.
+
+### Removed
+
+- `ManifestEntryBuilder` no longer falls back to `'1'` for `version` or `''` for `description` when building manifest entries (`??` operators removed). These fields are now guaranteed present by the type system.
+- Dead `?? '1'` fallbacks removed from `EmitEventInterceptor.buildSubject()` and `OnEventExplorer.buildWildcardSubject()` — same rationale.
+
+### Added
+
+- `ManifestEntryBuilder` now has dedicated test coverage in `src/discovery/manifest-entry.builder.spec.ts`. Tests verify each builder method (`buildOnEventEntry`, `buildOnRequestReplyEntry`, `buildEmitEventEntry`) produces correctly shaped entries, that `description`/`payloadExample` propagate without fallbacks, that `tags ?? []` fallback still works, and that `payloadSchemaRef` auto-resolution from TypeScript reflect metadata works for both param types (consumers) and return types (producers).
+
+### Migration
+
+- **All decorator usages must be updated** to pass the now-required fields. For each `@EmitEvent` / `@OnEvent` call, add `version`, `description`, and `payloadExample`. For each `@OnRequestReply` call, add `description` and `payloadExample`.
+- Example migration:
+
+  ```diff
+  - @EmitEvent('payment.proof.uploaded', { version: '1' })
+  + @EmitEvent('payment.proof.uploaded', {
+  +   version: '1',
+  +   description: 'Proof was uploaded',
+  +   payloadExample: { proofId: 'uuid', amount: 100 },
+  + })
+  ```
+
+- `tags` remains optional (`?? []` fallback preserved in `ManifestEntryBuilder`); no change needed for existing `tags` usage.
+- `payloadSchemaRef` remains optional (auto-resolved from reflect metadata); no change needed for existing `payloadSchemaRef` usage.
+- `companyId` on `@OnRequestReply` remains optional; no change needed.
+
+### Documentation
+
+- Updated `docs/event-messaging-convention.md` Section 4.1 options table to mark `version`, `description`, and `payloadExample` as required.
+- Updated `docs/event-discovery-and-service-registry.md` decorator annotation examples to include the now-required fields.
+
 ## [0.7.4] - 2026-06-27
 
 ### Fixed

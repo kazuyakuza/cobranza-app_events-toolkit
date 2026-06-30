@@ -178,24 +178,39 @@ All messages published to JetStream **must** follow this JSON structure:
 
 ### 4.1 Decorator Signature Convention
 
-The toolkit provides three event decorators that now accept the event type as a **string first argument**, followed by an optional options object:
+The toolkit provides three event decorators that accept the event type as a **string first argument**, followed by a **required** options object:
 
 ```typescript
-@EmitEvent('payment.proof.uploaded', { version: '1', description: 'Proof was uploaded' })
-@OnEvent('payment.proof.uploaded', { version: '1', tags: ['proof'] })
-@OnRequestReply('credit.check.completed', { companyId: '550e8400-e29b-41d4-a716-446655440000' })
+@EmitEvent('payment.proof.uploaded', {
+  version: '1',
+  description: 'Proof was uploaded',
+  payloadExample: { proofId: 'uuid', amount: 100 },
+})
+@OnEvent('payment.proof.uploaded', {
+  version: '1',
+  description: 'Handles uploaded payment proofs',
+  payloadExample: { proofId: 'uuid', amount: 100 },
+  tags: ['proof'],
+})
+@OnRequestReply('credit.check.completed', {
+  description: 'Handles credit check completion responses',
+  payloadExample: { checkId: 'uuid', approved: true },
+  companyId: '550e8400-e29b-41d4-a716-446655440000',
+})
 ```
 
 The options object supports rich metadata for discovery manifests:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `version` | `string?` | Major version (default: `'1'`) |
-| `description` | `string?` | Human-readable description |
-| `tags` | `string[]?` | Arbitrary categorization tags |
-| `payloadSchemaRef` | `string?` | Explicit payload schema class name |
-| `payloadExample` | `Record<string, unknown>?` | Example payload for documentation |
-| `companyId` | `string?` | Tenant filter (`@OnRequestReply` only) |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `version` | `string` | **Yes** for `@EmitEvent` and `@OnEvent` (not applicable to `@OnRequestReply`) | Major version string (e.g., `'1'`) |
+| `description` | `string` | **Yes** | Human-readable description; appears in the service manifest |
+| `payloadExample` | `Record<string, unknown>` | **Yes** | Example payload object for documentation in discovery manifests |
+| `tags` | `string[]` | No (defaults to `[]`) | Arbitrary categorization tags |
+| `payloadSchemaRef` | `string` | No (auto-resolved from reflect metadata) | Explicit payload schema class name |
+| `companyId` | `string` | No (`@OnRequestReply` only) | Tenant filter for responses |
+
+> **Breaking change (v0.8.0):** `version` (where applicable), `description`, and `payloadExample` are now **required**. Previously they were optional with fallback defaults in `ManifestEntryBuilder` (`?? '1'` for `version`, `?? ''` for `description`). Those fallbacks have been removed because the type system now guarantees presence. The `tags` fallback (`?? []`) is preserved because `tags` remains optional.
 
 The old object-based signature (`@OnEvent({ domain, entity, action })`) has been replaced by the string-first-arg format shown above.
 
