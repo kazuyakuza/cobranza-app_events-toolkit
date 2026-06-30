@@ -77,7 +77,6 @@ export class OnEventExplorer implements OnModuleInit {
   }
 
   private buildWildcardSubject(metadata: OnEventMetadata): string {
-    const version = metadata.version ?? '1';
-    return `company.*.${metadata.eventType}.v${version}`;
+    return `company.*.${metadata.eventType}.v${metadata.version}`;
   }
 }

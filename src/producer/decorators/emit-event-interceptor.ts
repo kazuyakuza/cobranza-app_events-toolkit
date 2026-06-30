@@ -85,7 +85,6 @@ export class EmitEventInterceptor implements NestInterceptor {
   }
 
   private buildSubject(metadata: EmitEventMetadata, eventContext: EventContext): string {
-    const version = metadata.version ?? '1';
-    return `company.${eventContext.companyId}.${metadata.eventType}.v${version}`;
+    return `company.${eventContext.companyId}.${metadata.eventType}.v${metadata.version}`;
   }
 }

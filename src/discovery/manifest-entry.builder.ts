@@ -45,12 +45,11 @@ export class ManifestEntryBuilder {
       methodName,
       explicitRef: metadata.payloadSchemaRef,
     });
-    const version = metadata.version ?? '1';
     return {
-      subject: `company.*.${metadata.eventType}.v${version}`,
+      subject: `company.*.${metadata.eventType}.v${metadata.version}`,
       payloadSchemaRef,
-      description: metadata.description ?? '',
-      version,
+      description: metadata.description,
+      version: metadata.version,
       handler: methodName,
       tags: metadata.tags ?? [],
       payloadExample: metadata.payloadExample,
@@ -79,7 +78,7 @@ export class ManifestEntryBuilder {
     return {
       subject: metadata.eventType,
       payloadSchemaRef,
-      description: metadata.description ?? '',
+      description: metadata.description,
       version: '1',
       handler: methodName,
       tags: metadata.tags ?? [],
@@ -103,12 +102,11 @@ export class ManifestEntryBuilder {
       explicitRef: metadata.payloadSchemaRef,
       preferReturnType: true,
     });
-    const version = metadata.version ?? '1';
     return {
-      subject: `company.${COMPANY_ID_PLACEHOLDER}.${metadata.eventType}.v${version}`,
+      subject: `company.${COMPANY_ID_PLACEHOLDER}.${metadata.eventType}.v${metadata.version}`,
       payloadSchemaRef,
-      description: metadata.description ?? '',
-      version,
+      description: metadata.description,
+      version: metadata.version,
       handler: methodName,
       tags: metadata.tags ?? [],
       payloadExample: metadata.payloadExample,
