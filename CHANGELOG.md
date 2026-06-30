@@ -47,6 +47,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - Updated `docs/event-messaging-convention.md` Section 4.1 options table to mark `version`, `description`, and `payloadExample` as required.
 - Updated `docs/event-discovery-and-service-registry.md` decorator annotation examples to include the now-required fields.
+- Added **README Quickstart** section with literal step-by-step checklist for AI agents.
+- Added **README Onboarding Flow** section with 11-step navigation covering architecture → deploy.
+- Added **README Deployment** section with JetStream stream config, env vars table, and health checks.
+- Fixed stale decorator signatures (added required `description`, `payloadExample`) across all `.md` docs and `.ts` examples.
+- Fixed old object-based decorator patterns (`{ domain, entity, action }`) in `docs/examples/async-request-reply.example.ts` and `.agent/project-info/tech.md`.
+- Added onboarding-flow step pointers to all relevant `docs/*.md` files.
+- Added missing cross-links between related documentation files (ai-agent-guidelines, outbox-*, testing-utilities, request-reply-*).
+- Refreshed `.agent/project-info/architecture.md` (component tree + entry points), `brief.md` (folder structure + modules), `tech.md` (version + signatures), and `CONTEXT.md` (focus + history).
+- Swept JSDoc/TSDoc gaps across all exported `src/` symbols.
 
 ## [0.7.4] - 2026-06-27
 
