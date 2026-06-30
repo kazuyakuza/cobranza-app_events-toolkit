@@ -39,33 +39,89 @@ src/
 │   ├── dto/
 │   │   └── build-subject.dto.ts      # BuildSubjectDto with validation
 │   ├── utils/
-│   │   ├── subject.builder.ts        # SubjectBuilder class
+│   │   ├── subject.builder.ts        # SubjectBuilder, buildSubject, buildResponseSubject, buildDlqSubject
 │   │   ├── event.factory.ts          # createEvent<T>() factory
 │   │   ├── uuid.utils.ts             # UUIDv7 generation
-│   │   └── date.utils.ts             # ISO 8601 timestamp helpers
+│   │   ├── date.utils.ts             # ISO 8601 timestamp helpers
+│   │   └── serialization.utils.ts    # Serialization helpers
 │   └── errors/
 │       ├── event-consumer.exception.ts  # Consumer-thrown exception → DLQ
 │       └── index.ts                     # Error barrel
+├── events-toolkit.module.ts          # Unified DynamicModule: forRoot / forRootAsync
+├── events-toolkit-options.interface.ts  # Unified options interfaces
 ├── producer/                         # Fire-and-forget + async emit
 │   ├── producer.module.ts            # NestJS DynamicModule
 │   ├── producer.service.ts           # publish() + emit<T>()
 │   └── decorators/
-│       └── emit-event.decorator.ts   # @EmitEvent() decorator
+│       ├── emit-event.decorator.ts   # @EmitEvent() decorator + interceptor
+│       └── index.ts                  # Producer barrel exports
 ├── consumer/                         # JetStream subscription + handling
 │   ├── consumer.module.ts            # NestJS DynamicModule
 │   ├── consumer.service.ts           # Core consumer logic
 │   ├── jetstream-consumer.service.ts # JetStream-specific operations
+│   ├── request-reply-consumer.service.ts    # Request-reply response consumer
+│   ├── request-reply-message-processor.ts   # Message processor for reply flows
 │   └── decorators/
-│       └── on-event.decorator.ts     # @OnEvent() decorator
+│       ├── on-event.decorator.ts     # @OnEvent() decorator + explorer
+│       ├── on-request-reply.decorator.ts    # @OnRequestReply() decorator + explorer
+│       └── index.ts                  # Consumer barrel exports
 ├── request-reply/                    # Async request → response
 │   ├── request-reply.service.ts      # Request-reply helpers
-│   └── request-reply.types.ts        # Type definitions
-├── outbox/                           # SQLite-based outbox
+│   ├── request-reply.types.ts        # Type definitions
+│   ├── request-reply.helpers.ts      # Helper utilities
+│   └── index.ts                      # Request-reply barrel exports
+├── outbox/                           # Outbox pattern
 │   ├── outbox.module.ts              # NestJS DynamicModule
-│   ├── sqlite-outbox.service.ts      # File-based outbox with BG processor
-│   └── outbox.entity.ts              # Outbox record entity
-└── logging/                          # Event logging
-    └── event-logger.service.ts       # Winston-based event logger
+│   ├── outbox.service.ts             # Unified OutboxService
+│   ├── sqlite-outbox.repository.ts   # SQLite outbox storage
+│   ├── postgres-outbox.repository.ts # PostgreSQL outbox storage
+│   ├── outbox.types.ts               # Shared type definitions
+│   ├── outbox.utils.ts               # Outbox helper utilities
+│   ├── outbox-request-reply.helpers.ts # Request-reply outbox helpers
+│   ├── outbox-request-reply.exception.ts # Request-reply outbox exceptions
+│   ├── outbox-logging.helpers.ts     # Outbox logging utilities
+│   └── index.ts                      # Outbox barrel exports
+├── discovery/                        # Service discovery, manifest generation, schema publishing
+│   ├── discovery.module.ts           # NestJS DynamicModule
+│   ├── discovery.service.ts          # Orchestrates manifest generation, heartbeat, shutdown
+│   ├── discovery.controller.ts       # HTTP endpoints: GET /discovery/manifest, GET /discovery/schemas
+│   ├── manifest.service.ts           # Scans decorators, builds ServiceManifestDto
+│   ├── manifest-entry.builder.ts     # Builds manifest entries, resolves payloadSchemaRef
+│   ├── manifest-deps.interface.ts    # Dependencies interface for ManifestService
+│   ├── service-info.interface.ts     # Service info interface
+│   ├── service-info-overrides.interface.ts # Service info override interface
+│   ├── service-info.resolver.ts      # Resolves service identity from DI context
+│   ├── instance-id.utils.ts          # Instance ID generation
+│   ├── package-info-reader.utils.ts  # Reads package.json for version info
+│   ├── discovery-service-options.interface.ts # Options for discovery subsystem
+│   ├── dto/                          # Manifest DTOs (ServiceManifestDto, ManifestConsumeEntry, ManifestProduceEntry, ManifestRequestReplyEntry)
+│   ├── events/
+│   │   ├── discovery-event-publisher.service.ts # Publishes platform events
+│   │   ├── discovery-payloads.interface.ts      # Platform event payloads
+│   │   └── platform-event-subjects.ts           # Platform event subject strings
+│   ├── utils/
+│   │   ├── schema-generator.ts       # Auto-generates JSON Schema from DTOs
+│   │   ├── schema-generator-options.interface.ts # Options for schema generator
+│   │   ├── schema-persister.ts       # Persists generated schemas
+│   │   └── schema-types.interface.ts # Schema type definitions
+│   └── index.ts                      # Discovery barrel exports
+├── logging/                          # Event logging
+│   ├── event-logger.service.ts       # Winston-based event logger
+│   └── index.ts                      # Logging barrel exports
+└── testing/                          # Testing utilities
+    ├── events-toolkit-test.module.ts          # NestJS DynamicModule for testing
+    ├── events-toolkit-test-options.interface.ts # Options for test module
+    ├── mock-consumer.service.ts              # Mock consumer service
+    ├── mock-outbox.service.ts                # Mock outbox service
+    ├── mock-request-reply.service.ts         # Mock request-reply service
+    ├── mock-event-logger.service.ts          # Mock event logger
+    ├── mock-manifest.service.ts              # Mock manifest service
+    ├── mock-discovery.service.ts             # Mock discovery service
+    ├── mock-discovery-event-publisher.service.ts # Mock discovery event publisher
+    ├── assertion.helpers.ts                  # Jest assertion helpers (expectEventPublished, etc.)
+    ├── published-event.interface.ts           # Published event tracking interface
+    ├── saved-outbox-event.interface.ts        # Saved outbox event tracking interface
+    └── index.ts                              # Testing barrel exports
 ```
 
 ### Module Dependency Graph
@@ -162,39 +218,52 @@ Events are saved to a persistent store (SQLite file) before being published. A b
 
 ## 6. Entry Points (Public API via `src/index.ts`)
 
+The unified barrel file (`src/index.ts`) re-exports all sub-module barrels and the following top-level symbols. The actual list is authoritative from `src/index.ts`; key exports include:
+
 ```
-// Modules
-export { ProducerModule } from './producer/producer.module';
-export { ConsumerModule } from './consumer/consumer.module';
-export { OutboxModule } from './outbox/outbox.module';
+// Unified module
+EventsToolkitModule
+EventsToolkitModuleOptions, EventsToolkitModuleAsyncOptions, EventsToolkitNatsOptions
+EventsToolkitOutboxOptions, EventsToolkitLoggingOptions
+EventsToolkitConsumerOptions, EventsToolkitDiscoveryOptions
 
-// Services
-export { ProducerService } from './producer/producer.service';
-export { ConsumerService } from './consumer/consumer.service';
-export { JetStreamConsumerService } from './consumer/jetstream-consumer.service';
-export { RequestReplyService } from './request-reply/request-reply.service';
-export { SqliteOutboxService } from './outbox/sqlite-outbox.service';
-export { EventLoggerService } from './logging/event-logger.service';
+// Common — envelope, DTOs, utils, errors
+EventEnvelope, EventBase, ActorType, EventContext
+BuildSubjectDto
+SubjectBuilder, buildSubject, buildResponseSubject, buildDlqSubject, RESPONSE_SUFFIX, SubjectParseResult
+createEvent, generateEventId, generateUuidV7
+EventConsumerException
 
-// Core classes
-export { EventEnvelope } from './common/envelope/event-envelope.class';
-export { EventBase } from './common/envelope/event-base.class';
-export { ActorType } from './common/envelope/actor-type.enum';
+// Producer
+ProducerModule, ProducerService, EmitEvent
 
-// DTOs
-export { BuildSubjectDto } from './common/dto/build-subject.dto';
+// Consumer
+ConsumerModule, ConsumerService, JetStreamConsumerService
+OnEvent, OnRequestReply, EventConsumerException
+RequestReplyConsumerService
 
-// Utils
-export { SubjectBuilder } from './common/utils/subject.builder';
-export { createEvent } from './common/utils/event.factory';
-export { generateUuidV7 } from './common/utils/uuid.utils';
+// Request-Reply
+RequestReplyService
+(types: request reply options, results, etc.)
 
-// Decorators
-export { EmitEvent } from './producer/decorators/emit-event.decorator';
-export { OnEvent } from './consumer/decorators/on-event.decorator';
+// Outbox
+OutboxModule, OutboxService, OutboxModuleOptions
+EntityManagerLike, TransactionContext, TypeormQueryRunnerContext, SaveInTransactionParams
+(send request through outbox helpers, async request event context)
 
-// Errors
-export { EventConsumerException } from './common/errors/event-consumer.exception';
+// Discovery
+DiscoveryModule, DiscoveryService
+(manifest DTOs, manifest entry builders, schema generator, schemas)
+
+// Logging
+EventLoggerService
+
+// Testing
+EventsToolkitTestModule
+MockProducerService, MockConsumerService, MockOutboxService, MockRequestReplyService
+MockDiscoveryService, MockManifestService, MockEventLoggerService
+expectEventPublished, expectEventConsumed, etc.
+PublishedEvent, SavedOutboxEvent
 ```
 
 ## 7. Cross-Cutting Concerns

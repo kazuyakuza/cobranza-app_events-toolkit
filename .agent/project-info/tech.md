@@ -45,7 +45,7 @@ npm run test:e2e
 ```json
 {
   "name": "@cobranza-app/events-toolkit",
-  "version": "0.1.0",
+  "version": "0.8.0",
   "description": "NestJS library for standardized NATS+JetStream event handling",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -58,6 +58,7 @@ npm run test:e2e
   },
   "peerDependencies": {
     "@nestjs/common": "^11.1.0",
+    "@nestjs/core": "^11.1.0",
     "@nestjs/microservices": "^11.1.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
@@ -125,10 +126,10 @@ const subject = subjectBuilder.build({
 await this.producerService.publish(subject, eventEnvelope);
 
 // Decorator-based (auto-publish on method return)
-@EmitEvent({
-  domain: 'payment',
-  entity: 'proof',
-  action: 'uploaded'
+@EmitEvent('payment.proof.uploaded', {
+  version: '1',
+  description: 'A payment proof file was uploaded',
+  payloadExample: { paymentAttemptId: 'uuid', fileUrl: 'https://...', amount: 100, currency: 'MXN' },
 })
 async handleProofUpload(data: ProofData, context: EventContext): Promise<PaymentProofUploadedEvent> {
   return new PaymentProofUploadedEvent(data, context);
@@ -137,10 +138,10 @@ async handleProofUpload(data: ProofData, context: EventContext): Promise<Payment
 
 ### Event Consumption
 ```typescript
-@OnEvent({
-  domain: 'payment',
-  entity: 'proof',
-  action: 'uploaded'
+@OnEvent('payment.proof.uploaded', {
+  version: '1',
+  description: 'Handles payment proof upload events',
+  payloadExample: { paymentAttemptId: 'uuid', fileUrl: 'https://...', amount: 100, currency: 'MXN' },
 })
 async onPaymentProofUploaded(event: EventEnvelope<PaymentProofUploadedData>) {
   // Business logic — toolkit handles validation, parsing, DLQ routing
@@ -150,7 +151,7 @@ async onPaymentProofUploaded(event: EventEnvelope<PaymentProofUploadedData>) {
 ### Outbox Pattern
 ```typescript
 // Save to outbox (persisted to SQLite file)
-await this.outboxService.saveToOutbox(eventEnvelope);
+await this.outboxService.saveToOutbox(event, subject);
 
 // Background processor automatically publishes when NATS is available
 ```

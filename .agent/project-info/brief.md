@@ -31,10 +31,22 @@ It enforces the rules defined in the [Event & Messaging Convention Document](../
 ```bash
 cobranza-apps/events-toolkit/
 ├── README.md
+├── CHANGELOG.md
 ├── docs/
-│   └── event-messaging-convention.md
+│   ├── event-messaging-convention.md
+│   ├── ai-agent-guidelines.md
+│   ├── request-reply-patterns.md
+│   ├── request-reply-guidelines.md
+│   ├── outbox-configuration.md
+│   ├── outbox-usage-guidelines.md
+│   ├── outbox-transactional-usage.md
+│   ├── event-discovery-and-service-registry.md
+│   ├── testing-utilities.md
+│   └── examples/                          # Runnable code samples
 ├── src/
-│   ├── index.ts
+│   ├── index.ts                           # Public API barrel
+│   ├── events-toolkit.module.ts           # Unified DynamicModule
+│   ├── events-toolkit-options.interface.ts
 │   ├── common/
 │   │   ├── constants.ts
 │   │   ├── envelope/
@@ -48,7 +60,8 @@ cobranza-apps/events-toolkit/
 │   │   │   ├── subject.builder.ts
 │   │   │   ├── event.factory.ts
 │   │   │   ├── uuid.utils.ts
-│   │   │   └── date.utils.ts
+│   │   │   ├── date.utils.ts
+│   │   │   └── serialization.utils.ts
 │   │   └── errors/
 │   │       ├── event-consumer.exception.ts
 │   │       └── index.ts
@@ -56,46 +69,90 @@ cobranza-apps/events-toolkit/
 │   │   ├── producer.module.ts
 │   │   ├── producer.service.ts
 │   │   └── decorators/
-│   │       └── emit-event.decorator.ts
+│   │       ├── emit-event.decorator.ts
+│   │       └── index.ts
 │   ├── consumer/
 │   │   ├── consumer.module.ts
 │   │   ├── consumer.service.ts
 │   │   ├── jetstream-consumer.service.ts
+│   │   ├── request-reply-consumer.service.ts
+│   │   ├── request-reply-message-processor.ts
 │   │   └── decorators/
-│   │       └── on-event.decorator.ts
+│   │       ├── on-event.decorator.ts
+│   │       ├── on-request-reply.decorator.ts
+│   │       └── index.ts
 │   ├── request-reply/
 │   │   ├── request-reply.service.ts
-│   │   └── request-reply.types.ts
+│   │   ├── request-reply.types.ts
+│   │   ├── request-reply.helpers.ts
+│   │   └── index.ts
 │   ├── outbox/
 │   │   ├── outbox.module.ts
-│   │   ├── sqlite-outbox.service.ts
-│   │   └── outbox.entity.ts
-│   └── logging/
-│       └── event-logger.service.ts
+│   │   ├── outbox.service.ts
+│   │   ├── sqlite-outbox.repository.ts
+│   │   ├── postgres-outbox.repository.ts
+│   │   ├── *.ts                          # Types, utils, helpers
+│   │   └── index.ts
+│   ├── discovery/
+│   │   ├── discovery.module.ts
+│   │   ├── discovery.service.ts
+│   │   ├── discovery.controller.ts
+│   │   ├── manifest.service.ts
+│   │   ├── manifest-entry.builder.ts
+│   │   ├── dto/
+│   │   ├── events/
+│   │   ├── utils/
+│   │   └── index.ts
+│   ├── logging/
+│   │   ├── event-logger.service.ts
+│   │   └── index.ts
+│   └── testing/
+│       ├── events-toolkit-test.module.ts
+│       ├── *.service.ts                  # Mock services
+│       ├── assertion.helpers.ts
+│       ├── *.interface.ts
+│       └── index.ts
 ├── package.json
 └── tsconfig.json
 ```
 
 ## 5. Main Modules & Usage
 
+### EventsToolkitModule (Unified — Recommended)
+
+- `EventsToolkitModule.forRoot(options)` configures all subsystems (NATS, outbox, logging, discovery) in a single call.
+- `EventsToolkitModule.forRootAsync(options)` for asynchronous factory-based configuration.
+
 ### ProducerModule
 
-- `ProducerService` → `publish(event)` and `emit<T>(type, data, context)`
-- `@EmitEvent()` decorator
+- `ProducerService` → `publish(subject, event)` and `emit<T>(type, data, context)`
+- `@EmitEvent(eventType, options)` decorator with interceptor for automatic publishing
 
 ### ConsumerModule
 
-- `ConsumerService` + `JetStreamConsumerService`
-- `@OnEvent()` decorator for easy handler registration
+- `ConsumerService` + `JetStreamConsumerService` + `RequestReplyConsumerService`
+- `@OnEvent(eventType, options)` decorator for handler registration
+- `@OnRequestReply(eventType, options)` decorator for async response handling
 - Automatic validation + error handling with `EventConsumerException`
 
 ### RequestReplyService
 
-- Helpers for async request → response pattern
+- Sync (`request()`) and async (`sendRequest()`, `sendResponse()`, `buildResponseEnvelope()`) request → response helpers
+- `isRequestReplyMessage()` utility
 
 ### OutboxModule
 
-- SQLite-based outbox with background processor
+- Unified `OutboxService` with SQLite or PostgreSQL backends
+- Background processor with configurable interval, retries, and DLQ routing
+- `saveInTransaction()` for PostgreSQL + TypeORM atomic writes
+- `sendRequestThroughOutbox()` / `sendAsyncRequestThroughOutbox()` for request-reply flows
+
+### DiscoveryModule
+
+- Automatic service manifest generation from decorator metadata
+- `GET /discovery/manifest` and `GET /discovery/schemas` HTTP endpoints
+- Platform heartbeat and registration events
+- Schema auto-generation from `class-validator` DTOs
 
 ## 6. Core Components
 
@@ -184,15 +241,29 @@ export class PaymentProofUploadedEvent extends EventEnvelope<PaymentProofUploade
 
 ```ts
 // In a controller or service
+
+// Using the decorator (auto-publishes on method return)
+@EmitEvent('payment.proof.uploaded', {
+  version: '1',
+  description: 'A payment proof file was uploaded',
+  payloadExample: { paymentAttemptId: 'uuid', fileUrl: 'https://...', amount: 100, currency: 'MXN' },
+})
+async handleUpload(data: UploadDto, context: EventContext): Promise<PaymentProofUploadedEvent> {
+  return new PaymentProofUploadedEvent(data, context);
+}
+
+// Or using direct service injection
 const subject = buildSubject({ companyId, domain: 'payment', entity: 'proof', action: 'uploaded', version: '1' });
-await this.producerService.publish(subject, new PaymentProofUploadedEvent(data, context));
+const event = createEvent(data, context);
+await this.producerService.publish(subject, event);
 ```
 
 ## 9. Outbox Strategy
 
-- `ms-db-gateway`: Uses main PostgreSQL Outbox table
-- Other microservices: Use `SqliteOutboxService` (persistent file in Docker volume)
-- The toolkit provides unified interface: `saveToOutbox(event)` + background processor
+- `ms-db-gateway`: Uses main PostgreSQL Outbox table via `OutboxService`
+- Other microservices: Use `OutboxService` with SQLite backend (persistent file in Docker volume)
+- The toolkit provides unified interface: `OutboxService.saveToOutbox(event, subject)` + background processor
+- PostgreSQL services can use `OutboxService.saveInTransaction(params)` for atomicity with business writes
 
 ## 10. Documentation & Developer Experience
 

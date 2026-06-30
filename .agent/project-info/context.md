@@ -2,11 +2,29 @@
 
 ## Current Work Focus
 
-**Implementing request-reply patterns — response event naming conventions.**
+**Decorator option refactor (v0.8.0) + comprehensive documentation overhaul (Task 6).**
 
-The project is actively implementing request-reply communication patterns. Task 5 (Response Event Naming Conventions) has been completed, adding `buildResponseSubject()` helper, `RESPONSE_SUFFIX` constant, `SubjectParseResult` type, and `parseSubjectSegments()` utility to support both the preferred (descriptive past-tense) and alternative (`.response` suffix) response naming conventions. Documentation has been updated in both `event-messaging-convention.md` and `request-reply-patterns.md`.
+The project has completed tightening decorator option interfaces (`EmitEventOptions`, `OnEventOptions`, `OnRequestReplyOptions`) to require `version`, `description`, and `payloadExample` as mandatory fields. `ManifestEntryBuilder` no longer falls back for `version`/`description`. The entire documentation surface is being overhauled to provide a clear, step-by-step onboarding path for AI agents: README Quickstart + Onboarding Flow + Deployment sections, stale decorator signature fixes, project-info refresh, cross-links, and JSDoc coverage.
 
 ## Recent Changes
+
+### 2026-06-29 — Task A (v0.8.0 Refactor)
+- Made `version`, `description`, `payloadExample` required in `EmitEventOptions`, `OnEventOptions`, `OnRequestReplyOptions`.
+- `@OnRequestReply` does **not** have a `version` field (stays absent).
+- Removed fallback (`??`) for `version` and `description` in `ManifestEntryBuilder`; kept `tags ?? []` fallback.
+- Updated all three decorator specs to pass required fields and removed tests asserting undefined behavior.
+- Added dedicated `ManifestEntryBuilder.spec.ts` test coverage.
+- Updated `docs/event-messaging-convention.md` §4.1 and `docs/event-discovery-and-service-registry.md` annotations.
+
+### 2026-06-29 — Task B (Documentation Overhaul)
+- Added README Quickstart, Onboarding Flow (11-step), and Deployment sections.
+- Fixed stale decorator signatures (added required `description`/`payloadExample`) across all `.md` docs and examples.
+- Fixed old object-based decorator patterns in `docs/examples/async-request-reply.example.ts` and `.agent/project-info/tech.md`.
+- Refreshed `.agent/project-info/architecture.md` (component tree + entry points), `brief.md` (folder structure + modules), and `CONTEXT.md` (focus + history).
+- Added onboarding-flow step pointers across all relevant docs.
+- Added missing cross-links between related documentation files.
+- Expanded CHANGELOG with Task B documentation entries.
+- JSDoc/TSDoc gap sweep across all `src/` exported symbols.
 
 ### 2026-06-18 — Task 4: Enhance Existing Decorators
 - Decorators (`@OnEvent`, `@EmitEvent`, `@OnRequestReply`) now accept `eventType: string` as the first argument instead of the old object-based signature `{ domain, entity, action }`.
@@ -15,7 +33,6 @@ The project is actively implementing request-reply communication patterns. Task 
 - Explorers and `EmitEventInterceptor` updated to use the new metadata shapes.
 - `ManifestEntryBuilder` extracted from `ManifestService` to keep the service under the 200-line limit.
 - Payload schema reference extraction (reflection helpers) moved into `ManifestEntryBuilder`.
-- Updated all documentation examples in `README.md`, `docs/ai-agent-guidelines.md`, `docs/request-reply-patterns.md`, `docs/outbox-configuration.md`, and `docs/event-messaging-convention.md`.
 - Branch: `feat/event-discovery-module`.
 
 ### 2026-06-12 — Project Info Initialization
@@ -48,16 +65,13 @@ The project is actively implementing request-reply communication patterns. Task 
 - `brief.md` was defined by the user during project info brief initialization.
 - `docs/event-messaging-convention.md` was provided as the event standard baseline.
 
-## Immediate Next Steps (After Task 5)
+## Immediate Next Steps (After Task 6)
 
-1. **Task 6 — Testing & Examples**: Add comprehensive examples in `/docs` for request-reply patterns and update links in the README. Create test cases covering sync request-reply, async request-reply with decorator, outbox + response flows, and timeout/error scenarios.
-2. **Task 7 — Guidelines for Developers**: Add a clear decision tree in `/docs` (linked from README) for choosing between sync and async request-reply patterns, documenting when to use each approach.
-3. **Update README**: Ensure README contains clear, practical examples and references to all documentation files.
-4. **Final verification**: Run full test suite, lint, and typecheck across all modules.
+1. **Final verification**: Run full test suite, lint, and typecheck across all modules.
 
 ## Current Blockers
 
-- None. Documentation phase is progressing.
+- None. Documentation overhaul is in progress.
 
 ## Active Decisions
 
@@ -66,6 +80,7 @@ The project is actively implementing request-reply communication patterns. Task 
 - SQLite (file-based) for outbox in non-gateway services.
 - `class-validator` + `class-transformer` for validation.
 - Official `@nestjs/microservices` + `nats` package for NATS/JetStream.
+- Decorator options now require `version`, `description`, `payloadExample` to enforce documentation quality.
 
 ## Notes for Next Session
 
