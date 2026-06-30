@@ -7,6 +7,39 @@ NATS + JetStream event handling library for the Cobranza App microservices platf
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20-339933?logo=node.js)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-Unlicense-blue.svg)](LICENSE)
 
+## Quickstart (for AI agents)
+
+1. `npm install @cobranza-apps/events-toolkit`
+2. Register NATS + subsystems in `AppModule`:
+
+   ```ts
+   EventsToolkitModule.forRoot({
+     nats: { servers: ['nats://localhost:4222'] },
+     discovery: { enabled: true, registerOnStartup: true, service: { name: 'payment-service', version: '1.0.0' } },
+   })
+   ```
+
+3. Define an event DTO — extend `EventEnvelope<T>`, decorate every field with `class-validator`.
+4. Emit: decorate a service method with `@EmitEvent('domain.entity.action', { version, description, payloadExample })`.
+5. Consume: decorate a handler with `@OnEvent('domain.entity.action', { version, description, payloadExample })`.
+6. Run: `npm run start`.
+
+See the [Onboarding Flow](#onboarding-flow) section for the full 11-step path (architecture → deploy).
+
+## Onboarding Flow
+
+1. **Architecture** — NATS + JetStream, event envelope, actors, tenant isolation → [Core Concepts](#core-concepts) · [Architecture](.agent/project-info/architecture.md)
+2. **Install & configure** — `EventsToolkitModule.forRoot()` → [Installation](#installation) · [Setup (Unified Module)](#setup-unified-module)
+3. **Define an event DTO** — `EventEnvelope<T>` + `class-validator` → [Defining an Event](#defining-an-event)
+4. **Produce an event** — `@EmitEvent()` · `ProducerService.emit()` → [Producer](#producer-publishing-events)
+5. **Consume an event** — `@OnEvent()` · DLQ routing → [Consumer](#consumer-subscribing-to-events) · [Error Handling & DLQ](#error-handling--dlq)
+6. **Request-reply** — `request()` / `sendRequest()` + `@OnRequestReply()` → [Request-Reply Pattern](#request-reply-pattern)
+7. **Outbox** — `OutboxService.saveToOutbox()` · `sendAsyncRequestThroughOutbox()` → [Outbox Pattern](#outbox-pattern)
+8. **Service discovery** — manifests · `GET /discovery/manifest` · platform events → [Discovery](#discovery)
+9. **Schema generation** — auto JSON Schema from DTOs · `payloadSchemaRef` → [Event Discovery & Service Registry](docs/event-discovery-and-service-registry.md)
+10. **Testing** — `EventsToolkitTestModule` · mock services · assertion helpers → [Testing Utilities](#testing-utilities)
+11. **Deployment** — JetStream stream config · env vars · health checks → [Deployment](#deployment) *(new section)*
+
 ---
 
 ## Overview
@@ -34,6 +67,8 @@ NATS + JetStream event handling library for the Cobranza App microservices platf
 
 ## Table of Contents
 
+- [Quickstart (for AI agents)](#quickstart-for-ai-agents)
+- [Onboarding Flow](#onboarding-flow)
 - [Overview](#overview)
 - [Installation](#installation)
 - [Core Concepts](#core-concepts)
@@ -41,6 +76,7 @@ NATS + JetStream event handling library for the Cobranza App microservices platf
 - [Architecture](#architecture)
 - [Guidelines for AI Agents](#guidelines-for-ai-agents)
 - [Development](#development)
+- [Deployment](#deployment)
 - [Related Documentation](#related-documentation)
 - [License](#license)
 
@@ -256,7 +292,11 @@ import { EmitEvent, SubjectBuilder, EventContext } from '@cobranza-apps/events-t
 class PaymentController {
   constructor(private readonly subjectBuilder: SubjectBuilder) {}
 
-  @EmitEvent('payment.proof.uploaded', { version: '1' })
+  @EmitEvent('payment.proof.uploaded', {
+    version: '1',
+    description: 'A payment proof file was uploaded',
+    payloadExample: { paymentAttemptId: 'uuid', fileUrl: 'https://...', amount: 100, currency: 'MXN' },
+  })
   async handleUpload(dto: UploadDto, context: EventContext): Promise<PaymentProofUploadedData> {
     return new PaymentProofUploadedData({ paymentAttemptId, fileUrl, amount });
   }
@@ -295,7 +335,11 @@ class PaymentService {
 import { OnEvent, EventEnvelope } from '@cobranza-apps/events-toolkit';
 
 class PaymentProofConsumer {
-  @OnEvent('payment.proof.uploaded', { version: '1' })
+  @OnEvent('payment.proof.uploaded', {
+    version: '1',
+    description: 'Handles payment proof upload events',
+    payloadExample: { paymentAttemptId: 'uuid', fileUrl: 'https://...', amount: 100, currency: 'MXN' },
+  })
   async onProofUploaded(event: EventEnvelope<PaymentProofUploadedData>): Promise<void> {
     const { data, company_id, correlation_id } = event;
     // Business logic — toolkit handles parsing, validation, acknowledgment
@@ -311,7 +355,11 @@ Throw `EventConsumerException` to route a message to the Dead Letter Queue. The 
 ```typescript
 import { EventConsumerException } from '@cobranza-apps/events-toolkit';
 
-@OnEvent('payment.proof.uploaded', { version: '1' })
+@OnEvent('payment.proof.uploaded', {
+    version: '1',
+    description: 'Handles payment proof upload events',
+    payloadExample: { paymentAttemptId: 'uuid', fileUrl: 'https://...', amount: 100, currency: 'MXN' },
+  })
 async onProofUploaded(event: EventEnvelope<PaymentProofUploadedData>): Promise<void> {
   if (event.data.amount <= 0) {
     throw new EventConsumerException({
@@ -438,7 +486,11 @@ class DebtService {
 class CreditCheckConsumer {
   constructor(private readonly requestReply: RequestReplyService) {}
 
-  @OnEvent('credit.check.requested', { version: '1' })
+  @OnEvent('credit.check.requested', {
+    version: '1',
+    description: 'Handles incoming credit check requests',
+    payloadExample: { clientId: 'uuid', fullName: 'Jane Doe' },
+  })
   async onCreditCheckRequested(event: EventEnvelope<CreditCheckRequestedData>): Promise<void> {
     if (!this.requestReply.isRequestReplyMessage(event)) { return; }
 
@@ -460,7 +512,10 @@ class CreditCheckConsumer {
 
 // ── Requester: handle async response ──
 class DebtServiceResponseHandler {
-  @OnRequestReply('credit.check.completed')
+  @OnRequestReply('credit.check.completed', {
+    description: 'Handles credit check completion responses',
+    payloadExample: { clientId: 'uuid', score: 750, approved: true },
+  })
   async handleCreditCheckResponse(
     event: EventEnvelope<CreditCheckResultData>,
     context: EventContext,
@@ -812,6 +867,63 @@ describe('PaymentService', () => {
 ```
 
 Full documentation: [`docs/testing-utilities.md`](docs/testing-utilities.md)
+
+---
+
+## Deployment
+
+### JetStream Stream Configuration
+
+Configure event and DLQ streams with the following JetStream settings:
+
+```ts
+// Event stream
+await nc.jetStreamManager.streams.add({
+  name: 'EVENTS',
+  subjects: ['company.>'],
+  retention: 'limits',
+  max_age: 7 * 24 * 60 * 60 * 1_000_000_000,    // 7 days in nanoseconds
+  max_msgs_per_subject: 10_000,
+  dedupe_window: 2 * 60 * 1_000_000_000,         // 2 minutes in nanoseconds
+  storage: 'file',
+});
+
+// DLQ stream
+await nc.jetStreamManager.streams.add({
+  name: 'DLQ',
+  subjects: ['dlq.>'],
+  retention: 'limits',
+  max_age: 30 * 24 * 60 * 60 * 1_000_000_000,   // 30 days in nanoseconds
+  max_msgs_per_subject: 100_000,
+  storage: 'file',
+  dedupe_window: 2 * 60 * 1_000_000_000,
+});
+
+// Platform events stream (for service discovery)
+await nc.jetStreamManager.streams.add({
+  name: 'PLATFORM',
+  subjects: ['platform.service.>'],
+  retention: 'limits',
+  max_age: 7 * 24 * 60 * 60 * 1_000_000_000,
+  max_msgs_per_subject: 1_000,
+  storage: 'file',
+});
+```
+
+### Environment Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `NATS_URLS` | Comma-separated NATS server URLs | `nats://localhost:4222` |
+| `SERVICE_NAME` | Microservice name for discovery | `payment-service` |
+| `SERVICE_VERSION` | Microservice version for discovery | `1.0.0` |
+| `OUTBOX_DB_PATH` | SQLite file path (SQLite outbox only) | `/data/outbox.sqlite` |
+
+### Health Checks
+
+- **Liveness probe**: `GET /discovery/manifest` — returns the service manifest JSON. A 200 response indicates the service is healthy and the discovery subsystem is active.
+- **Heartbeat**: Set `heartbeatIntervalMinutes` in discovery options to enable periodic platform heartbeat events (`platform.service.heartbeat.v1`). Default: 5 minutes.
+- **SQLite persistence**: When using the SQLite outbox backend in Docker, mount a persistent volume at the `OUTBOX_DB_PATH` directory to survive container restarts. See [Outbox Configuration](docs/outbox-configuration.md).
 
 ---
 
