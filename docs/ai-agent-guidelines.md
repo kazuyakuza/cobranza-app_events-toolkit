@@ -4,6 +4,8 @@
 
 This guide provides step-by-step instructions for creating and consuming events using events-toolkit, targeting both human developers and AI agents generating code.
 
+> **Onboarding:** This document condenses **steps 3–7** (DTO → Produce → Consume → Request-Reply → Outbox) of the [Onboarding Flow](../README.md#onboarding-flow).
+
 For the full convention specification, see [`event-messaging-convention.md`](event-messaging-convention.md).
 
 ## Table of Contents
@@ -111,7 +113,11 @@ import { EmitEvent, SubjectBuilder, EventContext } from '@cobranza-apps/events-t
 class PaymentController {
   constructor(private readonly subjectBuilder: SubjectBuilder) {}
 
-  @EmitEvent('payment.proof.uploaded', { version: '1' })
+  @EmitEvent('payment.proof.uploaded', {
+    version: '1',
+    description: 'A payment proof file was uploaded',
+    payloadExample: { paymentAttemptId: 'uuid', fileUrl: 'https://...', amount: 100, currency: 'MXN' },
+  })
   async handleUpload(dto: UploadDto, context: EventContext): Promise<PaymentProofUploadedData> {
     return new PaymentProofUploadedData({ paymentAttemptId, fileUrl, amount });
   }
@@ -149,20 +155,27 @@ class PaymentService {
 import { OnEvent, EventEnvelope } from '@cobranza-apps/events-toolkit';
 
 class PaymentProofConsumer {
-  @OnEvent('payment.proof.uploaded', { version: '1' })
+  @OnEvent('payment.proof.uploaded', {
+    version: '1',
+    description: 'Handles payment proof upload events',
+    payloadExample: { paymentAttemptId: 'uuid', fileUrl: 'https://...', amount: 100, currency: 'MXN' },
+  })
   async onProofUploaded(event: EventEnvelope<PaymentProofUploadedData>): Promise<void> {
     const { data, company_id, correlation_id } = event;
     await this.processProof(data);
   }
 }
-```
 
 For business errors that should route to DLQ:
 
 ```typescript
 import { EventConsumerException } from '@cobranza-apps/events-toolkit';
 
-@OnEvent('payment.proof.uploaded', { version: '1' })
+@OnEvent('payment.proof.uploaded', {
+    version: '1',
+    description: 'Handles payment proof upload events',
+    payloadExample: { paymentAttemptId: 'uuid', fileUrl: 'https://...', amount: 100, currency: 'MXN' },
+  })
 async onProofUploaded(event: EventEnvelope<PaymentProofUploadedData>): Promise<void> {
   if (event.data.amount <= 0) {
     throw new EventConsumerException({
@@ -322,6 +335,22 @@ throw new EventConsumerException({
 
 These fields appear in the DLQ payload for monitoring and alerting systems.
 
+## Onboarding Step Links
+
+| Step | Topic | Key Resources |
+|------|-------|---------------|
+| 1 | **Architecture** — NATS, JetStream, envelope, actors | [Core Concepts](../README.md#core-concepts) · [Architecture](../.agent/project-info/architecture.md) |
+| 2 | **Install & configure** — `EventsToolkitModule.forRoot()` | [Installation](../README.md#installation) · [Setup](../README.md#setup-unified-module) |
+| 3 | **Define an event DTO** — `EventEnvelope<T>` + `class-validator` | [Defining an Event](../README.md#defining-an-event) |
+| 4 | **Produce an event** — `@EmitEvent()` · `ProducerService` | [Producer](../README.md#producer-publishing-events) · This guide §Publishing |
+| 5 | **Consume an event** — `@OnEvent()` · DLQ routing | [Consumer](../README.md#consumer-subscribing-to-events) · This guide §Consuming |
+| 6 | **Request-reply** — `request()` / `sendRequest()` + `@OnRequestReply()` | [Request-Reply Patterns](request-reply-patterns.md) · [Guidelines](request-reply-guidelines.md) |
+| 7 | **Outbox pattern** — `OutboxService.saveToOutbox()` · `sendAsyncRequestThroughOutbox()` | [Outbox Configuration](outbox-configuration.md) · [Usage Guidelines](outbox-usage-guidelines.md) |
+| 8 | **Service discovery** — manifests · `GET /discovery/manifest` | [Discovery & Service Registry](event-discovery-and-service-registry.md) |
+| 9 | **Schema generation** — auto JSON Schema from DTOs | [Discovery & Service Registry](event-discovery-and-service-registry.md) |
+| 10 | **Testing** — `EventsToolkitTestModule` · mocks · assertions | [Testing Utilities](testing-utilities.md) |
+| 11 | **Deployment** — JetStream streams · env vars · health checks | [Deployment](../README.md#deployment) |
+
 ## Validation Checklist
 
 Before submitting event-related code, verify:
@@ -360,3 +389,14 @@ Before submitting event-related code, verify:
 | Unified | `EventsToolkitModule`, `EventsToolkitModuleOptions` |
 | Logging | `EventLoggerService` |
 | Errors | `EventConsumerException`, `RequestReplyException` |
+
+---
+
+### See Also
+
+- [Outbox Configuration](outbox-configuration.md) — SQLite vs Postgres setup, service options
+- [Outbox Usage Guidelines](outbox-usage-guidelines.md) — Decision trees for outbox backend
+- [Transactional Outbox Usage](outbox-transactional-usage.md) — TypeORM transaction examples
+- [Testing Utilities](testing-utilities.md) — Mock services, test module, assertion helpers
+- [Event Discovery & Service Registry](event-discovery-and-service-registry.md) — Service manifest, schema generation
+- [Request-Reply Patterns](request-reply-patterns.md) — Full async + sync pattern documentation

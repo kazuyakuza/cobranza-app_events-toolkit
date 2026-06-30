@@ -106,7 +106,11 @@ class DebtService {
 class CreditCheckConsumer {
   constructor(private readonly requestReply: RequestReplyService) {}
 
-  @OnEvent({ domain: 'credit', entity: 'check', action: 'requested' })
+  @OnEvent('credit.check.requested', {
+    version: '1',
+    description: 'Handles incoming credit check requests',
+    payloadExample: { clientId: 'uuid', fullName: 'Jane Doe' },
+  })
   async onCreditCheckRequested(
     event: EventEnvelope<CreditCheckRequestedData>,
   ): Promise<void> {
@@ -151,7 +155,10 @@ class CreditCheckConsumer {
 // ── 3. Response Handler ─────────────────────────────────────────────
 
 class DebtServiceResponseHandler {
-  @OnRequestReply({ eventType: 'credit.check.completed' })
+  @OnRequestReply('credit.check.completed', {
+    description: 'Handles credit check completion responses',
+    payloadExample: { clientId: 'uuid', score: 750, approved: true },
+  })
   async handleCreditCheckResponse(
     event: EventEnvelope<CreditCheckResultData>,
   ): Promise<void> {

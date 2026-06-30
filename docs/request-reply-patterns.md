@@ -1,5 +1,7 @@
 # Request-Reply Patterns
 
+> **Onboarding:** This document covers **step 6 (Request-Reply)** of the [Onboarding Flow](../README.md#onboarding-flow).
+
 The events-toolkit provides two patterns for request-reply communication over NATS JetStream.
 
 For the convention specification, see [Event & Messaging Convention](event-messaging-convention.md).
@@ -226,7 +228,11 @@ import { EventContext } from '@cobranza-apps/events-toolkit';
 class CreditCheckConsumer {
   constructor(private readonly requestReply: RequestReplyService) {}
 
-  @OnEvent('credit.check.requested', { version: '1' })
+  @OnEvent('credit.check.requested', {
+    version: '1',
+    description: 'Handles incoming credit check requests',
+    payloadExample: { clientId: 'uuid', fullName: 'Jane Doe' },
+  })
   async onCreditCheckRequested(event: EventEnvelope<CreditCheckRequestedData>): Promise<void> {
     if (!this.requestReply.isRequestReplyMessage(event)) {
       return;
@@ -262,7 +268,10 @@ class CreditCheckConsumer {
 import { OnRequestReply, EventEnvelope, EventContext } from '@cobranza-apps/events-toolkit';
 
 class DebtServiceResponseHandler {
-  @OnRequestReply('credit.check.completed')
+  @OnRequestReply('credit.check.completed', {
+    description: 'Handles credit check completion responses',
+    payloadExample: { clientId: 'uuid', score: 750, approved: true },
+  })
   async handleCreditCheckResponse(
     event: EventEnvelope<CreditCheckResultData>,
     context: EventContext,
@@ -416,7 +425,11 @@ All request-reply handlers MUST be idempotent.
 ```typescript
 private readonly processedRequests = new Map<string, ResponseData>();
 
-@OnEvent('credit.check.requested', { version: '1' })
+@OnEvent('credit.check.requested', {
+  version: '1',
+  description: 'Handles incoming credit check requests with idempotency',
+  payloadExample: { clientId: 'uuid', fullName: 'Jane Doe' },
+})
 async onCreditCheckRequested(event: EventEnvelope<CreditCheckRequestedData>): Promise<void> {
   const idempotencyKey = event.correlation_id;
 
@@ -494,7 +507,11 @@ If a request-reply consumer encounters a business error that should route to the
 ```typescript
 import { EventConsumerException } from '@cobranza-apps/events-toolkit';
 
-@OnEvent('credit.check.requested', { version: '1' })
+@OnEvent('credit.check.requested', {
+  version: '1',
+  description: 'Handles incoming credit check requests',
+  payloadExample: { clientId: 'uuid', fullName: 'Jane Doe' },
+})
 async onCreditCheckRequested(event: EventEnvelope<CreditCheckRequestedData>): Promise<void> {
   if (isInvalidRequest(event.data)) {
     throw new EventConsumerException({
@@ -585,10 +602,16 @@ await this.outboxService.sendRequestThroughOutbox(event, subject);
 
 ### `@OnRequestReply(options)`
 
-| Option | Type | Description |
-| ------ | ---- | ----------- |
-| `eventType` | `string` | Dot-notation event type to match (e.g., `'credit.check.completed'`) |
-| `companyId` | `string?` | Optional tenant filter for scoped handlers |
+| Option | Type | Required | Description |
+| ------ | ---- | -------- | ----------- |
+| `description` | `string` | Yes | Human-readable description of the handler |
+| `payloadExample` | `Record<string, unknown>` | Yes | Example response payload for documentation |
+| `companyId` | `string` | No | Optional tenant filter for scoped handlers |
+| `tags` | `string[]` | No | Arbitrary tags for discovery manifest filtering |
+
+> **Note:** Unlike `@EmitEvent` and `@OnEvent`, `@OnRequestReply` does **not** have a `version` field — it listens for responses on a specific subject rather than declaring an event schema version.
+
+For the `@EmitEvent` / `@OnEvent` options reference (with required `version`, `description`, `payloadExample`), see [Event & Messaging Convention §4.1](event-messaging-convention.md#41-decorator-signature-convention).
 
 ### `RequestReplyConfig`
 

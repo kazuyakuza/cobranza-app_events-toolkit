@@ -1,5 +1,7 @@
 # Outbox Configuration
 
+> **Onboarding:** This document covers **step 7 (Outbox)** of the [Onboarding Flow](../README.md#onboarding-flow).
+
 ## Overview
 
 The Outbox pattern ensures transactional safety for event publishing. When a microservice performs a state change and needs to emit an event, the Outbox module persists the event to a local store first, then a background processor publishes it to NATS JetStream. This guarantees at-least-once delivery even if the publish step fails.
@@ -292,7 +294,11 @@ The method returns a `SendAsyncRequestThroughOutboxResult` with the event's `cor
 Response handlers typically do **not** need the outbox pattern unless they perform other side effects that require transactional safety. Use `RequestReplyService.sendResponse()` or `ProducerService.publish()` directly:
 
 ```typescript
-@OnEvent('credit.check.requested', { version: '1' })
+@OnEvent('credit.check.requested', {
+  version: '1',
+  description: 'Handles incoming credit check requests',
+  payloadExample: { clientId: 'uuid', fullName: 'Jane Doe' },
+})
 async onCreditCheckRequested(event: EventEnvelope<CreditCheckRequestedData>): Promise<void> {
   if (!this.requestReply.isRequestReplyMessage(event)) { return; }
 
