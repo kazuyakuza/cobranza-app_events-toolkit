@@ -7,30 +7,30 @@ export const ON_EVENT_METADATA = 'on_event_metadata';
 export interface OnEventMetadata {
   /** NATS event type identifier (e.g., 'payment.proof.uploaded'). */
   eventType: string;
-  /** Major semantic version string (defaults to '1'). */
-  version?: string;
+  /** Major semantic version string (e.g., '1'). */
+  version: string;
   /** Human-readable description for discovery manifests. */
-  description?: string;
+  description: string;
   /** Arbitrary tags for categorization in discovery manifests. */
   tags?: string[];
   /** Explicit payload schema reference (e.g., 'PaymentProofUploadedEvent'). */
   payloadSchemaRef?: string;
   /** Example payload object for documentation in discovery manifests. */
-  payloadExample?: Record<string, unknown>;
+  payloadExample: Record<string, unknown>;
 }
 
-/** Options for the @OnEvent() method decorator (second argument). */
+/** Options for the @OnEvent() method decorator (second argument, required). */
 export interface OnEventOptions {
-  /** Major version number (default: '1'). */
-  version?: string;
-  /** Human-readable description for discovery manifests. */
-  description?: string;
-  /** Arbitrary tags for categorization in discovery manifests. */
+  /** Major version string (e.g., '1'). Required. */
+  version: string;
+  /** Human-readable description for discovery manifests. Required. */
+  description: string;
+  /** Arbitrary tags for categorization in discovery manifests (defaults to []). */
   tags?: string[];
   /** Explicit payload schema reference (e.g., 'PaymentProofUploadedEvent'). */
   payloadSchemaRef?: string;
-  /** Example payload object for documentation in discovery manifests. */
-  payloadExample?: Record<string, unknown>;
+  /** Example payload object for documentation in discovery manifests. Required. */
+  payloadExample: Record<string, unknown>;
 }
 
 /**
@@ -41,13 +41,17 @@ export interface OnEventOptions {
  *
  * @example
  * ```ts
- * @OnEvent('payment.proof.uploaded', { version: '1', description: 'Proof was uploaded' })
+ * @OnEvent('payment.proof.uploaded', {
+ *   version: '1',
+ *   description: 'Proof was uploaded',
+ *   payloadExample: { proofId: 'uuid' },
+ * })
  * async handleProofUploaded(event: EventEnvelope<PaymentProofUploadedData>) {
  *   // handle event
  * }
  * ```
  */
-export function OnEvent(eventType: string, options?: OnEventOptions): MethodDecorator {
+export function OnEvent(eventType: string, options: OnEventOptions): MethodDecorator {
   const metadata: OnEventMetadata = { eventType, ...options };
   return SetMetadata(ON_EVENT_METADATA, metadata);
 }

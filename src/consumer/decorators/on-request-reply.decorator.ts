@@ -9,17 +9,17 @@ export interface OnRequestReplyMetadata {
   eventType: string;
   /** Optional tenant identifier to filter responses by company_id. */
   companyId?: string;
-  /** Human-readable description for discovery manifests. */
-  description?: string;
+  /** Human-readable description for discovery manifests. Required. */
+  description: string;
   /** Arbitrary tags for categorization in discovery manifests. */
   tags?: string[];
   /** Explicit payload schema reference (e.g., 'PaymentProofUploadedData'). */
   payloadSchemaRef?: string;
-  /** Example payload object for documentation in discovery manifests. */
-  payloadExample?: Record<string, unknown>;
+  /** Example payload object for documentation in discovery manifests. Required. */
+  payloadExample: Record<string, unknown>;
 }
 
-/** Options for the @OnRequestReply() method decorator (second argument). */
+/** Options for the @OnRequestReply() method decorator (second argument, required). */
 export interface OnRequestReplyOptions {
   /**
    * Optional tenant identifier.
@@ -27,14 +27,14 @@ export interface OnRequestReplyOptions {
    * `company_id` matches this value.
    */
   companyId?: string;
-  /** Human-readable description for discovery manifests. */
-  description?: string;
-  /** Arbitrary tags for categorization in discovery manifests. */
+  /** Human-readable description for discovery manifests. Required. */
+  description: string;
+  /** Arbitrary tags for categorization in discovery manifests (defaults to []). */
   tags?: string[];
   /** Explicit payload schema reference (e.g., 'PaymentProofUploadedData'). */
   payloadSchemaRef?: string;
-  /** Example payload object for documentation in discovery manifests. */
-  payloadExample?: Record<string, unknown>;
+  /** Example payload object for documentation in discovery manifests. Required. */
+  payloadExample: Record<string, unknown>;
 }
 
 /**
@@ -46,13 +46,17 @@ export interface OnRequestReplyOptions {
  *
  * @example
  * ```ts
- * @OnRequestReply('payment.proof.uploaded', { companyId: '550e8400-e29b-41d4-a716-446655440000' })
+ * @OnRequestReply('payment.proof.uploaded', {
+ *   companyId: '550e8400-e29b-41d4-a716-446655440000',
+ *   description: 'Handles upload responses',
+ *   payloadExample: { proofId: 'uuid' },
+ * })
  * async handleResponse(event: EventEnvelope<PaymentProofData>) {
  *   // handle response
  * }
  * ```
  */
-export function OnRequestReply(eventType: string, options?: OnRequestReplyOptions): MethodDecorator {
+export function OnRequestReply(eventType: string, options: OnRequestReplyOptions): MethodDecorator {
   const metadata: OnRequestReplyMetadata = { eventType, ...options };
   return SetMetadata(ON_REQUEST_REPLY_METADATA, metadata);
 }
