@@ -455,7 +455,7 @@ class DebtService {
   async requestCreditCheck(clientId: string, companyId: string): Promise<string> {
     const replySubject = this.subjectBuilder.build({
       companyId, domain: 'credit', entity: 'check',
-      action: 'requested.response', version: '1',
+      action: 'completed', version: '1',
     });
 
     const context: EventContext = {
@@ -618,7 +618,7 @@ class DebtService {
       correlationId: '987fcdeb-51a2-43e8-9c4f-123456789abc',
       replyTo: this.subjectBuilder.build({
         companyId, domain: 'credit', entity: 'check',
-        action: 'requested.response', version: '1',
+        action: 'completed', version: '1',
       }),
     };
 

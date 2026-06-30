@@ -15,6 +15,7 @@ For the full convention specification, see [`event-messaging-convention.md`](eve
 - [Step-by-Step: Naming New Events](#step-by-step-naming-new-events)
 - [Step-by-Step: Publishing Events](#step-by-step-publishing-events)
 - [Step-by-Step: Consuming Events](#step-by-step-consuming-events)
+- [Step-by-Step: Handling Async Responses](#step-by-step-handling-async-responses)
 - [Step-by-Step: Using the Outbox](#step-by-step-using-the-outbox)
 - [Request-Reply Guidelines](#request-reply-guidelines)
 - [Correlation & Causation Best Practices](#correlation--causation-best-practices)
@@ -165,6 +166,7 @@ class PaymentProofConsumer {
     await this.processProof(data);
   }
 }
+```
 
 For business errors that should route to DLQ:
 
@@ -187,6 +189,47 @@ async onProofUploaded(event: EventEnvelope<PaymentProofUploadedData>): Promise<v
   }
 }
 ```
+
+## Step-by-Step: Handling Async Responses
+
+For the full decision-making guide and sync vs async comparison, see [`request-reply-patterns.md`](request-reply-patterns.md).
+
+### 1. Define the response handler
+
+Use `@OnRequestReply` with the response subject and metadata:
+
+```typescript
+import { OnRequestReply, EventEnvelope } from '@cobranza-apps/events-toolkit';
+
+class CreditCheckResponseHandler {
+  @OnRequestReply('credit.check.completed', {
+    description: 'Handles credit check completion responses',
+    payloadExample: { clientId: 'uuid', score: 750, approved: true },
+  })
+  async handleCompleted(event: EventEnvelope<CreditCheckResultData>): Promise<void> {
+    const { data, company_id, correlation_id } = event;
+    await this.processResult(data);
+  }
+}
+```
+
+### 2. Send the request with `replyTo`
+
+Set `replyTo` to a past-tense subject (the same subject the handler listens on):
+
+```typescript
+const replySubject = this.subjectBuilder.build({
+  companyId, domain: 'credit', entity: 'check',
+  action: 'completed', version: '1',
+});
+
+const context: EventContext = {
+  // ... other context fields ...
+  replyTo: replySubject,
+};
+```
+
+The response is delivered asynchronously to the `@OnRequestReply` handler. Use `sendRequest()` for in-memory delivery or `sendRequestThroughOutbox()` / `sendAsyncRequestThroughOutbox()` for durable outbox-backed delivery.
 
 ## Step-by-Step: Using the Outbox
 
@@ -389,6 +432,10 @@ Before submitting event-related code, verify:
 | Unified | `EventsToolkitModule`, `EventsToolkitModuleOptions` |
 | Logging | `EventLoggerService` |
 | Errors | `EventConsumerException`, `RequestReplyException` |
+| Subject (response/DLQ) | `buildResponseSubject`, `buildDlqSubject`, `RESPONSE_SUFFIX`, `DLQ_SUBJECT_PREFIX` |
+| Consumer services | `ConsumerService`, `JetStreamConsumerService`, `RequestReplyConsumerService` |
+| Discovery | `DiscoveryModule`, `DiscoveryService`, `ManifestService`, `ManifestEntryBuilder` |
+| Testing | `EventsToolkitTestModule`, `MockProducerService`, `MockConsumerService`, `MockOutboxService`, `MockRequestReplyService`, `expectEventPublished`, `expectEventConsumed` |
 
 ---
 
