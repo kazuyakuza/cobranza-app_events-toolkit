@@ -1,5 +1,8 @@
 # Outbox Usage Guidelines
 
+> **Onboarding:** This document covers **step 7 (Outbox)** of the [Onboarding Flow](../README.md#onboarding-flow).
+> **See also:** [AI Agent Guidelines](ai-agent-guidelines.md) · [Event & Messaging Convention](event-messaging-convention.md)
+
 For detailed configuration, see [Outbox Configuration](outbox-configuration.md).
 For transactional outbox usage, see [Transactional Outbox Usage Guide](outbox-transactional-usage.md).
 

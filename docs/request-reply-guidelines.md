@@ -1,5 +1,7 @@
 # Request-Reply Guidelines
 
+> **Onboarding:** This document covers **step 6 (Request-Reply)** of the [Onboarding Flow](../README.md#onboarding-flow).
+
 ## Overview
 
 This guide helps developers and AI agents **decide when to use sync vs async request-reply patterns** in the events-toolkit. It is a decision-making guide, not an API reference.

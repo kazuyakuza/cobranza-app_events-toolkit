@@ -1,5 +1,8 @@
 # Testing Utilities
 
+> **Onboarding:** This document covers **step 10 (Testing)** of the [Onboarding Flow](../README.md#onboarding-flow).
+> **See also:** [AI Agent Guidelines](ai-agent-guidelines.md) · [README Quickstart](../README.md#quickstart-for-ai-agents)
+
 Mock services, test module, and Jest assertion helpers for unit-testing NestJS services that depend on `@cobranza-apps/events-toolkit`.
 
 ## Overview

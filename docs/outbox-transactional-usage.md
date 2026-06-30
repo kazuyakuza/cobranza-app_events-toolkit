@@ -1,5 +1,9 @@
 # Transactional Outbox Usage Guide
 
+> **Onboarding:** This document covers **step 7 (Outbox)** of the [Onboarding Flow](../README.md#onboarding-flow).
+
+> **See also:** [README Quickstart](../README.md#quickstart-for-ai-agents) · [AI Agent Guidelines](ai-agent-guidelines.md) · [Event & Messaging Convention](event-messaging-convention.md)
+
 ## Overview
 
 The transactional outbox pattern ensures atomicity between business data writes and event persistence. When a microservice performs a database write and needs to emit an event, using `saveInTransaction` with a TypeORM `QueryRunner` ensures both the business write and the outbox INSERT succeed or fail together.

@@ -1,5 +1,7 @@
 # Event Discovery & Service Registry
 
+> **Onboarding:** This document covers **steps 8 & 9 (Discovery + Schema Generation)** of the [Onboarding Flow](../README.md#onboarding-flow).
+
 The Discovery module enables automatic service registration, manifest generation, and schema publishing for microservices in the Cobranza App platform.
 
 ---

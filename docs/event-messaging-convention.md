@@ -11,6 +11,8 @@ NATS + JetStream Event Standard v1.0
 - [4. Good Practices](#4-good-practices)
 - [5. Actor Types](#5-actor-types-enum)
 
+> **Onboarding:** This document covers **step 1 (Architecture)** and **step 3 (Event DTO / Envelope)** of the [Onboarding Flow](../README.md#onboarding-flow).
+
 ## 1. Purpose
 
 This document defines the standard for **event naming**, **message envelope**, and **messaging patterns** used across all microservices in the Cobranza App platform.
