@@ -65,7 +65,8 @@ describe('EmitEventInterceptor', () => {
           version: '1',
           description: 'Proof was uploaded',
           payloadExample: { proofId: 'proof-123' },
-        }) handleUpload(): void {}
+        })
+        handleUpload(): void {}
       }
       const handler = WithMetadataProducer.prototype.handleUpload;
       const data = { amount: 250 };
@@ -85,7 +86,8 @@ describe('EmitEventInterceptor', () => {
           version: '1',
           description: 'Schedule processed',
           payloadExample: { scheduleId: 'sch-1' },
-        }) handleProcessed(): void {}
+        })
+        handleProcessed(): void {}
       }
       const handler = NoVersionProducer.prototype.handleProcessed;
       const data = { scheduleId: 'sch-1' };
@@ -105,7 +107,8 @@ describe('EmitEventInterceptor', () => {
           version: '1',
           description: 'Proof was uploaded',
           payloadExample: { proofId: 'proof-123' },
-        }) handleUpload(): void {}
+        })
+        handleUpload(): void {}
       }
       const handler = NoContextProducer.prototype.handleUpload;
       const context = createMockExecutionContext(handler, [{ plainData: true }]);
@@ -120,7 +123,8 @@ describe('EmitEventInterceptor', () => {
           version: '1',
           description: 'Proof was uploaded',
           payloadExample: { proofId: 'p-1' },
-        }) handleUpload(): void {}
+        })
+        handleUpload(): void {}
       }
       const handler = MultipleArgsProducer.prototype.handleUpload;
       const data = { proofId: 'p-1' };
@@ -136,7 +140,8 @@ describe('EmitEventInterceptor', () => {
           version: '1',
           description: 'Proof was uploaded',
           payloadExample: { proofId: 'proof-123' },
-        }) handleUpload(): void {}
+        })
+        handleUpload(): void {}
       }
       const handler = ReturnValueProducer.prototype.handleUpload;
       const returnValue = { id: 'evt-123', type: 'proof_uploaded' };

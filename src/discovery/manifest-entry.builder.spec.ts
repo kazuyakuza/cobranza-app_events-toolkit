@@ -28,9 +28,7 @@ describe('ManifestEntryBuilder', () => {
     };
   }
 
-  function buildOnRequestReplyMetadata(
-    overrides: Partial<OnRequestReplyMetadata> = {},
-  ): OnRequestReplyMetadata {
+  function buildOnRequestReplyMetadata(overrides: Partial<OnRequestReplyMetadata> = {}): OnRequestReplyMetadata {
     return {
       eventType: 'credit.check.completed',
       description: 'Handles credit check completion responses',
@@ -39,12 +37,18 @@ describe('ManifestEntryBuilder', () => {
     };
   }
 
+  function setDesignParamTypes(prototype: object, methodName: string, types: unknown[]): void {
+    Reflect.defineMetadata('design:paramtypes', types, prototype, methodName);
+  }
+
+  function setDesignReturnType(prototype: object, methodName: string, type: unknown): void {
+    Reflect.defineMetadata('design:returntype', type, prototype, methodName);
+  }
+
   describe('buildOnEventEntry', () => {
     it('should build a consume entry with wildcard subject and event type', () => {
       const metadata = buildOnEventMetadata();
-
       const entry = builder.buildOnEventEntry(metadata, 'onProofUploaded', {});
-
       expect(entry.subject).toBe('company.*.payment.proof.uploaded.v1');
       expect(entry.type).toBe('event');
       expect(entry.handler).toBe('onProofUploaded');
@@ -58,72 +62,46 @@ describe('ManifestEntryBuilder', () => {
         description: 'Custom description',
         payloadExample: example,
       });
-
       const entry = builder.buildOnEventEntry(metadata, 'onProofUploaded', {});
-
       expect(entry.description).toBe('Custom description');
       expect(entry.payloadExample).toEqual(example);
     });
 
     it('should default tags to empty array when omitted', () => {
       const metadata = buildOnEventMetadata({ tags: undefined });
-
       const entry = builder.buildOnEventEntry(metadata, 'onProofUploaded', {});
-
       expect(entry.tags).toEqual([]);
     });
 
     it('should preserve provided tags', () => {
       const metadata = buildOnEventMetadata({ tags: ['payment', 'proof'] });
-
       const entry = builder.buildOnEventEntry(metadata, 'onProofUploaded', {});
-
       expect(entry.tags).toEqual(['payment', 'proof']);
     });
   });
 
   describe('buildOnRequestReplyEntry', () => {
-    it('should build a consume entry with eventType as subject and request-reply type', () => {
+    it('should build a consume entry with required fields and defaults', () => {
       const metadata = buildOnRequestReplyMetadata();
-
       const entry = builder.buildOnRequestReplyEntry(metadata, 'onResponse', {});
-
       expect(entry.subject).toBe('credit.check.completed');
       expect(entry.type).toBe('request-reply');
       expect(entry.handler).toBe('onResponse');
-    });
-
-    it('should hardcode version to 1', () => {
-      const metadata = buildOnRequestReplyMetadata();
-
-      const entry = builder.buildOnRequestReplyEntry(metadata, 'onResponse', {});
-
       expect(entry.version).toBe('1');
+      expect(entry.tags).toEqual([]);
     });
 
     it('should propagate description without fallback', () => {
       const metadata = buildOnRequestReplyMetadata({ description: 'Custom response description' });
-
       const entry = builder.buildOnRequestReplyEntry(metadata, 'onResponse', {});
-
       expect(entry.description).toBe('Custom response description');
-    });
-
-    it('should default tags to empty array when omitted', () => {
-      const metadata = buildOnRequestReplyMetadata({ tags: undefined });
-
-      const entry = builder.buildOnRequestReplyEntry(metadata, 'onResponse', {});
-
-      expect(entry.tags).toEqual([]);
     });
   });
 
   describe('buildEmitEventEntry', () => {
     it('should build a produce entry with companyId placeholder subject', () => {
       const metadata = buildEmitEventMetadata();
-
       const entry = builder.buildEmitEventEntry(metadata, 'handleUpload', {});
-
       expect(entry.subject).toBe('company.{companyId}.payment.proof.uploaded.v1');
       expect(entry.handler).toBe('handleUpload');
       expect(entry.version).toBe('1');
@@ -135,34 +113,26 @@ describe('ManifestEntryBuilder', () => {
         description: 'Custom producer description',
         payloadExample: example,
       });
-
       const entry = builder.buildEmitEventEntry(metadata, 'handleUpload', {});
-
       expect(entry.description).toBe('Custom producer description');
       expect(entry.payloadExample).toEqual(example);
     });
 
     it('should default tags to empty array when omitted', () => {
       const metadata = buildEmitEventMetadata({ tags: undefined });
-
       const entry = builder.buildEmitEventEntry(metadata, 'handleUpload', {});
-
       expect(entry.tags).toEqual([]);
     });
 
     it('should use explicit payloadSchemaRef when provided', () => {
       const metadata = buildEmitEventMetadata({ payloadSchemaRef: 'PaymentProofUploadedData' });
-
       const entry = builder.buildEmitEventEntry(metadata, 'handleUpload', {});
-
       expect(entry.payloadSchemaRef).toBe('PaymentProofUploadedData');
     });
 
     it('should return empty payloadSchemaRef when reflect metadata is missing', () => {
       const metadata = buildEmitEventMetadata();
-
       const entry = builder.buildEmitEventEntry(metadata, 'noParamsMethod', {});
-
       expect(entry.payloadSchemaRef).toBe('');
     });
   });
@@ -173,26 +143,14 @@ describe('ManifestEntryBuilder', () => {
     }
 
     class ConsumerWithParam {
-      onEvent(_event: SampleData): void {}
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      onEvent(_: SampleData): void {}
     }
 
     it('should resolve payloadSchemaRef from first parameter type for consumers', () => {
-      // Manually set design:paramtypes as TypeScript would with emitDecoratorMetadata
-      Reflect.defineMetadata(
-        'design:paramtypes',
-        [SampleData],
-        ConsumerWithParam.prototype,
-        'onEvent',
-      );
-
+      setDesignParamTypes(ConsumerWithParam.prototype, 'onEvent', [SampleData]);
       const metadata = buildOnEventMetadata();
-
-      const entry = builder.buildOnEventEntry(
-        metadata,
-        'onEvent',
-        ConsumerWithParam.prototype,
-      );
-
+      const entry = builder.buildOnEventEntry(metadata, 'onEvent', ConsumerWithParam.prototype);
       expect(entry.payloadSchemaRef).toBe('SampleData');
     });
 
@@ -203,22 +161,9 @@ describe('ManifestEntryBuilder', () => {
     }
 
     it('should resolve payloadSchemaRef from return type for producers', () => {
-      // Manually set design:returntype as TypeScript would with emitDecoratorMetadata
-      Reflect.defineMetadata(
-        'design:returntype',
-        SampleData,
-        ProducerWithReturn.prototype,
-        'handleEvent',
-      );
-
+      setDesignReturnType(ProducerWithReturn.prototype, 'handleEvent', SampleData);
       const metadata = buildEmitEventMetadata();
-
-      const entry = builder.buildEmitEventEntry(
-        metadata,
-        'handleEvent',
-        ProducerWithReturn.prototype,
-      );
-
+      const entry = builder.buildEmitEventEntry(metadata, 'handleEvent', ProducerWithReturn.prototype);
       expect(entry.payloadSchemaRef).toBe('SampleData');
     });
   });

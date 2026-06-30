@@ -9,7 +9,7 @@ describe('EmitEvent', () => {
         description: 'Payment proof was uploaded',
         payloadExample: { proofId: 'proof-123' },
       })
-      handleUpload(): void { }
+      handleUpload(): void {}
     }
 
     const metadata = Reflect.getMetadata(EMIT_EVENT_METADATA, TestProducer.prototype.handleUpload) as EmitEventMetadata;
@@ -26,7 +26,7 @@ describe('EmitEvent', () => {
         description: 'Debt schedule processed',
         payloadExample: { scheduleId: 'sch-123' },
       })
-      handleProcessed(): void { }
+      handleProcessed(): void {}
     }
 
     const metadata = Reflect.getMetadata(
@@ -48,7 +48,7 @@ describe('EmitEvent', () => {
         description: 'Debt schedule processed',
         payloadExample,
       })
-      handleProcessed(): void { }
+      handleProcessed(): void {}
     }
 
     const metadata = Reflect.getMetadata(
@@ -69,7 +69,7 @@ describe('EmitEvent', () => {
 
     class TestProducer {
       @EmitEvent('debt.schedule.processed', options)
-      handleProcessed(): void { }
+      handleProcessed(): void {}
     }
 
     const metadata = Reflect.getMetadata(
