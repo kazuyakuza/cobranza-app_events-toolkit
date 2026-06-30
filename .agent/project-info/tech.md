@@ -44,7 +44,7 @@ npm run test:e2e
 ### Project Dependencies (`package.json`)
 ```json
 {
-  "name": "@cobranza-app/events-toolkit",
+  "name": "@cobranza-apps/events-toolkit",
   "version": "0.8.0",
   "description": "NestJS library for standardized NATS+JetStream event handling",
   "main": "dist/index.js",
@@ -160,7 +160,7 @@ await this.outboxService.saveToOutbox(event, subject);
 
 - TypeScript compiled to `dist/` with `declaration: true` (generates `.d.ts` files).
 - Package entry points: `main: "dist/index.js"`, `types: "dist/index.d.ts"`.
-- Consumers import: `import { ProducerModule, EventEnvelope } from '@cobranza-app/events-toolkit'`.
+- Consumers import: `import { ProducerModule, EventEnvelope } from '@cobranza-apps/events-toolkit'`.
 
 ## 6. Testing Strategy
 
