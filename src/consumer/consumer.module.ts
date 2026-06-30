@@ -26,16 +26,19 @@ export const DISCOVERY_REFLECTOR_PAIR = 'DISCOVERY_REFLECTOR_PAIR' as unknown as
 export const RESOLVED_CONNECTION_TOKEN = 'RESOLVED_CONNECTION' as unknown as Type<unknown>;
 export const CONSUMER_SERVICES_PAIR = 'CONSUMER_SERVICES_PAIR' as unknown as Type<unknown>;
 
+/** Pair of DiscoveryService and Reflector for explorer-based handler registration. */
 export interface DiscoveryReflectorPair {
   discovery: DiscoveryService;
   reflector: Reflector;
 }
 
+/** Pair of ConsumerService and EventLoggerService for consumer subsystem injection. */
 export interface ConsumerServicesPair {
   consumerService: ConsumerService;
   logger: EventLoggerService;
 }
 
+/** Resolved NATS JetStream connection with optional custom DLQ subject builder. */
 export interface ResolvedConnection {
   jetStream: JetStreamClient;
   dlqSubjectBuilder?: (subject: string) => string;
@@ -63,8 +66,20 @@ function resolveJetStream(options: ConsumerModuleOptions): JetStreamClient {
   throw new Error('ConsumerModule requires either connection or jetStream in options');
 }
 
+/**
+ * NestJS DynamicModule for event consumption via NATS JetStream.
+ *
+ * Registers ConsumerService, JetStreamConsumerService, and the
+ * RequestReplyConsumerService with automatic handler discovery via
+ * @OnEvent() and @OnRequestReply() decorator explorers.
+ */
 @Module({})
 export class ConsumerModule {
+  /**
+   * Registers the ConsumerModule with synchronously resolved options.
+   *
+   * @param options - NATS connection and optional DLQ response subject configuration.
+   */
   static forRoot(options: ConsumerModuleOptions): DynamicModule {
     const jetStream = resolveJetStream(options);
 
@@ -98,6 +113,14 @@ export class ConsumerModule {
     };
   }
 
+  /**
+   * Registers the ConsumerModule with asynchronously resolved options.
+   *
+   * Use when the NATS connection or configuration depends on other
+   * injected providers (e.g. a config service).
+   *
+   * @param asyncOptions - Factory with optional imports and injection tokens.
+   */
   static forRootAsync(asyncOptions: ConsumerModuleAsyncOptions): DynamicModule {
     return {
       module: ConsumerModule,

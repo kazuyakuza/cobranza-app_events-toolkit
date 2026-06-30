@@ -1,3 +1,9 @@
+/**
+ * @packageDocumentation
+ * Testing utilities — mock services, test module, and assertion helpers for unit-testing
+ * NestJS services that depend on @cobranza-apps/events-toolkit.
+ */
+
 export { MockProducerService } from './mock-producer.service';
 export { MockConsumerService } from './mock-consumer.service';
 export { MockEventLoggerService, LogRecord, LogMethod } from './mock-event-logger.service';
