@@ -4,7 +4,11 @@ import { ON_EVENT_METADATA, OnEventOptions, OnEventMetadata, OnEvent } from './o
 describe('OnEvent', () => {
   it('should store metadata on the decorated method via @OnEvent()', () => {
     class TestConsumer {
-      @OnEvent('payment.proof.uploaded', { version: '1' })
+      @OnEvent('payment.proof.uploaded', {
+        version: '1',
+        description: 'Payment proof was uploaded',
+        payloadExample: { proofId: 'proof-123' },
+      })
       handleProofUploaded(): void {}
     }
 
@@ -14,25 +18,41 @@ describe('OnEvent', () => {
     ) as OnEventMetadata;
     expect(metadata.eventType).toBe('payment.proof.uploaded');
     expect(metadata.version).toBe('1');
+    expect(metadata.description).toBe('Payment proof was uploaded');
+    expect(metadata.payloadExample).toEqual({ proofId: 'proof-123' });
   });
 
-  it('should store metadata with default version omitted via @OnEvent()', () => {
+  it('should store metadata with version via @OnEvent()', () => {
     class TestConsumer {
-      @OnEvent('debt.schedule.processed')
+      @OnEvent('debt.schedule.processed', {
+        version: '1',
+        description: 'Debt schedule processed',
+        payloadExample: { scheduleId: 'sch-123' },
+      })
       handleProcessed(): void {}
     }
 
     const metadata = Reflect.getMetadata(ON_EVENT_METADATA, TestConsumer.prototype.handleProcessed) as OnEventMetadata;
     expect(metadata.eventType).toBe('debt.schedule.processed');
-    expect(metadata.version).toBeUndefined();
+    expect(metadata.version).toBe('1');
+    expect(metadata.description).toBe('Debt schedule processed');
+    expect(metadata.payloadExample).toEqual({ scheduleId: 'sch-123' });
   });
 
   it('should allow multiple methods with different @OnEvent event types', () => {
     class TestConsumer {
-      @OnEvent('payment.proof.uploaded')
+      @OnEvent('payment.proof.uploaded', {
+        version: '1',
+        description: 'Payment proof was uploaded',
+        payloadExample: { proofId: 'proof-123' },
+      })
       handleProofUploaded(): void {}
 
-      @OnEvent('debt.schedule.created')
+      @OnEvent('debt.schedule.created', {
+        version: '1',
+        description: 'Debt schedule created',
+        payloadExample: { scheduleId: 'sch-123' },
+      })
       handleScheduleCreated(): void {}
     }
 
@@ -53,7 +73,11 @@ describe('OnEvent', () => {
     const payloadExample = { proofId: 'proof-123', amount: 250 };
 
     class TestConsumer {
-      @OnEvent('payment.proof.uploaded', { payloadExample })
+      @OnEvent('payment.proof.uploaded', {
+        version: '1',
+        description: 'Payment proof was uploaded',
+        payloadExample,
+      })
       handleProofUploaded(): void {}
     }
 

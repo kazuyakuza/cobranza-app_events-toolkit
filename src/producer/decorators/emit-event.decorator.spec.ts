@@ -4,19 +4,29 @@ import { EMIT_EVENT_METADATA, EmitEventOptions, EmitEventMetadata, EmitEvent } f
 describe('EmitEvent', () => {
   it('should store metadata on the decorated method via @EmitEvent()', () => {
     class TestProducer {
-      @EmitEvent('payment.proof.uploaded', { version: '2' })
-      handleUpload(): void {}
+      @EmitEvent('payment.proof.uploaded', {
+        version: '2',
+        description: 'Payment proof was uploaded',
+        payloadExample: { proofId: 'proof-123' },
+      })
+      handleUpload(): void { }
     }
 
     const metadata = Reflect.getMetadata(EMIT_EVENT_METADATA, TestProducer.prototype.handleUpload) as EmitEventMetadata;
     expect(metadata.eventType).toBe('payment.proof.uploaded');
     expect(metadata.version).toBe('2');
+    expect(metadata.description).toBe('Payment proof was uploaded');
+    expect(metadata.payloadExample).toEqual({ proofId: 'proof-123' });
   });
 
-  it('should store metadata without version via @EmitEvent()', () => {
+  it('should store metadata with version via @EmitEvent()', () => {
     class TestProducer {
-      @EmitEvent('debt.schedule.processed')
-      handleProcessed(): void {}
+      @EmitEvent('debt.schedule.processed', {
+        version: '1',
+        description: 'Debt schedule processed',
+        payloadExample: { scheduleId: 'sch-123' },
+      })
+      handleProcessed(): void { }
     }
 
     const metadata = Reflect.getMetadata(
@@ -24,15 +34,21 @@ describe('EmitEvent', () => {
       TestProducer.prototype.handleProcessed,
     ) as EmitEventMetadata;
     expect(metadata.eventType).toBe('debt.schedule.processed');
-    expect(metadata.version).toBeUndefined();
+    expect(metadata.version).toBe('1');
+    expect(metadata.description).toBe('Debt schedule processed');
+    expect(metadata.payloadExample).toEqual({ scheduleId: 'sch-123' });
   });
 
   it('should store payloadExample when provided', () => {
     const payloadExample = { scheduleId: 'sch-123', amount: 250 };
 
     class TestProducer {
-      @EmitEvent('debt.schedule.processed', { payloadExample })
-      handleProcessed(): void {}
+      @EmitEvent('debt.schedule.processed', {
+        version: '1',
+        description: 'Debt schedule processed',
+        payloadExample,
+      })
+      handleProcessed(): void { }
     }
 
     const metadata = Reflect.getMetadata(
@@ -53,7 +69,7 @@ describe('EmitEvent', () => {
 
     class TestProducer {
       @EmitEvent('debt.schedule.processed', options)
-      handleProcessed(): void {}
+      handleProcessed(): void { }
     }
 
     const metadata = Reflect.getMetadata(

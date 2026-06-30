@@ -9,7 +9,11 @@ import {
 describe('OnRequestReply', () => {
   it('should store metadata with eventType and companyId via @OnRequestReply()', () => {
     class TestConsumer {
-      @OnRequestReply('payment.proof.uploaded', { companyId: '550e8400-e29b-41d4-a716-446655440000' })
+      @OnRequestReply('payment.proof.uploaded', {
+        companyId: '550e8400-e29b-41d4-a716-446655440000',
+        description: 'Payment proof upload response',
+        payloadExample: { proofId: 'proof-123' },
+      })
       handleResponse(): void {}
     }
 
@@ -19,11 +23,16 @@ describe('OnRequestReply', () => {
     ) as OnRequestReplyMetadata;
     expect(metadata.eventType).toBe('payment.proof.uploaded');
     expect(metadata.companyId).toBe('550e8400-e29b-41d4-a716-446655440000');
+    expect(metadata.description).toBe('Payment proof upload response');
+    expect(metadata.payloadExample).toEqual({ proofId: 'proof-123' });
   });
 
   it('should store metadata with eventType only when companyId is omitted', () => {
     class TestConsumer {
-      @OnRequestReply('debt.schedule.processed')
+      @OnRequestReply('debt.schedule.processed', {
+        description: 'Debt schedule processed response',
+        payloadExample: { scheduleId: 'sch-123' },
+      })
       handleProcessed(): void {}
     }
 
@@ -33,14 +42,23 @@ describe('OnRequestReply', () => {
     ) as OnRequestReplyMetadata;
     expect(metadata.eventType).toBe('debt.schedule.processed');
     expect(metadata.companyId).toBeUndefined();
+    expect(metadata.description).toBe('Debt schedule processed response');
+    expect(metadata.payloadExample).toEqual({ scheduleId: 'sch-123' });
   });
 
   it('should allow multiple methods with different @OnRequestReply event types', () => {
     class TestConsumer {
-      @OnRequestReply('payment.proof.uploaded', { companyId: 'tenant-1' })
+      @OnRequestReply('payment.proof.uploaded', {
+        companyId: 'tenant-1',
+        description: 'Payment proof upload response',
+        payloadExample: { proofId: 'proof-123' },
+      })
       handleProofUploaded(): void {}
 
-      @OnRequestReply('debt.schedule.created')
+      @OnRequestReply('debt.schedule.created', {
+        description: 'Debt schedule created response',
+        payloadExample: { scheduleId: 'sch-123' },
+      })
       handleScheduleCreated(): void {}
     }
 
@@ -63,7 +81,10 @@ describe('OnRequestReply', () => {
     const payloadExample = { proofId: 'proof-123' };
 
     class TestConsumer {
-      @OnRequestReply('payment.proof.uploaded', { payloadExample })
+      @OnRequestReply('payment.proof.uploaded', {
+        description: 'Payment proof upload response',
+        payloadExample,
+      })
       handleResponse(): void {}
     }
 
