@@ -39,6 +39,10 @@ export interface EmitEventOptions {
  * Stores subject-building metadata that the EmitEventInterceptor reads
  * to auto-publish the method's return value via ProducerService.emit().
  *
+ * @param eventType - NATS event type identifier (e.g., 'payment.proof.uploaded').
+ * @param options - Required metadata options including version, description, and payloadExample.
+ * @returns A MethodDecorator that stores emit-event metadata via NestJS SetMetadata.
+ *
  * @example
  * ```ts
  * @EmitEvent('payment.proof.uploaded', {

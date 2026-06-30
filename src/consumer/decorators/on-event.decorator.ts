@@ -39,6 +39,10 @@ export interface OnEventOptions {
  * Stores subject-building metadata that the OnEventExplorer reads at startup
  * to auto-register the handler with ConsumerService for the matching NATS subject.
  *
+ * @param eventType - NATS event type identifier (e.g., 'payment.proof.uploaded').
+ * @param options - Required metadata options including version, description, and payloadExample.
+ * @returns A MethodDecorator that stores on-event metadata via NestJS SetMetadata.
+ *
  * @example
  * ```ts
  * @OnEvent('payment.proof.uploaded', {

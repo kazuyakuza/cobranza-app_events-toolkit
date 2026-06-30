@@ -44,6 +44,10 @@ export interface OnRequestReplyOptions {
  * to auto-register the handler with {@link RequestReplyConsumerService}
  * for the matching event type.
  *
+ * @param eventType - Event type identifier for the request-reply subject (e.g., 'payment.proof.uploaded').
+ * @param options - Required metadata options including description and payloadExample; optional companyId filter.
+ * @returns A MethodDecorator that stores on-request-reply metadata via NestJS SetMetadata.
+ *
  * @example
  * ```ts
  * @OnRequestReply('payment.proof.uploaded', {

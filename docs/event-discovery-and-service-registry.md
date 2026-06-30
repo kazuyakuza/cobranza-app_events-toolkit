@@ -80,7 +80,7 @@ Each entry in `consumes` and `produces` is built from `ManifestEntryBase`:
 | `version` | `string` | Major version string (e.g., `'1'`) |
 | `handler` | `string` | Method name of the decorated handler |
 | `tags` | `string[]` | Categorization tags from decorator options |
-| `payloadExample` | `Record<string, unknown>` | Optional example payload for documentation |
+| `payloadExample` | `Record<string, unknown>` | Example payload object for documentation (required in decorator options; always present in manifest entries) |
 
 ### Consumer vs Producer Entries
 
@@ -97,6 +97,7 @@ Example consumer entry:
   "version": "1",
   "handler": "onProofUploaded",
   "tags": ["payment", "proof"],
+  "payloadExample": { "paymentAttemptId": "uuid", "fileUrl": "https://...", "amount": 100, "currency": "MXN" },
   "type": "event"
 }
 ```
@@ -110,7 +111,8 @@ Example producer entry:
   "description": "Proof was uploaded",
   "version": "1",
   "handler": "handleUpload",
-  "tags": ["payment", "proof"]
+  "tags": ["payment", "proof"],
+  "payloadExample": { "paymentAttemptId": "uuid", "fileUrl": "https://...", "amount": 100, "currency": "MXN" }
 }
 ```
 
@@ -131,7 +133,9 @@ Example producer entry:
 ```typescript
 @EmitEvent('payment.proof.uploaded', {
   version: '1',
+  description: 'A payment proof file was uploaded',
   payloadSchemaRef: 'PaymentProofUploadedData',
+  payloadExample: { paymentAttemptId: 'uuid', fileUrl: 'https://...', amount: 100, currency: 'MXN' },
 })
 async handleUpload(dto: UploadDto, context: EventContext): Promise<PaymentProofUploadedData> {
   // ...
@@ -296,6 +300,7 @@ These are system-level NATS subjects used by the discovery subsystem. **They do 
         "version": "1",
         "handler": "onProofUploaded",
         "tags": ["payment", "proof"],
+        "payloadExample": { "paymentAttemptId": "uuid", "fileUrl": "https://...", "amount": 100, "currency": "MXN" },
         "type": "event"
       }
     ],
@@ -306,7 +311,8 @@ These are system-level NATS subjects used by the discovery subsystem. **They do 
         "description": "Proof was uploaded",
         "version": "1",
         "handler": "handleUpload",
-        "tags": ["payment", "proof"]
+        "tags": ["payment", "proof"],
+        "payloadExample": { "paymentAttemptId": "uuid", "fileUrl": "https://...", "amount": 100, "currency": "MXN" }
       }
     ]
   }
