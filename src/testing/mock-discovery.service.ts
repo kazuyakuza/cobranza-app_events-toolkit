@@ -3,6 +3,8 @@ import { ServiceManifestDto } from '../discovery/dto/service-manifest.dto';
 import { ServiceInfo } from '../discovery/service-info.interface';
 import { MockManifestService } from './mock-manifest.service';
 import { MockDiscoveryEventPublisher } from './mock-discovery-event-publisher.service';
+import { ManifestContributor } from '../discovery/manifest-contributor.interface';
+import { ManifestContributorMerger } from '../discovery/manifest-contributor.merger';
 
 /** Dependencies injected into MockDiscoveryService. */
 export interface MockDiscoveryServiceDeps {
@@ -26,6 +28,21 @@ export interface MockDiscoveryServiceConfig {
  * Provides explicit trigger methods instead of auto-running NestJS lifecycle
  * hooks, giving tests full control over when startup, heartbeat, and shutdown
  * events are published.
+ *
+ * ## Mock Parity with DiscoveryService
+ *
+ * This mock maintains behavioral parity with `DiscoveryService` for the
+ * `ManifestContributor` pattern:
+ *
+ * - `registerContributor()` accepts contributors and stores them in registration order.
+ * - `generateManifest()` calls `ManifestContributorMerger.merge()` with the same
+ *   deduplication semantics as the real service (baseline wins, `subject|type` for
+ *   consumes, `subject` for produces).
+ * - Contributors registered after `generateManifest()` has cached the manifest will
+ *   be included on the next call to `generateManifest()` or `getManifest()`.
+ *
+ * Use `clear()` to reset the cached manifest and force regeneration with the
+ * currently registered contributors.
  */
 @Injectable()
 export class MockDiscoveryService implements OnModuleInit, OnApplicationBootstrap, OnModuleDestroy {
@@ -34,6 +51,8 @@ export class MockDiscoveryService implements OnModuleInit, OnApplicationBootstra
   private readonly serviceInfo: ServiceInfo;
   private readonly manifestService: MockManifestService;
   private readonly eventPublisher: MockDiscoveryEventPublisher;
+  private readonly contributors: ManifestContributor[] = [];
+  private readonly merger = new ManifestContributorMerger();
 
   constructor({ manifestService, eventPublisher }: MockDiscoveryServiceDeps, config?: MockDiscoveryServiceConfig) {
     this.manifestService = manifestService;
@@ -43,6 +62,16 @@ export class MockDiscoveryService implements OnModuleInit, OnApplicationBootstra
       name: 'test-service',
       version: '1.0.0',
     };
+  }
+
+  /**
+   * Registers a ManifestContributor to add dynamic entries to the service manifest.
+   *
+   * Mirrors `DiscoveryService.registerContributor()`. Call in the contributor's
+   * constructor. Entries are merged on the next `generateManifest()` or `getManifest()` call.
+   */
+  registerContributor(contributor: ManifestContributor): void {
+    this.contributors.push(contributor);
   }
 
   /** Lifecycle hook: generates manifest on module init when enabled. */
@@ -63,9 +92,10 @@ export class MockDiscoveryService implements OnModuleInit, OnApplicationBootstra
     void this.triggerShutdown();
   }
 
-  /** Generates and caches the service manifest using MockManifestService. */
+  /** Generates and caches the service manifest using MockManifestService and merges contributor entries. */
   generateManifest(): ServiceManifestDto {
-    this.cachedManifest = this.manifestService.generateManifest(this.serviceInfo);
+    const baseManifest = this.manifestService.generateManifest(this.serviceInfo);
+    this.cachedManifest = this.merger.merge(baseManifest, this.contributors);
     return this.cachedManifest;
   }
 

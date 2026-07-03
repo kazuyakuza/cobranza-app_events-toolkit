@@ -14,7 +14,8 @@ The discovery subsystem operates during NestJS application startup and periodica
 NestJS App (startup)
   → DiscoveryModule.forRoot(options)
   → ManifestService scans @EmitEvent, @OnEvent, @OnRequestReply decorators
-  → Builds ServiceManifestDto
+  → ManifestContributorMerger merges ManifestContributor dynamic entries (deduplicated)
+  → Builds final ServiceManifestDto
   → SchemaGenerator extracts class-validator JSON Schemas
   → DiscoveryController exposes GET /discovery/manifest and GET /discovery/schemas
   → DiscoveryEventPublisher emits platform events via NATS
@@ -26,6 +27,7 @@ NestJS App (startup)
 |-----------|------|
 | `DiscoveryService` | Orchestrates manifest generation, heartbeat scheduling, and shutdown |
 | `ManifestService` | Scans decorated handlers and builds the `ServiceManifestDto` |
+| `ManifestContributorMerger` | Merges dynamic `ManifestContributor` entries into the baseline manifest with deduplication |
 | `SchemaGenerator` | Converts `class-validator` decorators to JSON Schema (Draft-07) |
 | `SchemaPersister` | Writes generated schemas to disk and maintains a schema manifest index |
 | `DiscoveryController` | NestJS HTTP controller exposing `/discovery/manifest` and `/discovery/schemas` |
@@ -501,6 +503,59 @@ async handleCreditCheckResponse(event: EventEnvelope<CreditCheckResultData>): Pr
 ```
 
 > **Note:** `payloadSchemaRef` is resolved automatically from TypeScript reflect metadata when possible, but can be overridden explicitly for precision.
+
+---
+
+## ManifestContributor — Dynamic Manifest Entries
+
+For microservices that register event handlers dynamically at runtime (e.g., generic CRUD gateways), the `ManifestContributor` interface provides a library-sanctioned extension point.
+
+### Interface
+
+```typescript
+export interface ManifestContributor {
+  contributeConsumes(): ManifestConsumeEntry[];
+  contributeProduces(): ManifestProduceEntry[];
+}
+```
+
+### Registration
+
+Services implement `ManifestContributor` and register themselves during construction:
+
+```typescript
+@Injectable()
+export class DynamicHandlerContributor implements ManifestContributor {
+  constructor(private readonly discoveryService: DiscoveryService) {
+    this.discoveryService.registerContributor(this);
+  }
+
+  contributeConsumes(): ManifestConsumeEntry[] { /* ... */ }
+  contributeProduces(): ManifestProduceEntry[] { /* ... */ }
+}
+```
+
+### Lifecycle Ordering
+
+1. **Constructor phase** — contributors call `discoveryService.registerContributor(this)` during DI instantiation.
+2. **`onModuleInit`** — `DiscoveryService` builds the decorator-scanned baseline manifest, then calls `ManifestContributorMerger.merge()` which collects entries from all registered contributors and merges them (with deduplication). The merged manifest is then used for schema generation.
+3. **`onApplicationBootstrap`** — the merged manifest (including contributor entries) is published as the `platform.service.register.v1` event payload.
+
+Contributors must be registered before `onModuleInit` fires (i.e., in the constructor) to be included in the canonical manifest.
+
+### Deduplication
+
+If a contributor submits an entry whose subject (for produces) or `subject|type` (for consumes) already exists in the decorator-scanned baseline, the baseline entry is kept and the contributor entry is skipped. This prevents accidental duplication when a service uses both static decorators and dynamic registration for the same subject.
+
+### Migration from Manual Patching
+
+Before `ManifestContributor`, services like `ms-db-gateway` used `DiscoveryManifestPatchService` to mutate the cached manifest after `onApplicationBootstrap`. This caused the `platform.service.register.v1` event to omit dynamic entries because the patch ran after publication.
+
+To migrate:
+1. Remove the manual patch service.
+2. Implement `ManifestContributor` on the class that generates dynamic subjects.
+3. Inject `DiscoveryService` and call `registerContributor(this)` in the constructor.
+4. Remove any post-bootstrap manifest mutations.
 
 ---
 

@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.9.0] - 2026-07-03
+
+### Added
+
+- `ManifestContributor` interface in `src/discovery/manifest-contributor.interface.ts` — extension point for services with dynamically registered event handlers.
+- `DiscoveryService.registerContributor(contributor)` — registers a `ManifestContributor` to be called during manifest generation.
+- `ManifestContributorMerger` in `src/discovery/manifest-contributor.merger.ts` — merges contributor entries into the baseline manifest with deduplication.
+- Contributor entries participate in schema generation and are included in the `platform.service.register.v1` event.
+- Deduplication: baseline (decorator-scanned) entries take priority over contributor entries by `subject` (produces) and `subject|type` (consumes).
+- `MockDiscoveryService` updated to support `registerContributor()` with identical merge semantics.
+- New tests: `manifest-contributor.merger.spec.ts` and `discovery.service.spec.ts`.
+- New example: `docs/examples/manifest-contributor.example.ts`.
+- Documentation: `event-discovery-and-service-registry.md` updated with ManifestContributor usage, lifecycle ordering, deduplication behavior, and migration from manual patching.
+
 ## [0.8.0] - 2026-06-29
 
 ### Changed

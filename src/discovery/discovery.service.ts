@@ -6,6 +6,8 @@ import { SchemaGenerator } from './utils/schema-generator';
 import { ServiceManifestDto } from './dto/service-manifest.dto';
 import { EventLoggerService } from '../logging/event-logger.service';
 import { DiscoveryEventPublisher } from './events/discovery-event-publisher.service';
+import { ManifestContributor } from './manifest-contributor.interface';
+import { ManifestContributorMerger } from './manifest-contributor.merger';
 
 /**
  * Core discovery service that manages the service lifecycle:
@@ -16,6 +18,8 @@ import { DiscoveryEventPublisher } from './events/discovery-event-publisher.serv
 export class DiscoveryService implements OnModuleInit, OnApplicationBootstrap, OnModuleDestroy {
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private cachedManifest: ServiceManifestDto | null = null;
+  private readonly contributors: ManifestContributor[] = [];
+  private readonly merger = new ManifestContributorMerger();
 
   @Inject(DISCOVERY_MODULE_OPTIONS)
   private readonly resolvedOptions: DiscoveryModuleOptions;
@@ -32,6 +36,22 @@ export class DiscoveryService implements OnModuleInit, OnApplicationBootstrap, O
 
   constructor(private readonly eventPublisher: DiscoveryEventPublisher) {}
 
+  /**
+   * Registers a ManifestContributor to add dynamic entries to the service manifest.
+   *
+   * Call this method in the constructor of the contributor class (i.e., during DI
+   * instantiation) to ensure the contributor is registered before `onModuleInit()`
+   * fires. Contributors registered after `onModuleInit()` will not be included in
+   * the cached manifest.
+   *
+   * @param contributor - An object implementing `ManifestContributor` that provides
+   *   dynamic consume/produce entries for the service manifest.
+   * @see {@link ManifestContributor}
+   */
+  registerContributor(contributor: ManifestContributor): void {
+    this.contributors.push(contributor);
+  }
+
   /** Generates and caches the service manifest, then logs it on module initialization. */
   onModuleInit(): void {
     if (!this.resolvedOptions.enabled) {
@@ -40,9 +60,8 @@ export class DiscoveryService implements OnModuleInit, OnApplicationBootstrap, O
     if (!this.resolvedOptions.registerOnStartup) {
       return;
     }
-    const manifest = this.manifestService.generateManifest(this.resolvedOptions.service);
+    const manifest = this.getOrGenerateManifest();
     this.schemaGenerator.generateSchemasForManifest(manifest);
-    this.cachedManifest = manifest;
     const resolvedLogger = this.logger ?? new EventLoggerService();
     resolvedLogger.logDiscoveryManifest(manifest as unknown as Record<string, unknown>);
     resolvedLogger.logEventEmitted({
@@ -90,7 +109,8 @@ export class DiscoveryService implements OnModuleInit, OnApplicationBootstrap, O
     if (this.cachedManifest) {
       return this.cachedManifest;
     }
-    this.cachedManifest = this.manifestService.generateManifest(this.resolvedOptions.service);
+    const baseManifest = this.manifestService.generateManifest(this.resolvedOptions.service);
+    this.cachedManifest = this.merger.merge(baseManifest, this.contributors);
     return this.cachedManifest;
   }
 

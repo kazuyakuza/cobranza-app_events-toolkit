@@ -26,6 +26,10 @@ export { resolveServiceInfo } from './service-info.resolver';
 export { readPackageInfo, PackageInfo } from './package-info-reader.utils';
 export { MANIFEST_SERVICE_DEPS_TOKEN, ManifestServiceDeps } from './manifest-deps.interface';
 
+// Manifest contributor extension point
+export { ManifestContributor } from './manifest-contributor.interface';
+export { ManifestContributorMerger } from './manifest-contributor.merger';
+
 // Schema generation utilities
 export { SchemaGenerator } from './utils/schema-generator';
 export { SchemaPersister } from './utils/schema-persister';
