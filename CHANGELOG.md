@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Contributor entries participate in schema generation and are included in the `platform.service.register.v1` event.
 - Deduplication: baseline (decorator-scanned) entries take priority over contributor entries by `subject` (produces) and `subject|type` (consumes).
 - `MockDiscoveryService` updated to support `registerContributor()` with identical merge semantics.
-- New tests: `manifest-contributor.merger.spec.ts` and `discovery.service.spec.ts`.
+- New tests: `manifest-contributor.merger.base.spec.ts`, `manifest-contributor.merger.dedup.spec.ts`, and `discovery.service.spec.ts`.
 - New example: `docs/examples/manifest-contributor.example.ts`.
 - Documentation: `event-discovery-and-service-registry.md` updated with ManifestContributor usage, lifecycle ordering, deduplication behavior, and migration from manual patching.
 
