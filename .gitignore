@@ -43,5 +43,8 @@ node_modules/
 # Generated JSON Schemas
 .events-toolkit/
 
+# Backup files
+*.bak
+
 # ESLint cache
 .eslintcache
