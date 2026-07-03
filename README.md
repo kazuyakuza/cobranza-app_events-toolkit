@@ -7,6 +7,21 @@ NATS + JetStream event handling library for the Cobranza App microservices platf
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20-339933?logo=node.js)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-Unlicense-blue.svg)](LICENSE)
 
+## Table of Contents
+
+- [Quickstart (for AI agents)](#quickstart-for-ai-agents)
+- [Onboarding Flow](#onboarding-flow)
+- [Overview](#overview)
+- [Installation](#installation)
+- [Core Concepts](#core-concepts)
+- [Usage](#usage)
+- [Architecture](#architecture)
+- [Guidelines for AI Agents](#guidelines-for-ai-agents)
+- [Development](#development)
+- [Deployment](#deployment)
+- [Related Documentation](#related-documentation)
+- [License](#license)
+
 ## Quickstart (for AI agents)
 
 1. `npm install @cobranza-apps/events-toolkit`
@@ -28,7 +43,7 @@ See the [Onboarding Flow](#onboarding-flow) section for the full 11-step path (a
 
 ## Onboarding Flow
 
-1. **Architecture** — NATS + JetStream, event envelope, actors, tenant isolation → [Core Concepts](#core-concepts) · [Architecture](.agent/project-info/architecture.md)
+1. **Architecture** — NATS + JetStream, event envelope, actors, tenant isolation → [Core Concepts](#core-concepts)
 2. **Install & configure** — `EventsToolkitModule.forRoot()` → [Installation](#installation) · [Setup (Unified Module)](#setup-unified-module)
 3. **Define an event DTO** — `EventEnvelope<T>` + `class-validator` → [Defining an Event](#defining-an-event)
 4. **Produce an event** — `@EmitEvent()` · `ProducerService.emit()` → [Producer](#producer-publishing-events)
@@ -64,21 +79,6 @@ See the [Onboarding Flow](#onboarding-flow) section for the full 11-step path (a
 - Is NOT a standalone service — it is a library consumed by NestJS microservices.
 
 ---
-
-## Table of Contents
-
-- [Quickstart (for AI agents)](#quickstart-for-ai-agents)
-- [Onboarding Flow](#onboarding-flow)
-- [Overview](#overview)
-- [Installation](#installation)
-- [Core Concepts](#core-concepts)
-- [Usage](#usage)
-- [Architecture](#architecture)
-- [Guidelines for AI Agents](#guidelines-for-ai-agents)
-- [Development](#development)
-- [Deployment](#deployment)
-- [Related Documentation](#related-documentation)
-- [License](#license)
 
 ## Installation
 
