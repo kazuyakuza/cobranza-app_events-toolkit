@@ -19,8 +19,19 @@
   "author": "kazuyakuza",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "default": "./dist/testing/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "pretest": "npm run build",
     "test": "jest",
     "test:e2e": "jest --config jest.e2e.config.js",
     "test:watch": "jest --watch",

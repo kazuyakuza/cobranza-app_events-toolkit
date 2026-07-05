@@ -37,4 +37,7 @@ export {
 } from './events-toolkit-options.interface';
 
 // ── Testing ──
-export * from './testing';
+// Testing utilities are exposed via the `@cobranza-apps/events-toolkit/testing`
+// subpath export (see package.json `exports`). Do NOT re-export them here:
+// `src/testing/assertion.helpers.ts` and `src/testing/discovery-assertion.helpers.ts`
+// import `@jest/globals`, which crashes any non-Jest consumer that loads the main entry.
