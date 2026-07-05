@@ -151,7 +151,7 @@ Replaces `RequestReplyService`. Records request/response calls and returns confi
 
 ## Assertion Helpers
 
-Import from `@cobranza-apps/events-toolkit`:
+Import from `@cobranza-apps/events-toolkit/testing`:
 
 ```typescript
 import {

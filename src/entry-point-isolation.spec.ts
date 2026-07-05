@@ -31,9 +31,9 @@ describe('main entry isolation from @jest/globals', () => {
 
     const testingKeySep = join('dist', 'testing') + '/';
     const testingKeyWin = join('dist', 'testing') + '\\';
-    const testingCacheKey = Object.keys(require.cache).find(
-      (key) => key.includes(testingKeySep) || key.includes(testingKeyWin),
-    );
+    const isTestingCacheKey = (key: string): boolean => key.includes(testingKeySep) || key.includes(testingKeyWin);
+
+    const testingCacheKey = Object.keys(require.cache).find(isTestingCacheKey);
     expect(testingCacheKey).toBeUndefined();
   });
 
