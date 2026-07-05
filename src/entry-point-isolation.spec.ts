@@ -1,3 +1,19 @@
+/**
+ * @file Regression spec — ensures the main entry (`dist/index.js`) does NOT
+ * transitively load `@jest/globals` or any module from `dist/testing/`.
+ *
+ * Background: prior to v0.10.0, `src/index.ts` re-exported `./testing`, which
+ * pulled `@jest/globals` into the main module graph. Any consumer that imported
+ * the package outside a Jest environment (e.g. NestJS CLI, seeders, globalSetup)
+ * crashed with "Do not import `@jest/globals` outside of the Jest test environment".
+ *
+ * This spec asserts:
+ * 1. Build outputs exist (`dist/index.js`, `dist/index.d.ts`, `dist/testing/index.js`).
+ * 2. Requiring `dist/index.js` does NOT populate `require.cache` with any `dist/testing/` entry.
+ * 3. The `./testing` subpath is still loadable inside a Jest environment.
+ *
+ * Must run after `npm run build` (enforced by the `pretest` hook in `package.json`).
+ */
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { expect, describe, it } from '@jest/globals';
