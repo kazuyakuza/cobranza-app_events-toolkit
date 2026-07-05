@@ -16,6 +16,13 @@ The project has completed tightening decorator option interfaces (`EmitEventOpti
 - Added dedicated `ManifestEntryBuilder.spec.ts` test coverage.
 - Updated `docs/event-messaging-convention.md` §4.1 and `docs/event-discovery-and-service-registry.md` annotations.
 
+### 2026-07-05 — Fix @jest/globals Leak Into Main Entry (v0.10.0)
+- Removed `export * from './testing';` from `src/index.ts`.
+- Added `exports` map to `package.json` exposing `.` and `./testing` subpaths (types + default conditions).
+- Added regression spec `src/entry-point-isolation.spec.ts` and `pretest` build hook.
+- Updated README, CHANGELOG, `docs/testing-utilities.md`, `docs/ai-agent-guidelines.md`, and `architecture.md` to document the `@cobranza-apps/events-toolkit/testing` subpath import.
+- Branch: `feat/fix-jest-globals-leak`.
+
 ### 2026-06-29 — Task B (Documentation Overhaul)
 - Added README Quickstart, Onboarding Flow (11-step), and Deployment sections.
 - Fixed stale decorator signatures (added required `description`/`payloadExample`) across all `.md` docs and examples.

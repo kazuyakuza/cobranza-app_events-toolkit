@@ -843,7 +843,9 @@ import {
   EventsToolkitTestModule,
   MockProducerService,
   expectEventPublished,
-} from '@cobranza-apps/events-toolkit';
+} from '@cobranza-apps/events-toolkit/testing';
+
+> Testing utilities (mocks + assertion helpers) must be imported from the `@cobranza-apps/events-toolkit/testing` subpath — they depend on `@jest/globals` and are not exported from the main entry.
 
 describe('PaymentService', () => {
   let service: PaymentService;

@@ -258,7 +258,8 @@ DiscoveryModule, DiscoveryService
 // Logging
 EventLoggerService
 
-// Testing
+// Testing — exported via the `@cobranza-apps/events-toolkit/testing` subpath ONLY.
+// Not reachable from the main entry to keep @jest/globals out of non-Jest consumers.
 EventsToolkitTestModule
 MockProducerService, MockConsumerService, MockOutboxService, MockRequestReplyService
 MockDiscoveryService, MockManifestService, MockEventLoggerService

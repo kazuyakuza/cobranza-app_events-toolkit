@@ -23,9 +23,11 @@ All mocks are registered via `EventsToolkitTestModule.forRoot()`, a NestJS `Dyna
 
 Import `EventsToolkitTestModule` in your `Test.createTestingModule()` setup:
 
+> **Import path:** All symbols documented here (`EventsToolkitTestModule`, `Mock*Service`, `expect*` helpers, `PublishedEvent`, `SavedOutboxEvent`) are exported from the **`@cobranza-apps/events-toolkit/testing`** subpath, not the main package entry. This isolation prevents `@jest/globals` from being loaded outside a Jest environment.
+
 ```typescript
 import { Test } from '@nestjs/testing';
-import { EventsToolkitTestModule } from '@cobranza-apps/events-toolkit';
+import { EventsToolkitTestModule } from '@cobranza-apps/events-toolkit/testing';
 ```
 
 ## Quick Start
@@ -36,7 +38,7 @@ import {
   EventsToolkitTestModule,
   MockProducerService,
   expectEventPublished,
-} from '@cobranza-apps/events-toolkit';
+} from '@cobranza-apps/events-toolkit/testing';
 
 describe('PaymentService', () => {
   let service: PaymentService;
@@ -157,7 +159,7 @@ import {
   expectNoEventsPublished,
   expectEventWithMatch,
   expectEnvelope,
-} from '@cobranza-apps/events-toolkit';
+} from '@cobranza-apps/events-toolkit/testing';
 ```
 
 | Function | Description |
@@ -202,7 +204,7 @@ import {
   MockProducerService,
   expectEventPublished,
   expectEnvelope,
-} from '@cobranza-apps/events-toolkit';
+} from '@cobranza-apps/events-toolkit/testing';
 
 describe('PaymentService', () => {
   let service: PaymentService;
@@ -243,12 +245,11 @@ describe('PaymentService', () => {
 
 ```typescript
 import { Test } from '@nestjs/testing';
+import { ActorType, EventEnvelope } from '@cobranza-apps/events-toolkit';
 import {
   EventsToolkitTestModule,
   MockConsumerService,
-  ActorType,
-} from '@cobranza-apps/events-toolkit';
-import { EventEnvelope } from '@cobranza-apps/events-toolkit';
+} from '@cobranza-apps/events-toolkit/testing';
 
 describe('NotificationHandler', () => {
   let handler: NotificationHandler;
@@ -290,7 +291,7 @@ import { Test } from '@nestjs/testing';
 import {
   EventsToolkitTestModule,
   MockOutboxService,
-} from '@cobranza-apps/events-toolkit';
+} from '@cobranza-apps/events-toolkit/testing';
 
 describe('ServiceWithOutbox', () => {
   let service: MyService;
@@ -325,7 +326,7 @@ import { Test } from '@nestjs/testing';
 import {
   EventsToolkitTestModule,
   MockRequestReplyService,
-} from '@cobranza-apps/events-toolkit';
+} from '@cobranza-apps/events-toolkit/testing';
 
 describe('ServiceWithRequestReply', () => {
   let service: MyService;

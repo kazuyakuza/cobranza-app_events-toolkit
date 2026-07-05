@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.10.0] — 2026-07-05
+
+### Breaking
+
+- **Testing utilities** (`EventsToolkitTestModule`, `Mock*Service`, `expect*` helpers, `PublishedEvent`, `SavedOutboxEvent`) are no longer exported from the main entry. Import them from `@cobranza-apps/events-toolkit/testing` instead. This prevents `@jest/globals` from being loaded when consumers import the main entry outside a Jest environment.
+
 ## [0.9.0] - 2026-07-03
 
 ### Added

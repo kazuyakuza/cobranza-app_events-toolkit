@@ -435,7 +435,7 @@ Before submitting event-related code, verify:
 | Subject (response/DLQ) | `buildResponseSubject`, `buildDlqSubject`, `RESPONSE_SUFFIX`, `DLQ_SUBJECT_PREFIX` |
 | Consumer services | `ConsumerService`, `JetStreamConsumerService`, `RequestReplyConsumerService` |
 | Discovery | `DiscoveryModule`, `DiscoveryService`, `ManifestService`, `ManifestEntryBuilder` |
-| Testing | `EventsToolkitTestModule`, `MockProducerService`, `MockConsumerService`, `MockOutboxService`, `MockRequestReplyService`, `expectEventPublished`, `expectEventConsumed` |
+| Testing | `EventsToolkitTestModule`, `MockProducerService`, `MockConsumerService`, `MockOutboxService`, `MockRequestReplyService`, `expectEventPublished`, `expectEventConsumed` — import from `@cobranza-apps/events-toolkit/testing` |
 
 ---
 
