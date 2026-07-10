@@ -3,15 +3,18 @@ description: Plan Agent - orchestrates task execution following the Critical Wor
 permission:
   read: allow
   edit:
-    "*.md": allow
     "*": deny
+    "*.md": allow
   bash:
+    "*": deny
+    "cat *": allow
+    "npm run lint*": allow,
+    "npm run build*": allow,
+    "npm run test*": allow
+    "npm run typecheck*": allow,
     "git log *": allow
     "git diff *": allow
     "git status *": allow
-    "cat *": allow
-    "npm run test*": allow
-    "*": deny
   task: allow
   question: allow
   mcp: allow

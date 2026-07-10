@@ -4,9 +4,11 @@ mode: subagent
 permission:
   read: allow
   edit:
-    "*.md": allow
     "*": deny
+    "*.md": allow
   bash:
+    "*": deny
+    "npm run *": "allow"
     "git log *": "allow"
     "git shortlog *": "allow"
     "git log *": "allow"
@@ -15,8 +17,6 @@ permission:
     "git show*": "allow"
     "git status *": "allow"
     "git range-diff *": "allow"
-    "npm run *": "allow"
-    "*": deny
   task: deny
   webfetch: allow
   mcp: allow

@@ -8,12 +8,12 @@ permission:
   glob: allow
   mcp: allow
   bash:
+    "*": ask
     "npm *": allow
     "npx *": allow
     "yarn *": allow
     "pnpm *": allow
     "git *": allow
-    "*": ask
 ---
 
 You are an expert refactoring specialist. You simplify and refactor code to reduce complexity.
