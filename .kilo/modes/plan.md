@@ -8,9 +8,13 @@ permission:
   bash:
     "*": deny
     "cat *": allow
+    "npm run lint": allow,
     "npm run lint*": allow,
+    "npm run build": allow,
     "npm run build*": allow,
+    "npm run test": allow
     "npm run test*": allow
+    "npm run typecheck": allow,
     "npm run typecheck*": allow,
     "git log *": allow
     "git diff *": allow
