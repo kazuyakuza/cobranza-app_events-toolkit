@@ -18,7 +18,7 @@
       "tests/**": "allow",
       "__tests__/**": "allow",
       "*ignore*": "allow",
-      "LICENSE": "allow",
+      "*LICENSE*": "allow",
       "*.md": "allow",
       "package*": "allow",
       ".env.example*": "allow",

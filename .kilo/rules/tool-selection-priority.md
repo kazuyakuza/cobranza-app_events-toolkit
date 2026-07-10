@@ -12,3 +12,4 @@
   - if "unknown cmd" or similar error arises, try up to 2 more times the same cmd.
   - prevent execute cmds composed by sub-cmds (cmds with &/&&, for example)
 - Fall back to `bash` or `edit` only when no semantic MCP tool covers the operation.
+- On `bash` tool, only run single cmds, ie. not concurrent nor chained cmds.

@@ -3,7 +3,9 @@ description: Simplifies and refactors code to reduce complexity.
 mode: subagent
 permission:
   read: allow
-  edit: allow
+  edit:
+    "*": deny
+    "*.md": allow
   grep: allow
   glob: allow
   mcp: allow

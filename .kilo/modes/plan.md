@@ -8,17 +8,18 @@ permission:
   bash:
     "*": deny
     "cat *": allow
-    "npm run lint": allow,
-    "npm run lint*": allow,
-    "npm run build": allow,
-    "npm run build*": allow,
-    "npm run test": allow
+    "npm run lint*": allow
+    "npm run build*": allow
     "npm run test*": allow
-    "npm run typecheck": allow,
-    "npm run typecheck*": allow,
-    "git log *": allow
-    "git diff *": allow
-    "git status *": allow
+    "npm run typecheck*": allow
+    "git log*": allow
+    "git shortlog*": allow
+    "git diff*": allow
+    "git ls*": allow
+    "git show*": allow
+    "git status*": allow
+    "git range-diff*": allow
+    "git branch --show-current": allow
   task: allow
   question: allow
   mcp: allow

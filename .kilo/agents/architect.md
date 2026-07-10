@@ -8,18 +8,19 @@ permission:
     "*.md": allow
   bash:
     "*": deny
-    "npm run *": "allow"
-    "git log *": "allow"
-    "git shortlog *": "allow"
-    "git log *": "allow"
-    "git diff": "allow"
-    "git diff*": "allow"
-    "git ls-": "allow"
-    "git ls-*": "allow"
-    "git show": "allow"
-    "git show*": "allow"
-    "git status *": "allow"
-    "git range-diff *": "allow"
+    "cat *": allow
+    "npm run lint*": allow
+    "npm run build*": allow
+    "npm run test*": allow
+    "npm run typecheck*": allow
+    "git log*": allow
+    "git shortlog*": allow
+    "git diff*": allow
+    "git ls*": allow
+    "git show*": allow
+    "git status*": allow
+    "git range-diff*": allow
+    "git branch --show-current": allow
   task: deny
   webfetch: allow
   mcp: allow

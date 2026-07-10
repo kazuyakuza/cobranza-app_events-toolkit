@@ -11,6 +11,10 @@ permission:
   mcp: allow
   bash:
     "*": deny
+    "npm *": allow
+    "npx *": allow
+    "yarn *": allow
+    "pnpm *": allow
     "git *": allow
 ---
 
