@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.10.1] — 2026-07-12
+
+### Fixed
+
+- **Circular dependency in `ProducerModule`**: `EmitEventInterceptor` had an undefined dependency at runtime (`Nest can't resolve dependencies of the EmitEventInterceptor (Reflector, ?)`) caused by a circular import chain: `producer.module.ts` → `emit-event-interceptor.ts` → `producer.service.ts` → `producer.module.ts`. At decoration time, `ProducerService` was `undefined` due to the circular `require()`, so NestJS stamped `design:paramtypes[1]` as `undefined`.
+
+### Changed
+
+- Extracted `JETSTREAM_TOKEN`, `ProducerModuleOptions`, and `ProducerModuleAsyncOptions` from `producer.module.ts` into a new leaf file `src/producer/producer.constants.ts`. This breaks the circular dependency because `producer.service.ts` no longer imports from `producer.module.ts`. All import sites updated accordingly.
+
+### Added
+
+- DI compilation regression tests: `src/producer/producer.module.di.spec.ts` compiles `ProducerModule` through NestJS `Test.createTestingModule` and resolves `EmitEventInterceptor` via DI, ensuring the circular dependency does not reappear. `src/module-compilation.spec.ts` validates that the root `EventsToolkitModule` compiles cleanly.
+
 ## [0.10.0] — 2026-07-05
 
 ### Breaking
