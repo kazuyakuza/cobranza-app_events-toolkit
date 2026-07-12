@@ -6,7 +6,7 @@ import { generateEventId } from '../common/utils/uuid.utils';
 import { nowIso } from '../common/utils/date.utils';
 import { encodeEvent } from '../common/utils/serialization.utils';
 import { EventLoggerService, EventLogContext, EventErrorLogContext } from '../logging/event-logger.service';
-import { JETSTREAM_TOKEN } from './producer.module';
+import { JETSTREAM_TOKEN } from './producer.constants';
 
 /** Parameters for {@link ProducerService.emit}. */
 export interface EmitOptions<T> {
@@ -30,7 +30,7 @@ export class ProducerService {
   constructor(
     @Inject(JETSTREAM_TOKEN) private readonly jetStream: JetStreamClient,
     private readonly logger: EventLoggerService,
-  ) {}
+  ) { }
 
   /**
    * Publishes a pre-built event envelope to the given NATS subject.

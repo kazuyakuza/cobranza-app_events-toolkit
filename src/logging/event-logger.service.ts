@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import * as winston from 'winston';
 
 /**
@@ -22,7 +22,7 @@ export class EventLoggerService {
    *
    * @param options - Optional Winston transports and log level. Defaults to Console transport at `info` level.
    */
-  constructor(options?: EventLoggerOptions) {
+  constructor(@Optional() options?: EventLoggerOptions) {
     this.logger = this.createLogger(options);
   }
 

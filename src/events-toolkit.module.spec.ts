@@ -1,7 +1,7 @@
 import { DynamicModule } from '@nestjs/common';
 import { JetStreamClient, NatsConnection } from 'nats';
 import { EventsToolkitModule } from './events-toolkit.module';
-import { JETSTREAM_TOKEN } from './producer/producer.module';
+import { JETSTREAM_TOKEN } from './producer/producer.constants';
 import { EventLoggerService } from './logging/event-logger.service';
 
 jest.mock('nats', () => ({
@@ -26,7 +26,7 @@ jest.mock('./outbox/sqlite-outbox.repository', () => {
 const mockJetStream = { publish: jest.fn(), subscribe: jest.fn() } as unknown as JetStreamClient;
 
 function findProvider(providers: Provider[] | undefined, token: unknown): Provider | undefined {
-  return providers?.find((p): p is Provider & { provide: unknown } => 'provide' in p && p.provide === token);
+  return providers?.find((p): p is Provider & { provide: unknown; } => 'provide' in p && p.provide === token);
 }
 
 type Provider = Record<string, unknown>;
@@ -37,7 +37,7 @@ describe('EventsToolkitModule', () => {
       const module = await EventsToolkitModule.forRoot({
         nats: { connection: { jetstream: () => mockJetStream } as unknown as NatsConnection },
       });
-      const importNames = (module.imports ?? []).map((m) => (m as { module?: { name?: string } }).module?.name);
+      const importNames = (module.imports ?? []).map((m) => (m as { module?: { name?: string; }; }).module?.name);
       expect(importNames.some((n) => n === 'ProducerModule')).toBe(true);
       expect(importNames.some((n) => n === 'ConsumerModule')).toBe(true);
       expect(importNames.some((n) => n === 'DiscoveryModule')).toBe(true);
@@ -55,7 +55,7 @@ describe('EventsToolkitModule', () => {
       const module = await EventsToolkitModule.forRoot({
         nats: { connection: { jetstream: () => mockJetStream } as unknown as NatsConnection },
       });
-      const moduleNames = (module.imports ?? []).map((m) => (m as { module?: { name?: string } }).module?.name);
+      const moduleNames = (module.imports ?? []).map((m) => (m as { module?: { name?: string; }; }).module?.name);
       expect(moduleNames.length).toBeGreaterThanOrEqual(2);
     });
 
@@ -65,7 +65,7 @@ describe('EventsToolkitModule', () => {
         consumer: { enable: false },
       });
       const consumerImport = (module.imports ?? []).find(
-        (m) => (m as { module?: { name?: string } }).module?.name === 'ConsumerModule',
+        (m) => (m as { module?: { name?: string; }; }).module?.name === 'ConsumerModule',
       );
       expect(consumerImport).toBeUndefined();
     });
@@ -75,7 +75,7 @@ describe('EventsToolkitModule', () => {
         nats: { connection: { jetstream: () => mockJetStream } as unknown as NatsConnection },
         outbox: { type: 'sqlite' },
       });
-      const moduleNames = (module.imports ?? []).map((m) => (m as { module?: { name?: string } }).module?.name);
+      const moduleNames = (module.imports ?? []).map((m) => (m as { module?: { name?: string; }; }).module?.name);
       expect(moduleNames.some((n) => n === 'OutboxModule')).toBe(true);
     });
 
@@ -84,7 +84,7 @@ describe('EventsToolkitModule', () => {
         nats: { connection: { jetstream: () => mockJetStream } as unknown as NatsConnection },
       });
       const outboxImport = (module.imports ?? []).find(
-        (m) => (m as { module?: { name?: string } }).module?.name === 'OutboxModule',
+        (m) => (m as { module?: { name?: string; }; }).module?.name === 'OutboxModule',
       );
       expect(outboxImport).toBeUndefined();
     });
@@ -104,7 +104,7 @@ describe('EventsToolkitModule', () => {
       });
       const loggerProvider = findProvider(module.providers as Provider[] | undefined, EventLoggerService) as Provider;
       expect(loggerProvider).toBeDefined();
-      expect((loggerProvider as { useValue: EventLoggerService }).useValue).toBeInstanceOf(EventLoggerService);
+      expect((loggerProvider as { useValue: EventLoggerService; }).useValue).toBeInstanceOf(EventLoggerService);
     });
   });
 
@@ -113,7 +113,7 @@ describe('EventsToolkitModule', () => {
       const module = EventsToolkitModule.forRootAsync({
         useFactory: async () => ({ nats: { servers: ['nats://localhost:4222'] } }),
       });
-      const importNames = (module.imports ?? []).map((m) => (m as { module?: { name?: string } }).module?.name);
+      const importNames = (module.imports ?? []).map((m) => (m as { module?: { name?: string; }; }).module?.name);
       expect(importNames.some((n) => n === 'ProducerModule')).toBe(true);
       expect(importNames.some((n) => n === 'ConsumerModule')).toBe(true);
       expect(importNames.some((n) => n === 'OutboxModule')).toBe(true);
@@ -151,7 +151,7 @@ describe('EventsToolkitModule', () => {
     });
 
     it('should include user-provided imports', () => {
-      const dummyModule = { module: class DummyModule {} };
+      const dummyModule = { module: class DummyModule { } };
       const module = EventsToolkitModule.forRootAsync({
         useFactory: async () => ({ nats: { servers: ['nats://localhost:4222'] } }),
         imports: [dummyModule],
@@ -176,7 +176,7 @@ describe('EventsToolkitModule', () => {
         useFactory: async () => ({ nats: { servers: ['nats://localhost:4222'] } }),
       });
       const producerImport = module.imports?.find(
-        (m) => (m as { module?: { name?: string } }).module?.name === 'ProducerModule',
+        (m) => (m as { module?: { name?: string; }; }).module?.name === 'ProducerModule',
       );
       expect(producerImport).toBeDefined();
       const producerProviders = (producerImport as DynamicModule | undefined)?.providers ?? [];
@@ -191,7 +191,7 @@ describe('EventsToolkitModule', () => {
 
   describe('onModuleDestroy', () => {
     it('should close owned NATS connection on destroy', async () => {
-      const { connect } = jest.requireMock('nats') as { connect: jest.Mock };
+      const { connect } = jest.requireMock('nats') as { connect: jest.Mock; };
       const mockClose = jest.fn();
       connect.mockResolvedValueOnce({
         jetstream: jest.fn().mockReturnValue(mockJetStream),

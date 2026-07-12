@@ -1,6 +1,7 @@
 import { DynamicModule, ForwardReference, Module, OnModuleDestroy, Provider, Type } from '@nestjs/common';
 import { connect, NatsConnection, JetStreamClient } from 'nats';
-import { ProducerModule, JETSTREAM_TOKEN } from './producer/producer.module';
+import { ProducerModule } from './producer/producer.module';
+import { JETSTREAM_TOKEN } from './producer/producer.constants';
 import { ConsumerModule, ConsumerModuleOptions } from './consumer/consumer.module';
 import { OutboxModuleOptions } from './outbox/outbox.types';
 import { OutboxModule } from './outbox/outbox.module';
