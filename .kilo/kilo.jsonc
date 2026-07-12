@@ -6,6 +6,7 @@
   ],
   "permission": {
     "edit": {
+      "*": "ask",
       ".agent/project-info/**": "allow",
       ".agent/todos/**": "allow",
       ".agent/project-structure.md": "allow",
@@ -14,15 +15,16 @@
       "src/**": "allow",
       "test/**": "allow",
       "__test__/**": "allow",
+      "tests/**": "allow",
+      "__tests__/**": "allow",
       "*ignore*": "allow",
-      "LICENSE": "allow",
+      "*LICENSE*": "allow",
       "*.md": "allow",
       "package*": "allow",
       ".env.example*": "allow",
       "docker*": "allow",
       "eslint*": "allow",
-      "tsconfig*": "allow",
-      "*": "ask"
+      "tsconfig*": "allow"
     }
   }
 }

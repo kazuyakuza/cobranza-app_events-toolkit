@@ -45,7 +45,7 @@ After analysis:
 #### Project Info updates occur when
 
 1. Discovering new project patterns
-2. After implementing significant changes
+2. After implementing changes
 3. When user explicitly requests with the phrase **update project info** (MUST review ALL files)
 4. When context needs clarification
 

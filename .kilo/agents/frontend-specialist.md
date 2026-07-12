@@ -9,12 +9,12 @@ permission:
   mcp: allow
   webfetch: allow
   bash:
+    "*": ask
     "npm *": allow
     "npx *": allow
     "yarn *": allow
     "pnpm *": allow
     "git *": allow
-    "*": ask
 ---
 
 You are a frontend developer expert in Angular, VueJS, TypeScript, modern CSS (vanilla and related libs/frameworks). You handle frontend development tasks.

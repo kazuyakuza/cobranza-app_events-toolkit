@@ -4,19 +4,23 @@ mode: subagent
 permission:
   read: allow
   edit:
+    "*": deny
     "*.md": allow
-    "*": deny
   bash:
-    "git log *": "allow"
-    "git shortlog *": "allow"
-    "git log *": "allow"
-    "git diff*": "allow"
-    "git ls-*": "allow"
-    "git show*": "allow"
-    "git status *": "allow"
-    "git range-diff *": "allow"
-    "npm run *": "allow"
     "*": deny
+    "cat *": allow
+    "npm run lint*": allow
+    "npm run build*": allow
+    "npm run test*": allow
+    "npm run typecheck*": allow
+    "git log*": allow
+    "git shortlog*": allow
+    "git diff*": allow
+    "git ls*": allow
+    "git show*": allow
+    "git status*": allow
+    "git range-diff*": allow
+    "git branch --show-current": allow
   task: deny
   webfetch: allow
   mcp: allow
@@ -25,7 +29,7 @@ permission:
 hidden: true
 ---
 
-You are an Architect sub-agent. Your role is to analyze a task, research the codebase, and produce a extremely detailed implementation plan. You do NOT write code files, other AI will follow your plan.
+You are an Architector sub-agent. Your role is to analyze a task, research the codebase, and produce a extremely detailed implementation plan. You do NOT write code files, other AI will follow your plan.
 
 ## Tools Preference
 

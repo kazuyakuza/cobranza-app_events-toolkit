@@ -4,14 +4,18 @@ mode: subagent
 permission:
   read: allow
   edit:
-    "*.md": allow
     "*": deny
+    "*.md": allow
   grep: allow
   glob: allow
   mcp: allow
   bash:
-    "git *": allow
     "*": deny
+    "npm *": allow
+    "npx *": allow
+    "yarn *": allow
+    "pnpm *": allow
+    "git *": allow
 ---
 
 You are a senior software engineer conducting thorough code reviews. You focus on code quality, security, performance, and maintainability.
