@@ -34,7 +34,7 @@ The primary goal of this repository is to provide a clean, structured starting p
 Understanding the purpose of the configuration directories is key to effective development:
 
 - [`.agent/`](.agent/): Stores project-specific agent context. Includes [`.agent/project-info/`](.agent/project-info/) for persistent project knowledge (`brief.md`, `product.md`, `context.md`, `architecture.md`, `tech.md`), the [`.agent/todos/`](.agent/todos/) directory for task tracking, local rules, and the [`project-structure.md`](.agent/project-structure.md) map.
-- [`.kilo/`](.kilo/): The operational core of the AI integration. Contains custom [`.kilo/agents/`](.kilo/agents/) (Architect, Implementer, Code Reviewer, Docs Specialist, etc.), global [`.kilo/rules/`](.kilo/rules/) (19 rule files), standardized [`.kilo/commands/`](.kilo/commands/) (workflows like the Critical Workflow), [`.kilo/modes/`](.kilo/modes/) for agent mode overrides, and the [`.kilo/plans/`](.kilo/plans/) directory where agents store detailed implementation plans.
+- [`.kilo/`](.kilo/): The operational core of the AI integration. Contains custom [`.kilo/agents/`](.kilo/agents/) (Architector, Implementer, Code Reviewer, Docs Specialist, etc.), global [`.kilo/rules/`](.kilo/rules/) (19 rule files), standardized [`.kilo/commands/`](.kilo/commands/) (workflows like the Critical Workflow), [`.kilo/modes/`](.kilo/modes/) for agent mode overrides, and the [`.kilo/plans/`](.kilo/plans/) directory where agents store detailed implementation plans.
 - [`.kilocodeignore`](.kilocodeignore): Controls which files are excluded from codebase indexing, skipping lock files, dependency directories, build outputs, and binary assets.
 
 ## The Critical Workflow
