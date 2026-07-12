@@ -1,6 +1,6 @@
 {
   "name": "@cobranza-apps/events-toolkit",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "NestJS library for standardized NATS+JetStream event handling across Cobranza App microservices",
   "keywords": [
     "nestjs",
