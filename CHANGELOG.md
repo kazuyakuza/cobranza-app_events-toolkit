@@ -2,6 +2,40 @@
 
 All notable changes to the AI Agent Driven Development base project will be documented in this file.
 
+## 2026-06-11 to 2026-07-11
+
+### Changes
+
+#### Agent Renames
+
+- **Architect → Architector**: Renamed the "architect" sub-agent to "architector" across all references — agent files, workflows, rules, and TODO files (2026-07-11).
+
+#### Critical Workflow Updates
+
+- **Plan Agent forced to never call `plan_exit`**: Plan Agent must auto-approve plans and proceed without calling `plan_exit` (2026-07-05, 2026-07-08).
+- **Code-simplifier added to step 4.3**: Code Review & Simplification step now runs both code-reviewer and code-simplifier concurrently (2026-07-05).
+- **Improved plan generation and auto-approval**: Enhanced implementation plan generation and auto-approval behavior for task plans (2026-06-13, 2026-06-14, 2026-06-29).
+- **Updated steps 4.4 and 4.5**: Refined the Documentation and Verification steps in the Critical Workflow (2026-06-28).
+- **Enhanced context passing to sub-agents**: Plan Agent now passes more complete context (TODO path, plan path, constraints) when delegating tasks (2026-07-05).
+- **Documentation workflow updates**: Refined documentation-related steps in the Critical Workflow (2026-07-09).
+
+#### Permissions Updates
+
+- **Agent permissions overhaul**: Updated, fixed, and re-updated agent permission rules across all agent definition files (2026-07-10).
+- **Plan Agent bash access**: Updated Plan Agent permissions to allow necessary bash commands (2026-07-09).
+- **Tool Selection Priority Rule updated**: Added `semantic_search` to the tool selection preference hierarchy (2026-07-09).
+- **General permissions improvements**: Enhanced tool permission declarations across agent definitions (2026-06-28).
+
+#### Project Info Improvements
+
+- **Fixed project-info instructions**: Corrected details in the project-info instruction files (2026-06-12).
+- **More frequent info file updates**: Updated project-info instructions to refresh information files more frequently (2026-07-05).
+
+#### Minor Fixes
+
+- **Fixed TODO file handling**: Corrected logic for how TODO files are processed (2026-06-15).
+- **Git setup documentation**: Added command documentation for Git setup (2026-06-18).
+
 ## 2026-06-11
 
 ### Changes
