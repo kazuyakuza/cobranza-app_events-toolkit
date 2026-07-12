@@ -12,9 +12,9 @@ This workflow manages the creation, updates, and reorganization of the `.agent/p
 
 When the `.agent/project-structure.md` file does not exist:
 
-1. Use `task` tool to assign to Architect sub-agent (`subagent_type: "architect"`)
-2. Architect sub-agent analyzes the project requirements and generates a base folder structure for the `src` directory
-3. Architect sub-agent presents the proposed structure to the user for confirmation
+1. Use `task` tool to assign to Architector sub-agent (`subagent_type: "architector"`)
+2. Architector sub-agent analyzes the project requirements and generates a base folder structure for the `src` directory
+3. Architector sub-agent presents the proposed structure to the user for confirmation
 4. Upon user confirmation, use `task` tool to assign to Implementer sub-agent (`subagent_type: "implementer"`)
 5. Implementer sub-agent creates the `.agent/project-structure.md` file with the approved structure
 
@@ -29,10 +29,10 @@ When folders are added, removed, or renamed in the `src` directory:
 
 When the project structure needs reorganization:
 
-1. Use `task` tool to assign to Architect sub-agent (`subagent_type: "architect"`)
-2. Architect sub-agent reviews the current structure in `.agent/project-structure.md` and project context
-3. Architect sub-agent proposes a new structure based on current needs
-4. Architect sub-agent presents the proposed reorganization to the user for confirmation
+1. Use `task` tool to assign to Architector sub-agent (`subagent_type: "architector"`)
+2. Architector sub-agent reviews the current structure in `.agent/project-structure.md` and project context
+3. Architector sub-agent proposes a new structure based on current needs
+4. Architector sub-agent presents the proposed reorganization to the user for confirmation
 5. Upon user confirmation, use `task` tool to assign to Implementer sub-agent (`subagent_type: "implementer"`)
 6. Implementer sub-agent updates the `.agent/project-structure.md` file with the new structure
 7. Implementer sub-agent may also move existing files/folders to match the new structure if requested

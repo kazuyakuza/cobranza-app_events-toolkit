@@ -84,7 +84,7 @@ SUB-AGENT TASK — SINGLE DISCRETE STEP
 
 #### 4.1. Analysis and Planning
 
-Assign to architect sub-agent (`subagent_type: "architect"`).
+Assign to architector sub-agent (`subagent_type: "architector"`).
 
 - Identify task ambiguities; analyze project status; research required techs, frameworks, libs, dependencies, and/or APIs installed/used or new to add/use.
 - Generate implementation plan:
@@ -126,7 +126,7 @@ Assign to docs-specialist sub-agent (`subagent_type: "docs-specialist"`).
 
 #### 4.5. Verification
 
-Assign to architect sub-agent (`subagent_type: "architect"`).
+Assign to architector sub-agent (`subagent_type: "architector"`).
 
 - Check implementation plan adherence.
 - Report found diffs, if any.
@@ -183,11 +183,11 @@ Each entry is a separate `task` tool invocation with the appropriate `subagent_t
 ```markdown
 - Step 2: Git Feature Branch Setup => implementer
 - Step 3: Version Update => implementer
-- Task 1: 4.1 Analysis & Planning => architect
+- Task 1: 4.1 Analysis & Planning => architector
 - Task 1: 4.2 Implementation => implementer
 - Task 1: 4.3 Code Review & Simplification => code-reviewer & code-simplifier; 4.3-fix => implementer
 - Task 1: 4.4 Documentation => docs-specialist
-- Task 1: 4.5 Verification => architect
+- Task 1: 4.5 Verification => architector
 - Task 1: 4.6 Task Completion => implementer
 - (repeat 4.1–4.6 for each remaining task)
 - Step 5: TODO File Completion => implementer

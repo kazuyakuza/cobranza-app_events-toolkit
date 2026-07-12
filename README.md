@@ -50,7 +50,7 @@ graph TD
     GitSetup --> VersionUpdate["3. Version Update<br/><small>[Implementer]</small>"]
     VersionUpdate --> Execution[Task Execution Loop]
     subgraph ExecutionProcess [4. Task Execution]
-        Execution --> Analysis["4.1 Analysis & Planning<br/><small>[Architect]</small>"]
+        Execution --> Analysis["4.1 Analysis & Planning<br/><small>[Architector]</small>"]
         Analysis --> Implementation["4.2 Implementation<br/><small>[Implementer]</small>"]
         Implementation --> CodeReview["4.3 Code Review<br/><small>[Code Reviewer]</small>"]
         CodeReview -- Fixes Needed --> Fixes["4.3-fix Apply Fixes<br/><small>[Implementer]</small>"]
@@ -98,7 +98,7 @@ do [Your specific task or request here]
 
 ## AI Agent Plans
 
-The critical workflow requires the AI to generate detailed implementation plans for each task. The [Architect sub-agent](.kilo/agents/architect.md) handles analysis and planning (step 4.1), while the [Implementer sub-agent](.kilo/agents/implementer.md) executes the plan (step 4.2). A [Code Reviewer](.kilo/agents/code-reviewer.md) validates quality, and a [Docs Specialist](.kilo/agents/docs-specialist.md) maintains documentation.
+The critical workflow requires the AI to generate detailed implementation plans for each task. The [Architector sub-agent](.kilo/agents/architector.md) handles analysis and planning (step 4.1), while the [Implementer sub-agent](.kilo/agents/implementer.md) executes the plan (step 4.2). A [Code Reviewer](.kilo/agents/code-reviewer.md) validates quality, and a [Docs Specialist](.kilo/agents/docs-specialist.md) maintains documentation.
 
 The AI agent will ask for your approval before proceeding with plans. To skip approval prompts, include in the TODO file or chat request:
 
