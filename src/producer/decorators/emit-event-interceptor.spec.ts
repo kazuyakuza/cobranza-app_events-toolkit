@@ -19,7 +19,7 @@ jest.mock('../../common/utils/date.utils', () => ({
 describe('EmitEventInterceptor', () => {
   let interceptor: EmitEventInterceptor;
   let producerService: ProducerService;
-  let mockLoggerService: { logEventEmitted: jest.Mock; logEventError: jest.Mock; };
+  let mockLoggerService: { logEventEmitted: jest.Mock; logEventError: jest.Mock };
 
   beforeEach(async () => {
     const jetStream = { publish: jest.fn().mockResolvedValue({}) };
@@ -50,7 +50,7 @@ describe('EmitEventInterceptor', () => {
   describe('intercept', () => {
     it('should pass through when no @EmitEvent metadata is present', async () => {
       class NoMetadataProducer {
-        handleRequest(): void { }
+        handleRequest(): void {}
       }
       const handler = NoMetadataProducer.prototype.handleRequest;
       const context = createMockExecutionContext(handler, [sampleContext]);
@@ -66,7 +66,7 @@ describe('EmitEventInterceptor', () => {
           description: 'Proof was uploaded',
           payloadExample: { proofId: 'proof-123' },
         })
-        handleUpload(): void { }
+        handleUpload(): void {}
       }
       const handler = WithMetadataProducer.prototype.handleUpload;
       const data = { amount: 250 };
@@ -87,7 +87,7 @@ describe('EmitEventInterceptor', () => {
           description: 'Schedule processed',
           payloadExample: { scheduleId: 'sch-1' },
         })
-        handleProcessed(): void { }
+        handleProcessed(): void {}
       }
       const handler = NoVersionProducer.prototype.handleProcessed;
       const data = { scheduleId: 'sch-1' };
@@ -108,7 +108,7 @@ describe('EmitEventInterceptor', () => {
           description: 'Proof was uploaded',
           payloadExample: { proofId: 'proof-123' },
         })
-        handleUpload(): void { }
+        handleUpload(): void {}
       }
       const handler = NoContextProducer.prototype.handleUpload;
       const context = createMockExecutionContext(handler, [{ plainData: true }]);
@@ -124,7 +124,7 @@ describe('EmitEventInterceptor', () => {
           description: 'Proof was uploaded',
           payloadExample: { proofId: 'p-1' },
         })
-        handleUpload(): void { }
+        handleUpload(): void {}
       }
       const handler = MultipleArgsProducer.prototype.handleUpload;
       const data = { proofId: 'p-1' };
@@ -141,7 +141,7 @@ describe('EmitEventInterceptor', () => {
           description: 'Proof was uploaded',
           payloadExample: { proofId: 'proof-123' },
         })
-        handleUpload(): void { }
+        handleUpload(): void {}
       }
       const handler = ReturnValueProducer.prototype.handleUpload;
       const returnValue = { id: 'evt-123', type: 'proof_uploaded' };

@@ -1,5 +1,5 @@
 import { Type } from '@nestjs/common';
-import { JetStreamClient } from 'nats';
+import { JetStreamClient, NatsConnection } from 'nats';
 
 /** NestJS injection token for the JetStream client used by {@link ProducerService}. */
 export const JETSTREAM_TOKEN = 'NATS_JETSTREAM';
@@ -7,7 +7,7 @@ export const JETSTREAM_TOKEN = 'NATS_JETSTREAM';
 /** Synchronous options for {@link ProducerModule.forRoot}. */
 export interface ProducerModuleOptions {
   /** An existing NATS connection — JetStream is obtained via `connection.jetstream()`. */
-  connection?: import('nats').NatsConnection;
+  connection?: NatsConnection;
   /** A pre-obtained JetStream client instance — takes precedence over `connection`. */
   jetStream?: JetStreamClient;
 }

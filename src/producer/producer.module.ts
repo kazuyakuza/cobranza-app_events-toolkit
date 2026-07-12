@@ -5,6 +5,10 @@ import { ProducerService } from './producer.service';
 import { EmitEventInterceptor } from './decorators/emit-event-interceptor';
 import { JETSTREAM_TOKEN, ProducerModuleOptions, ProducerModuleAsyncOptions } from './producer.constants';
 
+const COMMON_PROVIDERS: Provider[] = [EventLoggerService, ProducerService, EmitEventInterceptor];
+
+const COMMON_EXPORTS = [ProducerService, EmitEventInterceptor];
+
 /** Resolves a JetStream instance from the provided module options. */
 function resolveJetStream(options: ProducerModuleOptions): JetStreamClient {
   if (options.jetStream) {
@@ -14,6 +18,14 @@ function resolveJetStream(options: ProducerModuleOptions): JetStreamClient {
     return options.connection.jetstream();
   }
   throw new Error('ProducerModule requires either connection or jetStream in options');
+}
+
+function moduleBase(): Pick<DynamicModule, 'module' | 'global' | 'exports'> {
+  return {
+    module: ProducerModule,
+    global: true,
+    exports: COMMON_EXPORTS,
+  };
 }
 
 /** NestJS DynamicModule for event publishing via NATS JetStream. */
@@ -26,15 +38,8 @@ export class ProducerModule {
   static forRoot(options: ProducerModuleOptions): DynamicModule {
     const jetStream = resolveJetStream(options);
     return {
-      module: ProducerModule,
-      global: true,
-      providers: [
-        { provide: JETSTREAM_TOKEN, useValue: jetStream },
-        EventLoggerService,
-        ProducerService,
-        EmitEventInterceptor,
-      ],
-      exports: [ProducerService, EmitEventInterceptor],
+      ...moduleBase(),
+      providers: [{ provide: JETSTREAM_TOKEN, useValue: jetStream }, ...COMMON_PROVIDERS],
     };
   }
 
@@ -49,10 +54,8 @@ export class ProducerModule {
   static forRootAsync(asyncOptions: ProducerModuleAsyncOptions): DynamicModule {
     if (asyncOptions.useExisting) {
       return {
-        module: ProducerModule,
-        global: true,
-        providers: [EventLoggerService, ProducerService, EmitEventInterceptor],
-        exports: [ProducerService, EmitEventInterceptor],
+        ...moduleBase(),
+        providers: [...COMMON_PROVIDERS],
       };
     }
     const jetStreamProvider: Provider = {
@@ -64,10 +67,8 @@ export class ProducerModule {
       inject: asyncOptions.inject ?? [],
     };
     return {
-      module: ProducerModule,
-      global: true,
-      providers: [jetStreamProvider, EventLoggerService, ProducerService, EmitEventInterceptor],
-      exports: [ProducerService, EmitEventInterceptor],
+      ...moduleBase(),
+      providers: [jetStreamProvider, ...COMMON_PROVIDERS],
     };
   }
 }
