@@ -2,11 +2,15 @@
 
 ## Current Work Focus
 
-**Decorator option refactor (v0.8.0) + comprehensive documentation overhaul (Task 6).**
-
-The project has completed tightening decorator option interfaces (`EmitEventOptions`, `OnEventOptions`, `OnRequestReplyOptions`) to require `version`, `description`, and `payloadExample` as mandatory fields. `ManifestEntryBuilder` no longer falls back for `version`/`description`. The entire documentation surface is being overhauled to provide a clear, step-by-step onboarding path for AI agents: README Quickstart + Onboarding Flow + Deployment sections, stale decorator signature fixes, project-info refresh, cross-links, and JSDoc coverage.
+**Fix EventsToolkitModule.forRootAsync missing exports (v0.10.2).** The async registration path now explicitly exports `EVENTS_TOOLKIT_OPTIONS`, `JETSTREAM_TOKEN`, and `EventLoggerService` so that imported sub-modules resolve DI correctly.
 
 ## Recent Changes
+
+### 2026-07-13 — Fix forRootAsync missing exports (v0.10.2)
+- Added `exports` array to `EventsToolkitModule.forRootAsync` so that `EVENTS_TOOLKIT_OPTIONS`, `JETSTREAM_TOKEN`, and `EventLoggerService` are globally available.
+- This fixes NestJS DI errors in imported sub-modules (`ProducerModule`, `ConsumerModule`, `OutboxModule`, `DiscoveryModule`) when using the async registration path.
+- Added DI compilation regression test in `src/events-toolkit.module.di.spec.ts`.
+- Branch: `feat/fix-forRootAsync-exports`.
 
 ### 2026-06-29 — Task A (v0.8.0 Refactor)
 - Made `version`, `description`, `payloadExample` required in `EmitEventOptions`, `OnEventOptions`, `OnRequestReplyOptions`.
@@ -72,13 +76,14 @@ The project has completed tightening decorator option interfaces (`EmitEventOpti
 - `brief.md` was defined by the user during project info brief initialization.
 - `docs/event-messaging-convention.md` was provided as the event standard baseline.
 
-## Immediate Next Steps (After Task 6)
+## Immediate Next Steps
 
 1. **Final verification**: Run full test suite, lint, and typecheck across all modules.
+2. Continue with any remaining tasks or verify that all consumers (e.g., `ms-db-gateway`) build correctly against the fixed package.
 
 ## Current Blockers
 
-- None. Documentation overhaul is in progress.
+- None.
 
 ## Active Decisions
 
