@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.10.3] — unreleased
+
+### Fixed
+
+- **`DiscoveryModule` missing `NestDiscoveryModule` import**: `ManifestServiceDepsProvider` depends on `MetadataScanner`, `DiscoveryService`, and `Reflector` from `@nestjs/core`, but `DiscoveryModule` did not import `NestDiscoveryModule`, causing NestJS DI resolution errors at runtime. Added `NestDiscoveryModule` to the `imports` array in `buildDiscoveryDynamicModule`.
+
 ## [0.10.2] — 2026-07-13
 
 ### Fixed

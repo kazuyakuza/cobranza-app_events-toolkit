@@ -110,7 +110,12 @@ export interface DiscoveryModuleAsyncOptions {
   inject?: Array<string | symbol | Type<unknown>>;
 }
 
-/** NestJS dynamic module for service discovery and manifest registration. */
+/**
+ * NestJS dynamic module for service discovery and manifest registration.
+ *
+ * Imports `NestDiscoveryModule` from `@nestjs/core` to make `MetadataScanner`,
+ * `DiscoveryService`, and `Reflector` available to `ManifestServiceDepsProvider`.
+ */
 @Module({})
 export class DiscoveryModule {
   /** Registers the discovery module with synchronous options. */
