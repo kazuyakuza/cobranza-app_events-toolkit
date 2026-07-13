@@ -1,4 +1,5 @@
 import { DynamicModule, Module, Type } from '@nestjs/common';
+import { DiscoveryModule as NestDiscoveryModule } from '@nestjs/core';
 import { DISCOVERY_MODULE_OPTIONS, EventsToolkitDiscoveryOptions } from './discovery-service-options.interface';
 import { DiscoveryService } from './discovery.service';
 import { ManifestService } from './manifest.service';
@@ -104,6 +105,7 @@ export class DiscoveryModule {
     return {
       module: DiscoveryModule,
       global: true,
+      imports: [NestDiscoveryModule],
       providers,
       exports: exported,
       controllers: [DiscoveryController],
@@ -131,7 +133,7 @@ export class DiscoveryModule {
       global: true,
       providers,
       exports: exported,
-      imports: asyncOptions.imports ?? [],
+      imports: [NestDiscoveryModule, ...(asyncOptions.imports ?? [])],
       controllers: [DiscoveryController],
     };
   }
