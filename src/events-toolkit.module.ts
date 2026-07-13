@@ -127,6 +127,7 @@ export class EventsToolkitModule implements OnModuleDestroy {
       global: true,
       imports,
       providers: [optionsProvider, jetStreamProvider, loggingProvider],
+      exports: [EVENTS_TOOLKIT_OPTIONS, JETSTREAM_TOKEN, EventLoggerService],
     };
   }
 

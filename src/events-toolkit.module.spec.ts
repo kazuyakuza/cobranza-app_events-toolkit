@@ -107,13 +107,15 @@ describe('EventsToolkitModule', () => {
   });
 
   describe('forRootAsync', () => {
-    it('should expose sub-module services via global imports instead of exports', () => {
+    it('should import sub-modules globally and export toolkit-level tokens', () => {
       const module = EventsToolkitModule.forRootAsync(forRootAsyncOptions);
       const importNames = (module.imports ?? []).map(getModuleName);
       expect(importNames).toContain('ProducerModule');
       expect(importNames).toContain('ConsumerModule');
       expect(importNames).toContain('OutboxModule');
-      expect(module.exports ?? []).toHaveLength(0);
+      expect(module.exports).toContain('EVENTS_TOOLKIT_OPTIONS');
+      expect(module.exports).toContain(JETSTREAM_TOKEN);
+      expect(module.exports).toContain(EventLoggerService);
     });
 
     it('should be a global module', () => {
