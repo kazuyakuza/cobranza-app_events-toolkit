@@ -9,6 +9,10 @@ permission:
   bash:
     "*": deny
     "cat *": allow
+    "npm lint*": allow
+    "npm build*": allow
+    "npm test*": allow
+    "npm typecheck*": allow
     "npm run lint*": allow
     "npm run build*": allow
     "npm run test*": allow
