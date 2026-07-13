@@ -108,6 +108,12 @@ export class EventsToolkitModule implements OnModuleDestroy {
   /**
    * Registers the toolkit with asynchronous options resolved via a factory provider.
    * Defers NATS connection and sub-module configuration until runtime injection.
+   *
+   * @remarks
+   * The returned dynamic module exports `EVENTS_TOOLKIT_OPTIONS`, `JETSTREAM_TOKEN`,
+   * and `EventLoggerService` so that imported sub-modules (`ProducerModule`,
+   * `ConsumerModule`, `OutboxModule`, `DiscoveryModule`) can resolve these
+   * dependencies during NestJS DI compilation.
    */
   static forRootAsync(asyncOptions: EventsToolkitModuleAsyncOptions): DynamicModule {
     const optionsProvider = buildAsyncOptionsProvider(asyncOptions);

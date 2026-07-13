@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.10.2] — 2026-07-13
+
+### Fixed
+
+- **`EventsToolkitModule.forRootAsync` missing exports**: The dynamic module returned by `forRootAsync` did not include an `exports` array, so the async providers (`EVENTS_TOOLKIT_OPTIONS`, `JETSTREAM_TOKEN`, `EventLoggerService`) were invisible to the imported sub-modules (`ProducerModule`, `ConsumerModule`, `OutboxModule`, `DiscoveryModule`). This caused NestJS DI resolution errors in any consumer using the async registration path (e.g., `ms-db-gateway` via `NatsModule`). The `forRoot` synchronous path was unaffected because it passes resolved values directly into sub-modules.
+
+### Added
+
+- DI compilation regression test in `src/events-toolkit.module.di.spec.ts` that compiles `EventsToolkitModule.forRootAsync` through NestJS `Test.createTestingModule` and resolves `ProducerService` via DI, preventing this class of missing-export regression.
+
 ## [0.10.1] — 2026-07-12
 
 ### Fixed
