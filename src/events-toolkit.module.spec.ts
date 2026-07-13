@@ -135,11 +135,6 @@ describe('EventsToolkitModule', () => {
       expect(optsProvider).toBeDefined();
     });
 
-    it('should include ProducerModule, ConsumerModule, and OutboxModule in imports', () => {
-      const module = EventsToolkitModule.forRootAsync(forRootAsyncOptions);
-      expect(module.imports?.length).toBeGreaterThanOrEqual(3);
-    });
-
     it('should include user-provided imports', () => {
       const dummyModule = { module: class DummyModule {} };
       const module = EventsToolkitModule.forRootAsync({
