@@ -1,4 +1,4 @@
-import { DynamicModule, Module, Type } from '@nestjs/common';
+import { DynamicModule, Module, Provider, Type } from '@nestjs/common';
 import { DiscoveryModule as NestDiscoveryModule } from '@nestjs/core';
 import { DISCOVERY_MODULE_OPTIONS, EventsToolkitDiscoveryOptions } from './discovery-service-options.interface';
 import { DiscoveryService } from './discovery.service';
@@ -67,13 +67,37 @@ const SCHEMA_GENERATOR_PROVIDER = {
   inject: [DISCOVERY_MODULE_OPTIONS],
 };
 
-function createAsyncOptionsResolver(
-  asyncOptions: DiscoveryModuleAsyncOptions,
-): (...args: unknown[]) => Promise<DiscoveryModuleOptions> {
-  return async (...args: unknown[]): Promise<DiscoveryModuleOptions> => {
-    const userOptions = await asyncOptions.useFactory(...args);
-    return resolveDiscoveryOptions(userOptions);
+const CORE_DISCOVERY_PROVIDERS: Provider[] = [
+  DiscoveryService,
+  ManifestService,
+  MANIFEST_DEPS_FACTORY,
+  SCHEMA_GENERATOR_PROVIDER,
+  DiscoveryEventPublisher,
+];
+
+const DISCOVERY_EXPORTS: Provider[] = [
+  DiscoveryService,
+  ManifestService,
+  SchemaGenerator,
+  DiscoveryEventPublisher,
+];
+
+function buildDiscoveryDynamicModule(
+  providers: Provider[],
+  extraImports: Array<Type<unknown> | DynamicModule | Promise<DynamicModule>> = [],
+): DynamicModule {
+  return {
+    module: DiscoveryModule,
+    global: true,
+    imports: [NestDiscoveryModule, ...extraImports],
+    providers,
+    exports: DISCOVERY_EXPORTS,
+    controllers: [DiscoveryController],
   };
+}
+
+function createAsyncOptionsResolver(asyncOptions: DiscoveryModuleAsyncOptions) {
+  return async (...args: unknown[]) => resolveDiscoveryOptions(await asyncOptions.useFactory(...args));
 }
 
 /** Asynchronous options for DiscoveryModule.forRootAsync. */
@@ -92,49 +116,24 @@ export class DiscoveryModule {
   /** Registers the discovery module with synchronous options. */
   static forRoot(options: EventsToolkitDiscoveryOptions): DynamicModule {
     const resolvedOptions = resolveDiscoveryOptions(options);
-    const providers = [
+    return buildDiscoveryDynamicModule([
       { provide: DISCOVERY_MODULE_OPTIONS, useValue: resolvedOptions },
-      DiscoveryService,
-      ManifestService,
-      MANIFEST_DEPS_FACTORY,
-      SCHEMA_GENERATOR_PROVIDER,
-      DiscoveryEventPublisher,
-    ];
-    const exported = [DiscoveryService, ManifestService, SchemaGenerator, DiscoveryEventPublisher];
-
-    return {
-      module: DiscoveryModule,
-      global: true,
-      imports: [NestDiscoveryModule],
-      providers,
-      exports: exported,
-      controllers: [DiscoveryController],
-    };
+      ...CORE_DISCOVERY_PROVIDERS,
+    ]);
   }
 
   /** Registers the discovery module with asynchronous options resolved via a factory. */
   static forRootAsync(asyncOptions: DiscoveryModuleAsyncOptions): DynamicModule {
-    const providers = [
-      {
-        provide: DISCOVERY_MODULE_OPTIONS,
-        useFactory: createAsyncOptionsResolver(asyncOptions),
-        inject: asyncOptions.inject ?? [],
-      },
-      DiscoveryService,
-      ManifestService,
-      MANIFEST_DEPS_FACTORY,
-      SCHEMA_GENERATOR_PROVIDER,
-      DiscoveryEventPublisher,
-    ];
-    const exported = [DiscoveryService, ManifestService, SchemaGenerator, DiscoveryEventPublisher];
-
-    return {
-      module: DiscoveryModule,
-      global: true,
-      providers,
-      exports: exported,
-      imports: [NestDiscoveryModule, ...(asyncOptions.imports ?? [])],
-      controllers: [DiscoveryController],
-    };
+    return buildDiscoveryDynamicModule(
+      [
+        {
+          provide: DISCOVERY_MODULE_OPTIONS,
+          useFactory: createAsyncOptionsResolver(asyncOptions),
+          inject: asyncOptions.inject ?? [],
+        },
+        ...CORE_DISCOVERY_PROVIDERS,
+      ],
+      asyncOptions.imports ?? [],
+    );
   }
 }
