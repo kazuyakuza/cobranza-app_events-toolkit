@@ -37,6 +37,10 @@ jest.mock('nats', () => ({
     request: jest.fn(),
     close: jest.fn(),
   }),
+  AckPolicy: { Explicit: 'Explicit', All: 'All', None: 'None' },
+  consumerOpts: () => ({
+    manualAck: () => ({ ackExplicit: () => ({ getOpts: () => ({ config: { ack_policy: 'Explicit' } }) }) }),
+  }),
 }));
 
 jest.mock('./outbox/sqlite-outbox.repository', () => ({
