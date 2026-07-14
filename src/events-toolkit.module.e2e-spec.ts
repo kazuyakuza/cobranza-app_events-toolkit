@@ -16,6 +16,18 @@ import { DiscoveryService } from './discovery/discovery.service';
 import { RequestReplyService } from './request-reply/request-reply.service';
 import { RequestReplyConsumerService } from './consumer/request-reply-consumer.service';
 
+/**
+ * NATS connection mock.
+ *
+ * `request` is included because `RequestReplyService` stores a reference to it
+ * during instantiation. Even though no test in this file invokes `request`
+ * directly, omitting it would cause DI compilation to fail when the service's
+ * constructor tries to access `natsConnection.request`.
+ *
+ * AI AGENT NOTE: If a new service is added that depends on additional NATS
+ * connection methods (e.g., `subscribe`, `jetstreamManager`), add stubs for
+ * those methods here to prevent DI compilation failures.
+ */
 jest.mock('nats', () => ({
   connect: jest.fn().mockResolvedValue({
     jetstream: jest.fn().mockReturnValue({
@@ -70,6 +82,21 @@ describe('EventsToolkitModule.forRootAsync e2e DI compilation', () => {
     expect(moduleRef).toBeDefined();
   });
 
+  /**
+   * Registry of every core service that the toolkit module must provide.
+   *
+   * PURPOSE: Acts as a regression guard — if a sub-module stops exporting a
+   * provider, the corresponding entry here will fail to resolve and the test
+   * will surface the missing export immediately.
+   *
+   * WHY `it.each`: Each service is tested in an independent test case so that
+   * a failure in one does not mask failures in others. Adding a new core
+   * service requires appending it to this array; otherwise the new service
+   * will not be covered by the regression guard.
+   *
+   * AI AGENT NOTE: When introducing a new injectable service in any sub-module,
+   * add its class to this array to ensure it is verified during DI compilation.
+   */
   const resolvableServices = [
     ProducerService,
     ConsumerService,
