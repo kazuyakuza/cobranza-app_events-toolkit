@@ -5,6 +5,29 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.11.0] — 2026-07-14
+
+### Added
+
+- **JetStream stream auto-creation** (`consumer.autoCreateStreams`): When enabled, `JetStreamConsumerService.subscribe()` automatically creates a NATS JetStream stream for the subject before subscribing, eliminating the `Error: no stream matches subject` startup failure. Uses `JetStreamManager` to check stream coverage via `streams.find(subject)`; if missing, creates a stream with file storage, limits retention, and unlimited messages/bytes/age. Race conditions (another service creating the same stream simultaneously) are silently handled.
+- `StreamAutoCreator` class in `src/consumer/stream-auto-creator.ts`.
+- `buildStreamName()` utility in `src/consumer/build-stream-name.util.ts`.
+- `consumer.autoCreateStreams?: boolean` option on `EventsToolkitConsumerOptions` (default `false`, opt-in).
+- `connection?: NatsConnection` and `autoCreateStreams?: boolean` added to `JetStreamConsumerDeps`.
+- Tests: `stream-auto-creator.spec.ts`, `jetstream-consumer.service.auto-create.spec.ts`, `consumer.module.auto-create.spec.ts`.
+
+### Changed
+
+- `ConsumerModuleOptions` now accepts `autoCreateStreams` and propagates it through sync and async provider factories.
+- `EventsToolkitModule` passes the resolved `NatsConnection` and `autoCreateStreams` flag to `ConsumerModule`.
+- `createSyncJetStreamConsumerDepsProvider` and `createSyncRequestReplyConsumerDepsProvider` refactored to accept single options objects (max-2-params compliance).
+- Centralized JetStream resolution: removed duplicate `resolveJetStream` from `consumer.module.ts`.
+
+### Documentation
+
+- New guide: `docs/nats-jetstream-configuration.md` — 11 sections covering NATS server requirements, JetStream configuration, stream auto-creation, manual setup, production recommendations, Docker Compose, resource limits, authentication & security, clustering & replication, monitoring & health checks, backup & restore.
+- `README.md` Deployment section trimmed: removed duplicated programmatic stream setup snippet.
+
 ## [0.10.7] — 2026-07-14
 
 ### Fixed
