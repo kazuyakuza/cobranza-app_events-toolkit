@@ -70,27 +70,19 @@ describe('EventsToolkitModule.forRootAsync e2e DI compilation', () => {
     expect(moduleRef).toBeDefined();
   });
 
-  it('resolves ProducerService from the compiled module', () => {
-    expect(moduleRef.get(ProducerService)).toBeInstanceOf(ProducerService);
-  });
+  const resolvableServices = [
+    ProducerService,
+    ConsumerService,
+    OutboxService,
+    DiscoveryService,
+    RequestReplyService,
+    RequestReplyConsumerService,
+  ] as const;
 
-  it('resolves ConsumerService from the compiled module', () => {
-    expect(moduleRef.get(ConsumerService)).toBeInstanceOf(ConsumerService);
-  });
-
-  it('resolves OutboxService from the compiled module', () => {
-    expect(moduleRef.get(OutboxService)).toBeInstanceOf(OutboxService);
-  });
-
-  it('resolves DiscoveryService via the fixed NestDiscoveryModule import', () => {
-    expect(moduleRef.get(DiscoveryService)).toBeInstanceOf(DiscoveryService);
-  });
-
-  it('resolves RequestReplyService from the compiled module', () => {
-    expect(moduleRef.get(RequestReplyService)).toBeInstanceOf(RequestReplyService);
-  });
-
-  it('resolves RequestReplyConsumerService from the compiled module', () => {
-    expect(moduleRef.get(RequestReplyConsumerService)).toBeInstanceOf(RequestReplyConsumerService);
-  });
+  it.each(resolvableServices.map((ServiceClass) => ({ ServiceClass, name: ServiceClass.name })))(
+    'resolves $name from the compiled module',
+    ({ ServiceClass }) => {
+      expect(moduleRef.get(ServiceClass)).toBeInstanceOf(ServiceClass);
+    },
+  );
 });
