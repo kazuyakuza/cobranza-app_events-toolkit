@@ -527,9 +527,7 @@ describe('JetStreamConsumerService', () => {
       const asyncIterable = (async function* () {})();
       jetStream.subscribe.mockResolvedValue(asyncIterable);
 
-      await expect(
-        serviceWithAuto.subscribe({ subject: testSubject, handler: jest.fn() }),
-      ).resolves.toBeUndefined();
+      await expect(serviceWithAuto.subscribe({ subject: testSubject, handler: jest.fn() })).resolves.toBeUndefined();
     });
   });
 });

@@ -93,7 +93,12 @@ export class ConsumerModule {
       providers: [
         createDiscoveryPairProvider(),
         createOnEventExplorerDepsProvider(),
-        createSyncJetStreamConsumerDepsProvider(jetStream, options.dlqSubjectBuilder, options.connection, options.autoCreateStreams),
+        createSyncJetStreamConsumerDepsProvider(
+          jetStream,
+          options.dlqSubjectBuilder,
+          options.connection,
+          options.autoCreateStreams,
+        ),
         createRequestReplyExplorerDepsProvider(),
         createSyncRequestReplyConsumerDepsProvider(
           jetStream,

@@ -79,6 +79,7 @@ export class EventsToolkitModule implements OnModuleDestroy {
       exports: [
         EVENTS_TOOLKIT_OPTIONS,
         JETSTREAM_TOKEN,
+        NATS_CONNECTION_TOKEN,
         EventLoggerService,
         RequestReplyService,
         REQUEST_REPLY_DEPS_TOKEN,

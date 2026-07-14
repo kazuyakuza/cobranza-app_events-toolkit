@@ -51,7 +51,7 @@ export class StreamAutoCreator {
     }
   }
 
-  private buildStreamConfig(subject: string): StreamConfig {
+  private buildStreamConfig(subject: string): Partial<StreamConfig> {
     return {
       name: this.buildStreamName(subject),
       subjects: [subject],

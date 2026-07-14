@@ -135,7 +135,11 @@ export function createAsyncConsumerServicesProvider(): Provider {
 export function createAsyncJetStreamConsumerDepsProvider(): Provider {
   return {
     provide: JETSTREAM_CONSUMER_DEPS_TOKEN,
-    useFactory: (connection: ResolvedConnection, services: ConsumerServicesPair, moduleOptions: ConsumerModuleOptions) => ({
+    useFactory: (
+      connection: ResolvedConnection,
+      services: ConsumerServicesPair,
+      moduleOptions: ConsumerModuleOptions,
+    ) => ({
       jetStream: connection.jetStream,
       consumerService: services.consumerService,
       logger: services.logger,

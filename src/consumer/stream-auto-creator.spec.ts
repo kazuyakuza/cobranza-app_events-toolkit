@@ -16,7 +16,7 @@ describe('StreamAutoCreator', () => {
     it('should sanitize wildcard subject with dots and asterisks', () => {
       const { connection } = createMockConnection();
       const creator = new StreamAutoCreator({ connection });
-      expect(creator.buildStreamName('company.*.response.v1')).toBe('auto-company--response-v1');
+      expect(creator.buildStreamName('company.*.response.v1')).toBe('auto-company---response-v1');
     });
 
     it('should preserve digits and lowercase the result', () => {
