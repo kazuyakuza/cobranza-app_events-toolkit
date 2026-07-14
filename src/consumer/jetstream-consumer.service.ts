@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { JetStreamClient, JsMsg } from 'nats';
+import { StreamAutoCreator } from './stream-auto-creator';
 import { plainToInstance } from 'class-transformer';
 import { validateSync } from 'class-validator';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
@@ -32,14 +33,8 @@ export class JetStreamConsumerService {
   private readonly logger: EventLoggerService;
   private readonly dlqSubjectBuilder: (subject: string) => string;
   private readonly dlqHandler: ConsumerDlqHandler;
+  private readonly streamAutoCreator?: StreamAutoCreator;
 
-  /**
-   * Creates a JetStreamConsumerService with the required module dependencies.
-   *
-   * Initializes the internal {@link ConsumerDlqHandler} for DLQ routing.
-   *
-   * @param deps - JetStream client, consumer service, event logger, and optional DLQ subject builder.
-   */
   constructor(@Inject(JETSTREAM_CONSUMER_DEPS_TOKEN) deps: JetStreamConsumerDeps) {
     this.jetStream = deps.jetStream;
     this.consumerService = deps.consumerService;
@@ -50,21 +45,14 @@ export class JetStreamConsumerService {
       logger: this.logger,
       dlqSubjectBuilder: this.dlqSubjectBuilder,
     });
+    this.streamAutoCreator = deps.autoCreateStreams && deps.connection
+      ? new StreamAutoCreator({ connection: deps.connection })
+      : undefined;
   }
 
-  /**
-   * Subscribes to a NATS subject and begins consuming messages.
-   *
-   * Registers the handler in {@link ConsumerService}, creates the JetStream
-   * subscription, and starts the async message-processing loop.
-   *
-   * @param options - Subject pattern, handler function, and optional consumer/DLQ configuration.
-   */
   async subscribe(options: SubscribeOptions): Promise<void> {
     this.consumerService.registerHandler(options.subject, options.handler);
-    // resolveConsumerSubscribeOpts guarantees ack_policy is set; passing `?? {}` crashes
-    // the NATS client because JetStreamClientImpl._processOptions reads `config.ack_policy`
-    // unconditionally and throws "Cannot read properties of undefined (reading 'ack_policy')".
+    await this.ensureStreamIfNeeded(options.subject);
     const consumerOpts = resolveConsumerSubscribeOpts(options.consumerOpts);
     const subscription = await this.jetStream.subscribe(options.subject, consumerOpts);
     this.processSubscription(subscription, options.subject).catch((error: unknown) =>
@@ -87,6 +75,12 @@ export class JetStreamConsumerService {
    */
   async moveToDlq(options: MoveToDlqOptions): Promise<void> {
     return this.dlqHandler.moveToDlq(options);
+  }
+
+  private async ensureStreamIfNeeded(subject: string): Promise<void> {
+    if (this.streamAutoCreator) {
+      await this.streamAutoCreator.ensureStreamExists(subject);
+    }
   }
 
   private async processSubscription(subscription: AsyncIterable<JsMsg>, subject: string): Promise<void> {
