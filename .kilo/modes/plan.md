@@ -5,9 +5,11 @@ permission:
   edit:
     "*": deny
     "*.md": allow
+  grep: allow
   bash:
     "*": deny
     "cat *": allow
+    "grep *": allow
     "npm lint*": allow
     "npm build*": allow
     "npm test*": allow
