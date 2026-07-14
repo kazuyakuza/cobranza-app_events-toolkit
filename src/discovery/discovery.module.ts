@@ -75,12 +75,7 @@ const CORE_DISCOVERY_PROVIDERS: Provider[] = [
   DiscoveryEventPublisher,
 ];
 
-const DISCOVERY_EXPORTS: Provider[] = [
-  DiscoveryService,
-  ManifestService,
-  SchemaGenerator,
-  DiscoveryEventPublisher,
-];
+const DISCOVERY_EXPORTS: Provider[] = [DiscoveryService, ManifestService, SchemaGenerator, DiscoveryEventPublisher];
 
 function buildDiscoveryDynamicModule(
   providers: Provider[],
