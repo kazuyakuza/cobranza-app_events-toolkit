@@ -1,48 +1,12 @@
 import { Test } from '@nestjs/testing';
-import { AckPolicy, consumerOpts, ConsumerOpts, ConsumerOptsBuilder, JsMsg } from 'nats';
+import { AckPolicy, consumerOpts, ConsumerOpts, ConsumerOptsBuilder } from 'nats';
 import { JetStreamConsumerService } from './jetstream-consumer.service';
 import { defaultDlqSubjectBuilder } from './subscribe-options.interface';
 import { ConsumerService } from './consumer.service';
 import { EventLoggerService, EventLogContext, EventErrorLogContext } from '../logging/event-logger.service';
 import { JETSTREAM_CONSUMER_DEPS_TOKEN } from './jetstream-consumer-deps.interface';
 import { EventConsumerException } from '../common/errors/event-consumer.exception';
-import { ActorType } from '../common/envelope/actor-type.enum';
-
-function createValidEventJson(): Record<string, unknown> {
-  return {
-    id: 'evt_test-123',
-    type: 'payment.proof.uploaded',
-    version: '1.0.0',
-    produced_at: '2026-06-13T15:00:00.000Z',
-    producer: 'payment-service',
-    company_id: '550e8400-e29b-41d4-a716-446655440000',
-    actor_type: ActorType.CLIENT,
-    actor_id: 'user-123',
-    correlation_id: '660e8400-e29b-41d4-a716-446655440001',
-    data: { amount: 100 },
-  };
-}
-
-function createJsMsg(data: Record<string, unknown>, subject: string): JsMsg {
-  const payload = new TextEncoder().encode(JSON.stringify(data));
-  return {
-    seq: 1,
-    subject,
-    data: payload,
-    redelivered: false,
-    headers: undefined,
-    ack: jest.fn(),
-    nak: jest.fn(),
-    term: jest.fn(),
-    working: jest.fn(),
-    ackAck: jest.fn().mockResolvedValue(true),
-    next: jest.fn(),
-    sid: 1,
-    info: {} as never,
-    json: jest.fn().mockReturnValue(data),
-    string: jest.fn().mockReturnValue(JSON.stringify(data)),
-  } as unknown as JsMsg;
-}
+import { createValidEventJson, createJsMsg } from './jetstream-consumer.service.spec-helpers';
 
 describe('JetStreamConsumerService', () => {
   let service: JetStreamConsumerService;
@@ -440,94 +404,6 @@ describe('JetStreamConsumerService', () => {
       expect(msg.nak).toHaveBeenCalledTimes(1);
       expect(msg.ack).not.toHaveBeenCalled();
       expect(mockLogger.logEventError).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  describe('subscribe with autoCreateStreams', () => {
-    let jetStreamManagerMock: { streams: { find: jest.Mock; add: jest.Mock } };
-    let connectionMock: { jetstreamManager: jest.Mock };
-
-    beforeEach(() => {
-      jetStreamManagerMock = { streams: { find: jest.fn(), add: jest.fn().mockResolvedValue({}) } };
-      connectionMock = { jetstreamManager: jest.fn().mockResolvedValue(jetStreamManagerMock) };
-    });
-
-    async function buildServiceWithAutoCreate(
-      options: { connection?: unknown; autoCreateStreams?: boolean } = {},
-    ): Promise<JetStreamConsumerService> {
-      const module = await Test.createTestingModule({
-        providers: [
-          {
-            provide: JETSTREAM_CONSUMER_DEPS_TOKEN,
-            useFactory: (cs: ConsumerService, logger: EventLoggerService) => ({
-              jetStream,
-              consumerService: cs,
-              logger,
-              dlqSubjectBuilder: defaultDlqSubjectBuilder,
-              connection: options.connection,
-              autoCreateStreams: options.autoCreateStreams,
-            }),
-            inject: [ConsumerService, EventLoggerService],
-          },
-          { provide: EventLoggerService, useValue: mockLogger },
-          ConsumerService,
-          JetStreamConsumerService,
-        ],
-      }).compile();
-      return module.get(JetStreamConsumerService);
-    }
-
-    it('creates stream when autoCreateStreams is enabled and stream does not exist', async () => {
-      jetStreamManagerMock.streams.find.mockRejectedValue(new Error('no stream matches subject'));
-      const serviceWithAuto = await buildServiceWithAutoCreate({
-        connection: connectionMock,
-        autoCreateStreams: true,
-      });
-      const asyncIterable = (async function* () {})();
-      jetStream.subscribe.mockResolvedValue(asyncIterable);
-
-      await serviceWithAuto.subscribe({ subject: testSubject, handler: jest.fn() });
-
-      expect(jetStreamManagerMock.streams.find).toHaveBeenCalledWith(testSubject);
-      expect(jetStreamManagerMock.streams.add).toHaveBeenCalledTimes(1);
-    });
-
-    it('skips creation when stream already exists', async () => {
-      jetStreamManagerMock.streams.find.mockResolvedValue({ name: 'existing' });
-      const serviceWithAuto = await buildServiceWithAutoCreate({
-        connection: connectionMock,
-        autoCreateStreams: true,
-      });
-      const asyncIterable = (async function* () {})();
-      jetStream.subscribe.mockResolvedValue(asyncIterable);
-
-      await serviceWithAuto.subscribe({ subject: testSubject, handler: jest.fn() });
-
-      expect(jetStreamManagerMock.streams.find).toHaveBeenCalledWith(testSubject);
-      expect(jetStreamManagerMock.streams.add).not.toHaveBeenCalled();
-    });
-
-    it('skips auto-creation when autoCreateStreams is falsy', async () => {
-      const serviceWithoutAuto = await buildServiceWithAutoCreate();
-      const asyncIterable = (async function* () {})();
-      jetStream.subscribe.mockResolvedValue(asyncIterable);
-
-      await serviceWithoutAuto.subscribe({ subject: testSubject, handler: jest.fn() });
-
-      expect(connectionMock.jetstreamManager).not.toHaveBeenCalled();
-    });
-
-    it('swallows race condition when add throws stream name already in use', async () => {
-      jetStreamManagerMock.streams.find.mockRejectedValue(new Error('no stream matches subject'));
-      jetStreamManagerMock.streams.add.mockRejectedValue(new Error('stream name already in use'));
-      const serviceWithAuto = await buildServiceWithAutoCreate({
-        connection: connectionMock,
-        autoCreateStreams: true,
-      });
-      const asyncIterable = (async function* () {})();
-      jetStream.subscribe.mockResolvedValue(asyncIterable);
-
-      await expect(serviceWithAuto.subscribe({ subject: testSubject, handler: jest.fn() })).resolves.toBeUndefined();
     });
   });
 });

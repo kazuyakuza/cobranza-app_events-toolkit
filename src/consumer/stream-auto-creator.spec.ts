@@ -1,5 +1,6 @@
-import { NatsConnection, RetentionPolicy, StorageType } from 'nats';
+import { DiscardPolicy, NatsConnection, RetentionPolicy, StorageType } from 'nats';
 import { StreamAutoCreator } from './stream-auto-creator';
+import { buildStreamName } from './build-stream-name.util';
 
 function createMockConnection(): {
   connection: NatsConnection;
@@ -11,27 +12,21 @@ function createMockConnection(): {
   return { connection, jetStreamManagerMock: streams };
 }
 
-describe('StreamAutoCreator', () => {
-  describe('buildStreamName', () => {
-    it('should sanitize wildcard subject with dots and asterisks', () => {
-      const { connection } = createMockConnection();
-      const creator = new StreamAutoCreator({ connection });
-      expect(creator.buildStreamName('company.*.response.v1')).toBe('auto-company---response-v1');
-    });
-
-    it('should preserve digits and lowercase the result', () => {
-      const { connection } = createMockConnection();
-      const creator = new StreamAutoCreator({ connection });
-      expect(creator.buildStreamName('EVENT.v2')).toBe('auto-event-v2');
-    });
-
-    it('should replace multiple special characters with hyphens', () => {
-      const { connection } = createMockConnection();
-      const creator = new StreamAutoCreator({ connection });
-      expect(creator.buildStreamName('test.subject.123')).toBe('auto-test-subject-123');
-    });
+describe('buildStreamName', () => {
+  it('should sanitize wildcard subject with dots and asterisks collapsing consecutive separators', () => {
+    expect(buildStreamName('company.*.response.v1')).toBe('auto-company-response-v1');
   });
 
+  it('should preserve digits and lowercase the result', () => {
+    expect(buildStreamName('EVENT.v2')).toBe('auto-event-v2');
+  });
+
+  it('should replace multiple special characters with a single hyphen', () => {
+    expect(buildStreamName('test.subject.123')).toBe('auto-test-subject-123');
+  });
+});
+
+describe('StreamAutoCreator', () => {
   describe('ensureStreamExists', () => {
     it('should not create a stream when one already covers the subject', async () => {
       const { connection, jetStreamManagerMock } = createMockConnection();
@@ -59,9 +54,23 @@ describe('StreamAutoCreator', () => {
         subjects: ['test.subject'],
         retention: RetentionPolicy.Limits,
         storage: StorageType.File,
+        max_consumers: -1,
         max_msgs: -1,
         max_bytes: -1,
         max_age: 0,
+        max_msgs_per_subject: -1,
+        max_msg_size: -1,
+        discard: DiscardPolicy.Old,
+        discard_new_per_subject: false,
+        num_replicas: 1,
+        sealed: false,
+        first_seq: 0,
+        duplicate_window: 0,
+        allow_rollup_hdrs: false,
+        deny_delete: false,
+        deny_purge: false,
+        allow_direct: false,
+        mirror_direct: false,
       });
     });
 

@@ -13,12 +13,18 @@ import {
   DISCOVERY_REFLECTOR_PAIR,
   RESOLVED_CONNECTION_TOKEN,
   CONSUMER_SERVICES_PAIR,
+  JETSTREAM_CONSUMER_ASYNC_DEPS_TOKEN,
+  REQUEST_REPLY_CONSUMER_ASYNC_DEPS_TOKEN,
   ConsumerModuleOptions,
   ConsumerModuleAsyncOptions,
   DiscoveryReflectorPair,
   ConsumerServicesPair,
   ResolvedConnection,
+  JetStreamAsyncDeps,
+  RequestReplyAsyncDeps,
 } from './consumer.module';
+import { SyncJetStreamConsumerDepsOptions } from './sync-jetstream-consumer-deps-options.interface';
+import { SyncRequestReplyConsumerDepsOptions } from './sync-request-reply-consumer-deps-options.interface';
 
 /** Provider for the DiscoveryService + Reflector pair used by explorers. */
 export function createDiscoveryPairProvider(): Provider {
@@ -43,21 +49,16 @@ export function createOnEventExplorerDepsProvider(): Provider {
 }
 
 /** Provider for JetStream consumer dependencies (sync forRoot variant). */
-export function createSyncJetStreamConsumerDepsProvider(
-  jetStream: JetStreamClient,
-  dlqSubjectBuilder?: (subject: string) => string,
-  connection?: import('nats').NatsConnection,
-  autoCreateStreams?: boolean,
-): Provider {
+export function createSyncJetStreamConsumerDepsProvider(options: SyncJetStreamConsumerDepsOptions): Provider {
   return {
     provide: JETSTREAM_CONSUMER_DEPS_TOKEN,
     useFactory: (consumerService: ConsumerService, logger: EventLoggerService) => ({
-      jetStream,
+      jetStream: options.jetStream,
       consumerService,
       logger,
-      dlqSubjectBuilder,
-      connection,
-      autoCreateStreams,
+      dlqSubjectBuilder: options.dlqSubjectBuilder,
+      connection: options.connection,
+      autoCreateStreams: options.autoCreateStreams,
     }),
     inject: [ConsumerService, EventLoggerService],
   };
@@ -77,18 +78,14 @@ export function createRequestReplyExplorerDepsProvider(): Provider {
 }
 
 /** Provider for request-reply consumer dependencies (sync forRoot variant). */
-export function createSyncRequestReplyConsumerDepsProvider(
-  jetStream: JetStreamClient,
-  responseSubjectPattern?: string,
-  dlqSubjectBuilder?: (subject: string) => string,
-): Provider {
+export function createSyncRequestReplyConsumerDepsProvider(options: SyncRequestReplyConsumerDepsOptions): Provider {
   return {
     provide: REQUEST_REPLY_CONSUMER_DEPS_TOKEN,
     useFactory: (logger: EventLoggerService) => ({
-      jetStream,
+      jetStream: options.jetStream,
       logger,
-      responseSubjectPattern,
-      dlqSubjectBuilder,
+      responseSubjectPattern: options.responseSubjectPattern,
+      dlqSubjectBuilder: options.dlqSubjectBuilder,
     }),
     inject: [EventLoggerService],
   };
@@ -116,7 +113,7 @@ export function createAsyncResolvedConnectionProvider(): Provider {
   };
 }
 
-function resolveJetStreamFromOptions(options: ConsumerModuleOptions): JetStreamClient {
+export function resolveJetStreamFromOptions(options: ConsumerModuleOptions): JetStreamClient {
   if (options.jetStream) return options.jetStream;
   if (options.connection) return options.connection.jetstream();
   throw new Error('ConsumerModule requires either connection or jetStream in options');
@@ -131,23 +128,43 @@ export function createAsyncConsumerServicesProvider(): Provider {
   };
 }
 
+/** Provider that combines ResolvedConnection and ConsumerModuleOptions for JetStream async deps. */
+export function createJetStreamAsyncDepsProvider(): Provider {
+  return {
+    provide: JETSTREAM_CONSUMER_ASYNC_DEPS_TOKEN,
+    useFactory: (connection: ResolvedConnection, moduleOptions: ConsumerModuleOptions) => ({
+      connection,
+      moduleOptions,
+    }),
+    inject: [RESOLVED_CONNECTION_TOKEN, CONSUMER_MODULE_OPTIONS],
+  };
+}
+
 /** Provider for JetStream consumer dependencies (async forRootAsync variant). */
 export function createAsyncJetStreamConsumerDepsProvider(): Provider {
   return {
     provide: JETSTREAM_CONSUMER_DEPS_TOKEN,
-    useFactory: (
-      connection: ResolvedConnection,
-      services: ConsumerServicesPair,
-      moduleOptions: ConsumerModuleOptions,
-    ) => ({
-      jetStream: connection.jetStream,
+    useFactory: (combined: JetStreamAsyncDeps, services: ConsumerServicesPair) => ({
+      jetStream: combined.connection.jetStream,
       consumerService: services.consumerService,
       logger: services.logger,
-      dlqSubjectBuilder: connection.dlqSubjectBuilder,
-      connection: connection.connection ?? moduleOptions.connection,
-      autoCreateStreams: moduleOptions.autoCreateStreams,
+      dlqSubjectBuilder: combined.connection.dlqSubjectBuilder,
+      connection: combined.connection.connection ?? combined.moduleOptions.connection,
+      autoCreateStreams: combined.moduleOptions.autoCreateStreams,
     }),
-    inject: [RESOLVED_CONNECTION_TOKEN, CONSUMER_SERVICES_PAIR, CONSUMER_MODULE_OPTIONS],
+    inject: [JETSTREAM_CONSUMER_ASYNC_DEPS_TOKEN, CONSUMER_SERVICES_PAIR],
+  };
+}
+
+/** Provider that combines ResolvedConnection and ConsumerModuleOptions for request-reply async deps. */
+export function createRequestReplyAsyncDepsProvider(): Provider {
+  return {
+    provide: REQUEST_REPLY_CONSUMER_ASYNC_DEPS_TOKEN,
+    useFactory: (connection: ResolvedConnection, moduleOptions: ConsumerModuleOptions) => ({
+      connection,
+      moduleOptions,
+    }),
+    inject: [RESOLVED_CONNECTION_TOKEN, CONSUMER_MODULE_OPTIONS],
   };
 }
 
@@ -155,12 +172,12 @@ export function createAsyncJetStreamConsumerDepsProvider(): Provider {
 export function createAsyncRequestReplyConsumerDepsProvider(): Provider {
   return {
     provide: REQUEST_REPLY_CONSUMER_DEPS_TOKEN,
-    useFactory: (connection: ResolvedConnection, logger: EventLoggerService, moduleOptions: ConsumerModuleOptions) => ({
-      jetStream: connection.jetStream,
+    useFactory: (combined: RequestReplyAsyncDeps, logger: EventLoggerService) => ({
+      jetStream: combined.connection.jetStream,
       logger,
-      responseSubjectPattern: moduleOptions.responseSubjectPattern,
-      dlqSubjectBuilder: connection.dlqSubjectBuilder,
+      responseSubjectPattern: combined.moduleOptions.responseSubjectPattern,
+      dlqSubjectBuilder: combined.connection.dlqSubjectBuilder,
     }),
-    inject: [RESOLVED_CONNECTION_TOKEN, EventLoggerService, CONSUMER_MODULE_OPTIONS],
+    inject: [REQUEST_REPLY_CONSUMER_ASYNC_DEPS_TOKEN, EventLoggerService],
   };
 }

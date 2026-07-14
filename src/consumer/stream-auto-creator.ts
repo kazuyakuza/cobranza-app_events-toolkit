@@ -1,12 +1,9 @@
-import { NatsConnection, RetentionPolicy, StorageType, StreamConfig } from 'nats';
+import { DiscardPolicy, NatsConnection, RetentionPolicy, StorageType, StreamConfig } from 'nats';
+import { buildStreamName, NO_STREAM_MATCHES_FRAGMENT, STREAM_NAME_INUSE_FRAGMENT } from './build-stream-name.util';
 
 export interface StreamAutoCreatorDeps {
   connection: NatsConnection;
 }
-
-const STREAM_NAME_INUSE_FRAGMENT = 'stream name already in use';
-const NO_STREAM_MATCHES_FRAGMENT = 'no stream matches subject';
-const STREAM_NAME_PREFIX = 'auto-';
 
 export class StreamAutoCreator {
   private readonly connection: NatsConnection;
@@ -21,9 +18,8 @@ export class StreamAutoCreator {
     await this.createStream(jsm, subject);
   }
 
-  buildStreamName(subject: string): string {
-    const sanitized = subject.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
-    return `${STREAM_NAME_PREFIX}${sanitized}`;
+  private buildStreamName(subject: string): string {
+    return buildStreamName(subject);
   }
 
   private async streamExists(
@@ -51,15 +47,29 @@ export class StreamAutoCreator {
     }
   }
 
-  private buildStreamConfig(subject: string): Partial<StreamConfig> {
+  private buildStreamConfig(subject: string): StreamConfig {
     return {
       name: this.buildStreamName(subject),
       subjects: [subject],
       retention: RetentionPolicy.Limits,
       storage: StorageType.File,
+      max_consumers: -1,
       max_msgs: -1,
       max_bytes: -1,
       max_age: 0,
+      max_msgs_per_subject: -1,
+      max_msg_size: -1,
+      discard: DiscardPolicy.Old,
+      discard_new_per_subject: false,
+      num_replicas: 1,
+      sealed: false,
+      first_seq: 0,
+      duplicate_window: 0,
+      allow_rollup_hdrs: false,
+      deny_delete: false,
+      deny_purge: false,
+      allow_direct: false,
+      mirror_direct: false,
     };
   }
 

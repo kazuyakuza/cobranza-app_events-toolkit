@@ -19,12 +19,17 @@ import {
   createAsyncConsumerServicesProvider,
   createAsyncJetStreamConsumerDepsProvider,
   createAsyncRequestReplyConsumerDepsProvider,
+  createJetStreamAsyncDepsProvider,
+  createRequestReplyAsyncDepsProvider,
+  resolveJetStreamFromOptions,
 } from './consumer-module.providers';
 
 export const CONSUMER_MODULE_OPTIONS = 'CONSUMER_MODULE_OPTIONS';
 export const DISCOVERY_REFLECTOR_PAIR = 'DISCOVERY_REFLECTOR_PAIR' as unknown as Type<unknown>;
 export const RESOLVED_CONNECTION_TOKEN = 'RESOLVED_CONNECTION' as unknown as Type<unknown>;
 export const CONSUMER_SERVICES_PAIR = 'CONSUMER_SERVICES_PAIR' as unknown as Type<unknown>;
+export const JETSTREAM_CONSUMER_ASYNC_DEPS_TOKEN = 'JETSTREAM_CONSUMER_ASYNC_DEPS' as unknown as Type<unknown>;
+export const REQUEST_REPLY_CONSUMER_ASYNC_DEPS_TOKEN = 'REQUEST_REPLY_CONSUMER_ASYNC_DEPS' as unknown as Type<unknown>;
 
 /** Pair of DiscoveryService and Reflector for explorer-based handler registration. */
 export interface DiscoveryReflectorPair {
@@ -45,6 +50,18 @@ export interface ResolvedConnection {
   dlqSubjectBuilder?: (subject: string) => string;
 }
 
+/** Combined async deps for JetStream consumer (ResolvedConnection + ConsumerModuleOptions). */
+export interface JetStreamAsyncDeps {
+  connection: ResolvedConnection;
+  moduleOptions: ConsumerModuleOptions;
+}
+
+/** Combined async deps for Request-Reply consumer (ResolvedConnection + ConsumerModuleOptions). */
+export interface RequestReplyAsyncDeps {
+  connection: ResolvedConnection;
+  moduleOptions: ConsumerModuleOptions;
+}
+
 /** Synchronous options for {@link ConsumerModule.forRoot}. */
 export interface ConsumerModuleOptions {
   connection?: NatsConnection;
@@ -63,12 +80,6 @@ export interface ConsumerModuleAsyncOptions {
   inject?: Array<string | symbol | Type<unknown>>;
 }
 
-function resolveJetStream(options: ConsumerModuleOptions): JetStreamClient {
-  if (options.jetStream) return options.jetStream;
-  if (options.connection) return options.connection.jetstream();
-  throw new Error('ConsumerModule requires either connection or jetStream in options');
-}
-
 /**
  * NestJS DynamicModule for event consumption via NATS JetStream.
  *
@@ -84,7 +95,7 @@ export class ConsumerModule {
    * @param options - NATS connection and optional DLQ response subject configuration.
    */
   static forRoot(options: ConsumerModuleOptions): DynamicModule {
-    const jetStream = resolveJetStream(options);
+    const jetStream = resolveJetStreamFromOptions(options);
 
     return {
       module: ConsumerModule,
@@ -93,18 +104,18 @@ export class ConsumerModule {
       providers: [
         createDiscoveryPairProvider(),
         createOnEventExplorerDepsProvider(),
-        createSyncJetStreamConsumerDepsProvider(
+        createSyncJetStreamConsumerDepsProvider({
           jetStream,
-          options.dlqSubjectBuilder,
-          options.connection,
-          options.autoCreateStreams,
-        ),
+          dlqSubjectBuilder: options.dlqSubjectBuilder,
+          connection: options.connection,
+          autoCreateStreams: options.autoCreateStreams,
+        }),
         createRequestReplyExplorerDepsProvider(),
-        createSyncRequestReplyConsumerDepsProvider(
+        createSyncRequestReplyConsumerDepsProvider({
           jetStream,
-          options.responseSubjectPattern,
-          options.dlqSubjectBuilder,
-        ),
+          responseSubjectPattern: options.responseSubjectPattern,
+          dlqSubjectBuilder: options.dlqSubjectBuilder,
+        }),
         ConsumerService,
         JetStreamConsumerService,
         OnEventExplorer,
@@ -139,10 +150,12 @@ export class ConsumerModule {
         createDiscoveryPairProvider(),
         createOnEventExplorerDepsProvider(),
         createRequestReplyExplorerDepsProvider(),
-        createAsyncRequestReplyConsumerDepsProvider(),
+        createJetStreamAsyncDepsProvider(),
+        createRequestReplyAsyncDepsProvider(),
         createAsyncResolvedConnectionProvider(),
         createAsyncConsumerServicesProvider(),
         createAsyncJetStreamConsumerDepsProvider(),
+        createAsyncRequestReplyConsumerDepsProvider(),
         ConsumerService,
         JetStreamConsumerService,
         OnEventExplorer,
