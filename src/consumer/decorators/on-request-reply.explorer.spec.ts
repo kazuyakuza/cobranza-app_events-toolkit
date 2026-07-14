@@ -47,6 +47,37 @@ class CompanyScopedConsumer {
   }
 }
 
+class GetterSetterConsumer {
+  handlerInvoked = false;
+
+  @OnRequestReply('audit.ledger.snapshot', {
+    companyId: 'tenant-1',
+    description: 'Handles audit ledger responses',
+    payloadExample: { ledgerId: 'led-1' },
+  })
+  handleSnapshot(): void {
+    this.handlerInvoked = true;
+  }
+
+  get readOnlyValue(): string {
+    return 'constant';
+  }
+
+  set writeOnlyValue(_value: string) {
+    void _value;
+  }
+
+  get computed(): number {
+    return 42;
+  }
+
+  set computed(_value: number) {
+    void _value;
+  }
+
+  plainMethod(): void {}
+}
+
 function createDeps(discovery: DiscoveryService): OnRequestReplyExplorerDeps {
   return {
     discovery,
@@ -170,6 +201,16 @@ describe('OnRequestReplyExplorer', () => {
       const handler = requestReplyConsumerService.getHandler('client.profile.updated', 'tenant-2');
       expect(handler).toBeDefined();
       expect(requestReplyConsumerService.handlerCount).toBe(1);
+    });
+
+    it('should skip getter/setter accessor properties without throwing', () => {
+      const instance = new GetterSetterConsumer();
+      (discovery.getProviders as jest.Mock).mockReturnValue([{ instance }]);
+      (discovery.getControllers as jest.Mock).mockReturnValue([]);
+
+      expect(() => explorer.onModuleInit()).not.toThrow();
+      expect(requestReplyConsumerService.handlerCount).toBe(1);
+      expect(requestReplyConsumerService.getHandler('audit.ledger.snapshot', 'tenant-1')).toBeDefined();
     });
   });
 });

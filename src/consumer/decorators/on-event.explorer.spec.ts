@@ -49,6 +49,37 @@ class CustomVersionConsumer {
   }
 }
 
+class GetterSetterConsumer {
+  handlerInvoked = false;
+
+  @OnEvent('audit.ledger.snapshot', {
+    version: '1',
+    description: 'Handles audit ledger snapshots',
+    payloadExample: { ledgerId: 'led-1' },
+  })
+  handleSnapshot(): void {
+    this.handlerInvoked = true;
+  }
+
+  get readOnlyValue(): string {
+    return 'constant';
+  }
+
+  set writeOnlyValue(_value: string) {
+    void _value;
+  }
+
+  get computed(): number {
+    return 42;
+  }
+
+  set computed(_value: number) {
+    void _value;
+  }
+
+  plainMethod(): void {}
+}
+
 function createDeps(discovery: DiscoveryService): OnEventExplorerDeps {
   return { discovery, reflector: new Reflector(), consumerService: new ConsumerService() };
 }
@@ -153,6 +184,16 @@ describe('OnEventExplorer', () => {
       explorer.onModuleInit();
 
       expect(consumerService.getHandler('company.*.client.profile.updated.v2')).toBeDefined();
+    });
+
+    it('should skip getter/setter accessor properties without throwing', () => {
+      const instance = new GetterSetterConsumer();
+      (discovery.getProviders as jest.Mock).mockReturnValue([{ instance }]);
+      (discovery.getControllers as jest.Mock).mockReturnValue([]);
+
+      expect(() => explorer.onModuleInit()).not.toThrow();
+      expect(consumerService.handlerCount).toBe(1);
+      expect(consumerService.getHandler('company.*.audit.ledger.snapshot.v1')).toBeDefined();
     });
   });
 });
