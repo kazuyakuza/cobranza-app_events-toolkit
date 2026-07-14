@@ -1,10 +1,22 @@
 import { DiscardPolicy, NatsConnection, RetentionPolicy, StorageType, StreamConfig } from 'nats';
 import { buildStreamName, NO_STREAM_MATCHES_FRAGMENT, STREAM_NAME_INUSE_FRAGMENT } from './build-stream-name.util';
 
+/** Dependencies required by {@link StreamAutoCreator}. */
 export interface StreamAutoCreatorDeps {
+  /** Active NATS connection used to access the JetStream manager. */
   connection: NatsConnection;
 }
 
+/**
+ * Automatically creates JetStream streams for subjects that do not yet have one.
+ *
+ * When stream auto-creation is enabled via `consumer.autoCreateStreams`, the consumer
+ * subsystem calls {@link ensureStreamExists} before subscribing to a subject. If no
+ * stream matches the subject, a new stream is created with sensible defaults
+ * (file storage, limits retention, unlimited consumers/messages).
+ *
+ * @see {@link docs/nats-jetstream-configuration.md} for full JetStream configuration guide.
+ */
 export class StreamAutoCreator {
   private readonly connection: NatsConnection;
 
@@ -12,6 +24,14 @@ export class StreamAutoCreator {
     this.connection = deps.connection;
   }
 
+  /**
+   * Ensures a JetStream stream exists for the given subject.
+   *
+   * If a stream already covers the subject the call is a no-op. Otherwise a new
+   * stream is created with the name derived from the subject via `buildStreamName`.
+   *
+   * @param subject - NATS subject pattern (e.g. `company.>.payment.proof.uploaded.v1`).
+   */
   async ensureStreamExists(subject: string): Promise<void> {
     const jsm = await this.connection.jetstreamManager();
     if (await this.streamExists(jsm, subject)) return;

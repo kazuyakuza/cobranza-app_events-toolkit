@@ -392,7 +392,7 @@ These fields appear in the DLQ payload for monitoring and alerting systems.
 | 8 | **Service discovery** — manifests · `GET /discovery/manifest` | [Discovery & Service Registry](event-discovery-and-service-registry.md) |
 | 9 | **Schema generation** — auto JSON Schema from DTOs | [Discovery & Service Registry](event-discovery-and-service-registry.md) |
 | 10 | **Testing** — `EventsToolkitTestModule` · mocks · assertions | [Testing Utilities](testing-utilities.md) |
-| 11 | **Deployment** — JetStream streams · env vars · health checks | [Deployment](../README.md#deployment) |
+| 11 | **Deployment** — JetStream streams · env vars · health checks | [Deployment](../README.md#deployment) · [NATS JetStream Config](nats-jetstream-configuration.md) |
 
 ## Validation Checklist
 
@@ -447,3 +447,4 @@ Before submitting event-related code, verify:
 - [Testing Utilities](testing-utilities.md) — Mock services, test module, assertion helpers
 - [Event Discovery & Service Registry](event-discovery-and-service-registry.md) — Service manifest, schema generation
 - [Request-Reply Patterns](request-reply-patterns.md) — Full async + sync pattern documentation
+- [NATS JetStream Configuration](nats-jetstream-configuration.md) — Server requirements, stream auto-creation, manual setup, and production best practices
