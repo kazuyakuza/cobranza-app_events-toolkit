@@ -40,6 +40,8 @@ export interface EventsToolkitConsumerOptions {
   enable?: boolean;
   /** Custom DLQ subject builder. Default: prepends 'dlq.'. */
   dlqSubjectBuilder?: (subject: string) => string;
+  /** When true, auto-create a JetStream stream covering each subscribed subject. Default: false. */
+  autoCreateStreams?: boolean;
 }
 
 /** Top-level options for EventsToolkitModule.forRoot. */
