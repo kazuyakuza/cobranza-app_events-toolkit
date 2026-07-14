@@ -46,39 +46,33 @@ async function compileToolkitModule(): Promise<TestingModule> {
 describe('EventsToolkitModule.forRootAsync e2e DI compilation', () => {
   let moduleRef: TestingModule;
 
+  beforeEach(async () => {
+    moduleRef = await compileToolkitModule();
+  });
+
   afterEach(async () => {
     if (moduleRef) {
       await moduleRef.close();
     }
   });
 
-  it('compiles the full toolkit graph without external core providers', async () => {
-    moduleRef = await compileToolkitModule();
-
+  it('compiles the full toolkit graph without external core providers', () => {
     expect(moduleRef).toBeDefined();
   });
 
-  it('resolves ProducerService from the compiled module', async () => {
-    moduleRef = await compileToolkitModule();
-
+  it('resolves ProducerService from the compiled module', () => {
     expect(moduleRef.get(ProducerService)).toBeInstanceOf(ProducerService);
   });
 
-  it('resolves ConsumerService from the compiled module', async () => {
-    moduleRef = await compileToolkitModule();
-
+  it('resolves ConsumerService from the compiled module', () => {
     expect(moduleRef.get(ConsumerService)).toBeInstanceOf(ConsumerService);
   });
 
-  it('resolves OutboxService from the compiled module', async () => {
-    moduleRef = await compileToolkitModule();
-
+  it('resolves OutboxService from the compiled module', () => {
     expect(moduleRef.get(OutboxService)).toBeInstanceOf(OutboxService);
   });
 
-  it('resolves DiscoveryService via the fixed NestDiscoveryModule import', async () => {
-    moduleRef = await compileToolkitModule();
-
+  it('resolves DiscoveryService via the fixed NestDiscoveryModule import', () => {
     expect(moduleRef.get(DiscoveryService)).toBeInstanceOf(DiscoveryService);
   });
 });

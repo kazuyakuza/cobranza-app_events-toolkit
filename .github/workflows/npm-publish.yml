@@ -1,5 +1,4 @@
 name: Publish Package to NPM
-description: This workflow publishes the package to NPM when a push is made to the main branch.
 
 on:
   push:
