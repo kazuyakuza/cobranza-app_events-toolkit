@@ -62,6 +62,9 @@ export class JetStreamConsumerService {
    */
   async subscribe(options: SubscribeOptions): Promise<void> {
     this.consumerService.registerHandler(options.subject, options.handler);
+    // resolveConsumerSubscribeOpts guarantees ack_policy is set; passing `?? {}` crashes
+    // the NATS client because JetStreamClientImpl._processOptions reads `config.ack_policy`
+    // unconditionally and throws "Cannot read properties of undefined (reading 'ack_policy')".
     const consumerOpts = resolveConsumerSubscribeOpts(options.consumerOpts);
     const subscription = await this.jetStream.subscribe(options.subject, consumerOpts);
     this.processSubscription(subscription, options.subject).catch((error: unknown) =>

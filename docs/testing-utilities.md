@@ -19,6 +19,7 @@ All mocks are registered via `EventsToolkitTestModule.forRoot()`, a NestJS `Dyna
 - [Assertion Helpers](#assertion-helpers)
 - [Examples](#examples)
 - [DI Regression Tests](#di-regression-tests)
+- [Runtime Regression Guard](#runtime-regression-guard)
 
 ## Installation
 
@@ -149,6 +150,8 @@ Replaces `RequestReplyService`. Records request/response calls and returns confi
 | `getSendResponseCalls()` | Returns recorded `SendResponseCall[]` |
 | `getSendRequestCalls()` | Returns recorded `SendRequestOptions[]` |
 | `clear()` | Resets all calls and restores default mock response |
+
+> **Consumer defaults:** `JetStreamConsumerService.subscribe()` applies `AckPolicy.Explicit` + `manualAck` when `consumerOpts` is omitted, preventing the NATS `ack_policy` undefined crash that occurs when an empty `{}` is passed to `jetStream.subscribe()`.
 
 ## Assertion Helpers
 
@@ -369,4 +372,26 @@ Run them with the standard test command:
 
 ```bash
 npm test -- --testPathPattern='e2e-spec|di.spec'
+```
+
+## Runtime Regression Guard
+
+[`src/events-toolkit.runtime.e2e-spec.ts`](../src/events-toolkit.runtime.e2e-spec.ts) boots the full `EventsToolkitModule.forRootAsync` through the NestJS lifecycle (`init()`) with mocked NATS and SQLite outbox. Unlike the DI compilation tests above — which only verify the module graph resolves — this spec exercises runtime code paths that previously crashed in production.
+
+### Bugs Guarded
+
+| Bug | Root Cause | Guard |
+|-----|-----------|-------|
+| Explorer accessor-property crash | `OnEventExplorer` / `OnRequestReplyExplorer` called `Reflect.getMetadata` on getter/setter property descriptors, yielding `undefined` | `HandlerWithAccessorsProvider` declares `get`/`set` alongside `@OnEvent` and `@OnRequestReply` handlers; `moduleRef.init()` must not throw |
+| Empty consumer-options crash | `JetStreamConsumerService` / `RequestReplyConsumerService` passed `{}` to `jetStream.subscribe`, causing NATS to read `undefined.ack_policy` | Assertions verify every `subscribe` call receives a config with a defined `ack_policy` (via `consumerOpts` builder or explicit config) |
+
+### Difference from DI Compilation e2e
+
+- **DI spec** (`events-toolkit.module.e2e-spec.ts`): mocks a minimal `nats` surface; only calls `module.compile()` — never `init()`. Catches missing-import / missing-export regressions.
+- **Runtime spec** (`events-toolkit.runtime.e2e-spec.ts`): mocks a richer `nats` surface (`consumerOpts`, `AckPolicy`, `jetstream.subscribe`); calls `moduleRef.init()` to trigger explorer discovery and auto-subscribe. Catches runtime crashes in explorers and consumer subscription.
+
+### Running
+
+```bash
+npm test -- --testPathPattern='runtime.e2e-spec'
 ```
