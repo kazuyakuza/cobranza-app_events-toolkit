@@ -13,6 +13,8 @@ import { ProducerService } from './producer/producer.service';
 import { ConsumerService } from './consumer/consumer.service';
 import { OutboxService } from './outbox/outbox.service';
 import { DiscoveryService } from './discovery/discovery.service';
+import { RequestReplyService } from './request-reply/request-reply.service';
+import { RequestReplyConsumerService } from './consumer/request-reply-consumer.service';
 
 jest.mock('nats', () => ({
   connect: jest.fn().mockResolvedValue({
@@ -20,6 +22,7 @@ jest.mock('nats', () => ({
       publish: jest.fn(),
       subscribe: jest.fn(),
     }),
+    request: jest.fn(),
     close: jest.fn(),
   }),
 }));
@@ -81,5 +84,13 @@ describe('EventsToolkitModule.forRootAsync e2e DI compilation', () => {
 
   it('resolves DiscoveryService via the fixed NestDiscoveryModule import', () => {
     expect(moduleRef.get(DiscoveryService)).toBeInstanceOf(DiscoveryService);
+  });
+
+  it('resolves RequestReplyService from the compiled module', () => {
+    expect(moduleRef.get(RequestReplyService)).toBeInstanceOf(RequestReplyService);
+  });
+
+  it('resolves RequestReplyConsumerService from the compiled module', () => {
+    expect(moduleRef.get(RequestReplyConsumerService)).toBeInstanceOf(RequestReplyConsumerService);
   });
 });
