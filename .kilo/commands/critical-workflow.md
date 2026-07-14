@@ -158,7 +158,7 @@ Plan Agent assigns implementer sub-agent (`subagent_type: "implementer"`).
 
 ### 6. Continuation
 
-Write down next text for the user to proceed with next TODO file in a new chat with
+Write down next text for the user to proceed with next undone TODO file in a new chat with
 
 ```text
 full read @AGENTS.md & follow /critical-workflow
