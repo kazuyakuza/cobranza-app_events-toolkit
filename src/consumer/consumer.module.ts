@@ -41,6 +41,7 @@ export interface ConsumerServicesPair {
 /** Resolved NATS JetStream connection with optional custom DLQ subject builder. */
 export interface ResolvedConnection {
   jetStream: JetStreamClient;
+  connection?: NatsConnection;
   dlqSubjectBuilder?: (subject: string) => string;
 }
 
@@ -51,6 +52,8 @@ export interface ConsumerModuleOptions {
   dlqSubjectBuilder?: (subject: string) => string;
   /** NATS subject pattern for request-reply response messages. */
   responseSubjectPattern?: string;
+  /** When true, auto-create a JetStream stream for each subscribe subject. Default: false. */
+  autoCreateStreams?: boolean;
 }
 
 /** Asynchronous options for {@link ConsumerModule.forRootAsync}. */
@@ -90,7 +93,7 @@ export class ConsumerModule {
       providers: [
         createDiscoveryPairProvider(),
         createOnEventExplorerDepsProvider(),
-        createSyncJetStreamConsumerDepsProvider(jetStream, options.dlqSubjectBuilder),
+        createSyncJetStreamConsumerDepsProvider(jetStream, options.dlqSubjectBuilder, options.connection, options.autoCreateStreams),
         createRequestReplyExplorerDepsProvider(),
         createSyncRequestReplyConsumerDepsProvider(
           jetStream,
