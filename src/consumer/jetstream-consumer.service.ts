@@ -24,7 +24,6 @@ import { MoveToDlqOptions } from './move-to-dlq-options.interface';
  *
  * Handles the full consume pipeline: JSON parsing, envelope validation,
  * handler dispatch, ACK/NACK, and DLQ routing on failure.
- * Requires {@link EventLoggerService} to be available globally.
  */
 @Injectable()
 export class JetStreamConsumerService {

@@ -4,6 +4,9 @@ import { EventContext } from '../common/envelope/event-context.interface';
 import { EventHandler } from './consumer.service';
 import { buildDlqSubject } from '../common/utils/subject.builder';
 
+/** Default ack policy applied when a caller omits consumer options. */
+const DEFAULT_ACK_POLICY = AckPolicy.Explicit;
+
 /** Consumer subscription options accepted by {@link SubscribeOptions}.
  * Plain `Partial<ConsumerOpts>` objects are normalized to guarantee `config.ack_policy`. */
 export type ConsumerSubscribeOpts = ConsumerOptsBuilder | Partial<ConsumerOpts>;
@@ -29,9 +32,9 @@ export function resolveConsumerSubscribeOpts(opts?: ConsumerSubscribeOpts): Cons
   return ensureValidConsumerConfig(opts);
 }
 
-/** Defaults `config.ack_policy` to `AckPolicy.Explicit` for a plain `Partial<ConsumerOpts>` value. */
+/** Defaults `config.ack_policy` for a plain `Partial<ConsumerOpts>` value. */
 function ensureValidConsumerConfig(opts: Partial<ConsumerOpts>): Partial<ConsumerOpts> {
-  const config = { ack_policy: AckPolicy.Explicit, ...opts.config };
+  const config = { ack_policy: DEFAULT_ACK_POLICY, ...opts.config };
   return { ...opts, config };
 }
 

@@ -10,6 +10,7 @@ jest.mock('nats', () => ({
     jetstream: jest.fn().mockReturnValue({ publish: jest.fn(), subscribe: jest.fn() }),
     close: jest.fn(),
   }),
+  AckPolicy: { Explicit: 0 },
 }));
 
 jest.mock('./outbox/sqlite-outbox.repository', () => {

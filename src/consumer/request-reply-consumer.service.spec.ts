@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { ConsumerOptsBuilder, JsMsg } from 'nats';
+import { AckPolicy, ConsumerOptsBuilder, JsMsg } from 'nats';
 import { RequestReplyConsumerService } from './request-reply-consumer.service';
 import { REQUEST_REPLY_CONSUMER_DEPS_TOKEN } from './request-reply-consumer-deps.interface';
 import { defaultDlqSubjectBuilder } from './subscribe-options.interface';
@@ -172,7 +172,7 @@ describe('RequestReplyConsumerService', () => {
       expect(subjectArg).toBe('company.*.response.v1');
       expect(typeof (optsArg as ConsumerOptsBuilder).getOpts).toBe('function');
       const resolved = (optsArg as ConsumerOptsBuilder).getOpts();
-      expect(resolved.config.ack_policy).toBeDefined();
+      expect(resolved.config.ack_policy).toBe(AckPolicy.Explicit);
     });
   });
 });
