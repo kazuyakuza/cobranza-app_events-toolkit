@@ -66,6 +66,7 @@ export class OnEventExplorer implements OnModuleInit {
 
   private tryRegisterHandler(target: HandlerTarget, methodName: string): void {
     const methodRef = (target.prototype as Record<string, (...args: unknown[]) => unknown>)[methodName];
+    // Accessor properties (getters/setters) appear in getOwnPropertyNames but are not callable; skip them.
     if (typeof methodRef !== 'function') return;
     const metadata = this.deps.reflector.get<OnEventMetadata>(ON_EVENT_METADATA, methodRef);
     if (!metadata) return;
