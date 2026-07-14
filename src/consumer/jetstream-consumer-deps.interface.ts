@@ -1,4 +1,4 @@
-import { JetStreamClient } from 'nats';
+import { JetStreamClient, NatsConnection } from 'nats';
 import { ConsumerService } from './consumer.service';
 import { EventLoggerService } from '../logging/event-logger.service';
 
@@ -15,4 +15,8 @@ export interface JetStreamConsumerDeps {
   logger: EventLoggerService;
   /** Custom DLQ subject builder. Defaults to prepending `dlq.`. */
   dlqSubjectBuilder?: (subject: string) => string;
+  /** NATS connection used to create streams when auto-creation is enabled. */
+  connection?: NatsConnection;
+  /** When true, auto-create a JetStream stream for each subscribe subject. Default: false. */
+  autoCreateStreams?: boolean;
 }
