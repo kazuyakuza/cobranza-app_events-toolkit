@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - **`DiscoveryModule` missing `NestDiscoveryModule` import**: `ManifestServiceDepsProvider` depends on `MetadataScanner`, `DiscoveryService`, and `Reflector` from `@nestjs/core`, but `DiscoveryModule` did not import `NestDiscoveryModule`, causing NestJS DI resolution errors at runtime. Added `NestDiscoveryModule` to the `imports` array in `buildDiscoveryDynamicModule`.
 
+### Added
+
+- End-to-end DI compilation test (`src/events-toolkit.module.e2e-spec.ts`) that compiles the full `EventsToolkitModule.forRootAsync` graph with mocked NATS and SQLite outbox, resolving all core services (`ProducerService`, `ConsumerService`, `OutboxService`, `DiscoveryService`) to catch DI regressions across the entire module boundary.
+
+### Changed
+
+- CI workflow updated to run e2e spec files alongside unit tests.
+
 ## [0.10.2] — 2026-07-13
 
 ### Fixed

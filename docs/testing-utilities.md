@@ -18,6 +18,7 @@ All mocks are registered via `EventsToolkitTestModule.forRoot()`, a NestJS `Dyna
 - [Mock Services](#mock-services)
 - [Assertion Helpers](#assertion-helpers)
 - [Examples](#examples)
+- [DI Regression Tests](#di-regression-tests)
 
 ## Installation
 
@@ -352,4 +353,20 @@ describe('ServiceWithRequestReply', () => {
     expect(result).toEqual({ status: 'approved' });
   });
 });
+```
+
+## DI Regression Tests
+
+The toolkit includes e2e-style DI regression tests that compile the full `EventsToolkitModule.forRootAsync` graph (with mocked NATS and SQLite outbox) and resolve all core services. These tests catch missing-import and missing-export regressions across the entire module boundary — a class of bug where a sub-module forgets to export a provider that downstream consumers depend on.
+
+| Test File | Scope |
+|-----------|-------|
+| `src/events-toolkit.module.e2e-spec.ts` | Full toolkit graph — resolves `ProducerService`, `ConsumerService`, `OutboxService`, `DiscoveryService` |
+| `src/events-toolkit.module.di.spec.ts` | Async registration path — resolves `ProducerService` via `forRootAsync` |
+| `src/producer/producer.module.di.spec.ts` | `ProducerModule` in isolation — resolves `EmitEventInterceptor` |
+
+Run them with the standard test command:
+
+```bash
+npm test -- --testPathPattern='e2e-spec|di.spec'
 ```

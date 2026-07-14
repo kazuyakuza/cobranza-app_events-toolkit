@@ -1,3 +1,10 @@
+/**
+ * End-to-end DI compilation regression test for `EventsToolkitModule.forRootAsync`.
+ *
+ * Compiles the full module graph with mocked NATS and SQLite outbox, then resolves
+ * all core services to verify that every sub-module exports its providers correctly.
+ * Catches missing-import and missing-export regressions across the entire toolkit boundary.
+ */
 import 'reflect-metadata';
 import { Test, TestingModule } from '@nestjs/testing';
 import { EventsToolkitModule } from './events-toolkit.module';
