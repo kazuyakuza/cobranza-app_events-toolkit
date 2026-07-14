@@ -5,7 +5,22 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.10.4] — unreleased
+## [0.10.5] — 2026-07-14
+
+### Fixed
+
+- **JetStream consumer options defaulting to invalid `{}`**: `JetStreamConsumerService.subscribe()` and `RequestReplyConsumerService.subscribe()` previously passed `{}` to `jetStream.subscribe()` when `consumerOpts` was omitted, causing `TypeError: Cannot read properties of undefined (reading 'ack_policy')` in NATS `JetStreamClientImpl._processOptions`. Both services now use `resolveConsumerSubscribeOpts()` which defaults to `consumerOpts().manualAck().ackExplicit()`, guaranteeing `config.ack_policy` is always set.
+- **Explorer metadata reflection crash on accessor properties**: `OnEventExplorer` and `OnRequestReplyExplorer` iterated over all `Object.getOwnPropertyNames(prototype)` including getter/setter accessors. For accessor properties, `prototype[methodName]` returns `undefined`, causing `Reflect.getMetadata` to throw `TypeError`. Added `typeof methodRef === 'function'` guard in both explorers before calling `reflector.get()`.
+
+### Added
+
+- End-to-end runtime regression test (`src/events-toolkit.runtime.e2e-spec.ts`) that boots `EventsToolkitModule.forRootAsync` through the full NestJS lifecycle (`moduleRef.init()`), registering a provider with `@OnEvent`, `@OnRequestReply`, and getter/setter accessor properties. Guards both the explorer metadata reflection bug and the empty-consumer-options bug from regressing.
+
+### Changed
+
+- Enriched the `jest.mock('nats', ...)` factory in the existing DI compilation e2e spec (`src/events-toolkit.module.e2e-spec.ts`) to export `AckPolicy` and `consumerOpts`, ensuring compatibility with the new default consumer options helper.
+
+## [0.10.4]
 
 ### Fixed
 
@@ -20,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - Optional `requestReply?: Partial<RequestReplyConfig>` field on `EventsToolkitModuleOptions` to override `defaultTimeoutMs` (default: 5000ms).
 
-## [0.10.3] — unreleased
+## [0.10.3]
 
 ### Fixed
 
