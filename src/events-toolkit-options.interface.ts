@@ -4,6 +4,7 @@ import { EntityManagerLike } from './outbox/outbox.types';
 import { Type, DynamicModule, ForwardReference } from '@nestjs/common';
 import * as winston from 'winston';
 import { EventsToolkitDiscoveryOptions } from './discovery/discovery-service-options.interface';
+import type { RequestReplyConfig } from './request-reply/request-reply.types';
 
 /** NATS connection configuration for EventsToolkitModule. */
 export interface EventsToolkitNatsOptions {
@@ -55,6 +56,8 @@ export interface EventsToolkitModuleOptions {
   consumer?: EventsToolkitConsumerOptions;
   /** Discovery subsystem toggle and options. */
   discovery?: EventsToolkitDiscoveryOptions;
+  /** Request-reply subsystem defaults. Omit to use built-in defaults (defaultTimeoutMs: 5000). */
+  requestReply?: Partial<RequestReplyConfig>;
 }
 
 /** Asynchronous options for EventsToolkitModule.forRootAsync. */

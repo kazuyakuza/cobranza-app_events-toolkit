@@ -1,107 +1,56 @@
 import { DynamicModule, ForwardReference, Module, OnModuleDestroy, Provider, Type } from '@nestjs/common';
-import { connect, NatsConnection, JetStreamClient } from 'nats';
+import { JetStreamClient } from 'nats';
 import { ProducerModule } from './producer/producer.module';
 import { JETSTREAM_TOKEN } from './producer/producer.constants';
 import { ConsumerModule, ConsumerModuleOptions } from './consumer/consumer.module';
-import { OutboxModuleOptions } from './outbox/outbox.types';
 import { OutboxModule } from './outbox/outbox.module';
-import { EventLoggerService, EventLoggerOptions } from './logging/event-logger.service';
+import { OutboxModuleOptions } from './outbox/outbox.types';
+import { EventLoggerService } from './logging/event-logger.service';
 import { DiscoveryModule } from './discovery/discovery.module';
+import { RequestReplyService } from './request-reply/request-reply.service';
+import { REQUEST_REPLY_DEPS_TOKEN } from './request-reply/request-reply.types';
 import {
-  EventsToolkitModuleOptions,
-  EventsToolkitModuleAsyncOptions,
-  EventsToolkitOutboxOptions,
-} from './events-toolkit-options.interface';
-
-const EVENTS_TOOLKIT_OPTIONS = 'EVENTS_TOOLKIT_OPTIONS';
+  EVENTS_TOOLKIT_OPTIONS,
+  ResolvedNats,
+  resolveConnection,
+  buildOutboxModuleOptions,
+  setOwnedNatsConnection,
+  closeOwnedNatsConnection,
+  buildLoggingProvider,
+  buildSyncNatsConnectionProvider,
+  buildSyncRequestReplyDepsProvider,
+  buildAsyncOptionsProvider,
+  buildAsyncResolvedNatsProvider,
+  buildAsyncJetStreamProvider,
+  buildAsyncNatsConnectionProvider,
+  buildAsyncLoggingProvider,
+  buildAsyncRequestReplyDepsProvider,
+} from './events-toolkit-module.providers';
+import { EventsToolkitModuleOptions, EventsToolkitModuleAsyncOptions } from './events-toolkit-options.interface';
 
 type ModuleImport = Type<unknown> | DynamicModule | Promise<DynamicModule> | ForwardReference<unknown>;
 
-interface ResolvedNats {
-  connection: NatsConnection;
-  jetStream: JetStreamClient;
-  owned: boolean;
-}
-
-let ownedConnection: NatsConnection | null = null;
-
-async function resolveConnection(options: EventsToolkitModuleOptions): Promise<ResolvedNats> {
-  if (options.nats.connection) {
-    return {
-      connection: options.nats.connection,
-      jetStream: options.nats.connection.jetstream(),
-      owned: false,
-    };
-  }
-  if (options.nats.servers) {
-    const connection = await connect({ servers: options.nats.servers as string[] });
-    return {
-      connection,
-      jetStream: connection.jetstream(),
-      owned: true,
-    };
-  }
-  throw new Error('EventsToolkitModule requires either nats.connection or nats.servers');
-}
-
-function buildOutboxModuleOptions(outbox: EventsToolkitOutboxOptions): OutboxModuleOptions {
-  if (outbox.type === 'postgres') {
-    return {
-      type: 'postgres',
-      postgres: outbox.postgres,
-      serviceOptions: outbox.serviceOptions,
-    };
-  }
-  return {
-    type: 'sqlite',
-    sqlite: { dbPath: outbox.sqlitePath ?? ':memory:' },
-    serviceOptions: outbox.serviceOptions,
-  };
-}
-
 /**
- * Root module that wires together Producer, Consumer, Outbox, and Logging subsystems
- * into a single global NestJS dynamic module.
+ * Root module that wires together Producer, Consumer, Outbox, Request-Reply, and Logging
+ * subsystems into a single global NestJS dynamic module.
  */
 @Module({})
 export class EventsToolkitModule implements OnModuleDestroy {
   /**
    * Registers the toolkit with synchronous, fully-resolved options.
-   * Creates or reuses a NATS connection and conditionally imports Consumer and Outbox modules.
+   * Creates or reuses a NATS connection, conditionally imports Consumer/Outbox/Discovery,
+   * and registers+exports RequestReplyService for consumer injection.
    */
   static async forRoot(options: EventsToolkitModuleOptions): Promise<DynamicModule> {
     const resolved = await resolveConnection(options);
-    ownedConnection = resolved.owned ? resolved.connection : null;
-
-    const imports: ModuleImport[] = [ProducerModule.forRoot({ jetStream: resolved.jetStream })];
-
-    const consumerEnabled = options.consumer?.enable !== false;
-    if (consumerEnabled) {
-      const consumerOpts: ConsumerModuleOptions = {
-        jetStream: resolved.jetStream,
-        dlqSubjectBuilder: options.consumer?.dlqSubjectBuilder,
-      };
-      imports.push(ConsumerModule.forRoot(consumerOpts));
-    }
-
-    if (options.outbox) {
-      const outboxOpts = buildOutboxModuleOptions(options.outbox);
-      imports.push(OutboxModule.forRoot(outboxOpts));
-    }
-
-    const discoveryEnabled = options.discovery?.enabled !== false;
-    if (discoveryEnabled) {
-      const discoveryOpts = options.discovery ?? {};
-      imports.push(DiscoveryModule.forRoot(discoveryOpts));
-    }
-
-    const loggingProvider = buildLoggingProvider(options);
+    setOwnedNatsConnection(resolved.owned ? resolved.connection : null);
 
     return {
       module: EventsToolkitModule,
       global: true,
-      imports,
-      providers: [loggingProvider],
+      imports: buildSyncImports(options, resolved),
+      providers: buildSyncProviders(options, resolved),
+      exports: [RequestReplyService, REQUEST_REPLY_DEPS_TOKEN],
     };
   }
 
@@ -109,88 +58,79 @@ export class EventsToolkitModule implements OnModuleDestroy {
    * Registers the toolkit with asynchronous options resolved via a factory provider.
    * Defers NATS connection and sub-module configuration until runtime injection.
    *
-   * @remarks
-   * The returned dynamic module exports `EVENTS_TOOLKIT_OPTIONS`, `JETSTREAM_TOKEN`,
-   * and `EventLoggerService` so that imported sub-modules (`ProducerModule`,
-   * `ConsumerModule`, `OutboxModule`, `DiscoveryModule`) can resolve these
-   * dependencies during NestJS DI compilation.
+   * Exports EVENTS_TOOLKIT_OPTIONS, JETSTREAM_TOKEN, EventLoggerService,
+   * RequestReplyService, and REQUEST_REPLY_DEPS_TOKEN so imported sub-modules and
+   * external consumers resolve these dependencies during NestJS DI compilation.
    */
   static forRootAsync(asyncOptions: EventsToolkitModuleAsyncOptions): DynamicModule {
-    const optionsProvider = buildAsyncOptionsProvider(asyncOptions);
-    const jetStreamProvider = buildAsyncJetStreamProvider();
-    const loggingProvider = buildAsyncLoggingProvider();
-
-    const imports: ModuleImport[] = [
-      ProducerModule.forRootAsync({ useExisting: JETSTREAM_TOKEN, useFactory: async () => ({}), inject: [] }),
-      buildConsumerAsyncImport(),
-      buildOutboxAsyncImport(),
-      buildDiscoveryAsyncImport(),
-      ...(asyncOptions.imports ?? []),
-    ];
-
     return {
       module: EventsToolkitModule,
       global: true,
-      imports,
-      providers: [optionsProvider, jetStreamProvider, loggingProvider],
-      exports: [EVENTS_TOOLKIT_OPTIONS, JETSTREAM_TOKEN, EventLoggerService],
+      imports: buildAsyncImports(asyncOptions),
+      providers: buildAsyncProviders(asyncOptions),
+      exports: [
+        EVENTS_TOOLKIT_OPTIONS,
+        JETSTREAM_TOKEN,
+        EventLoggerService,
+        RequestReplyService,
+        REQUEST_REPLY_DEPS_TOKEN,
+      ],
     };
   }
 
   /** Closes the module-owned NATS connection, if one was created internally. */
   onModuleDestroy(): void {
-    if (ownedConnection) {
-      ownedConnection.close();
-      ownedConnection = null;
-    }
+    closeOwnedNatsConnection();
   }
 }
 
-function buildLoggingProvider(options: EventsToolkitModuleOptions): Provider {
-  if (options.logging) {
-    const loggerOptions: EventLoggerOptions = {
-      level: options.logging.level,
-      transports: options.logging.transports,
+function buildSyncProviders(options: EventsToolkitModuleOptions, resolved: ResolvedNats): Provider[] {
+  return [
+    buildLoggingProvider(options),
+    buildSyncNatsConnectionProvider(resolved.connection),
+    buildSyncRequestReplyDepsProvider(resolved.connection, options.requestReply),
+    RequestReplyService,
+  ];
+}
+
+function buildSyncImports(options: EventsToolkitModuleOptions, resolved: ResolvedNats): ModuleImport[] {
+  const imports: ModuleImport[] = [ProducerModule.forRoot({ jetStream: resolved.jetStream })];
+  if (options.consumer?.enable !== false) {
+    const consumerOpts: ConsumerModuleOptions = {
+      jetStream: resolved.jetStream,
+      dlqSubjectBuilder: options.consumer?.dlqSubjectBuilder,
     };
-    return { provide: EventLoggerService, useValue: new EventLoggerService(loggerOptions) };
+    imports.push(ConsumerModule.forRoot(consumerOpts));
   }
-  return { provide: EventLoggerService, useClass: EventLoggerService };
+  if (options.outbox) {
+    imports.push(OutboxModule.forRoot(buildOutboxModuleOptions(options.outbox)));
+  }
+  if (options.discovery?.enabled !== false) {
+    imports.push(DiscoveryModule.forRoot(options.discovery ?? {}));
+  }
+  return imports;
 }
 
-function buildAsyncOptionsProvider(asyncOptions: EventsToolkitModuleAsyncOptions): Provider {
-  return {
-    provide: EVENTS_TOOLKIT_OPTIONS,
-    useFactory: async (...args: unknown[]): Promise<EventsToolkitModuleOptions> => asyncOptions.useFactory(...args),
-    inject: asyncOptions.inject ?? [],
-  };
+function buildAsyncProviders(asyncOptions: EventsToolkitModuleAsyncOptions): Provider[] {
+  return [
+    buildAsyncOptionsProvider(asyncOptions),
+    buildAsyncResolvedNatsProvider(),
+    buildAsyncJetStreamProvider(),
+    buildAsyncNatsConnectionProvider(),
+    buildAsyncLoggingProvider(),
+    buildAsyncRequestReplyDepsProvider(),
+    RequestReplyService,
+  ];
 }
 
-function buildAsyncJetStreamProvider(): Provider {
-  return {
-    provide: JETSTREAM_TOKEN,
-    useFactory: async (opts: EventsToolkitModuleOptions): Promise<JetStreamClient> => {
-      const resolved = await resolveConnection(opts);
-      ownedConnection = resolved.owned ? resolved.connection : null;
-      return resolved.jetStream;
-    },
-    inject: [EVENTS_TOOLKIT_OPTIONS],
-  };
-}
-
-function buildAsyncLoggingProvider(): Provider {
-  return {
-    provide: EventLoggerService,
-    useFactory: (opts: EventsToolkitModuleOptions): EventLoggerService => {
-      if (opts.logging) {
-        return new EventLoggerService({
-          level: opts.logging.level,
-          transports: opts.logging.transports,
-        });
-      }
-      return new EventLoggerService();
-    },
-    inject: [EVENTS_TOOLKIT_OPTIONS],
-  };
+function buildAsyncImports(asyncOptions: EventsToolkitModuleAsyncOptions): ModuleImport[] {
+  return [
+    ProducerModule.forRootAsync({ useExisting: JETSTREAM_TOKEN, useFactory: async () => ({}), inject: [] }),
+    buildConsumerAsyncImport(),
+    buildOutboxAsyncImport(),
+    buildDiscoveryAsyncImport(),
+    ...(asyncOptions.imports ?? []),
+  ];
 }
 
 function buildConsumerAsyncImport(): DynamicModule {

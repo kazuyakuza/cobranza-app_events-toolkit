@@ -3,6 +3,8 @@ import { JetStreamClient, NatsConnection } from 'nats';
 import { EventsToolkitModule } from './events-toolkit.module';
 import { JETSTREAM_TOKEN } from './producer/producer.constants';
 import { EventLoggerService } from './logging/event-logger.service';
+import { RequestReplyService } from './request-reply/request-reply.service';
+import { REQUEST_REPLY_DEPS_TOKEN } from './request-reply/request-reply.types';
 
 jest.mock('nats', () => ({
   connect: jest.fn().mockResolvedValue({
@@ -38,7 +40,12 @@ function getModuleName(imported: unknown): string | undefined {
 }
 
 function findProvider(providers: Provider[] | undefined, token: unknown): Provider | undefined {
-  return providers?.find((p): p is Provider & { provide: unknown } => 'provide' in p && p.provide === token);
+  return providers?.find((p): p is Provider & { provide: unknown } => {
+    if (p === token) {
+      return true;
+    }
+    return 'provide' in p && p.provide === token;
+  });
 }
 
 type Provider = Record<string, unknown>;
@@ -51,7 +58,8 @@ describe('EventsToolkitModule', () => {
       expect(importNames).toContain('ProducerModule');
       expect(importNames).toContain('ConsumerModule');
       expect(importNames).toContain('DiscoveryModule');
-      expect(module.exports ?? []).toHaveLength(0);
+      expect(module.exports ?? []).toContain(RequestReplyService);
+      expect(module.exports ?? []).toContain(REQUEST_REPLY_DEPS_TOKEN);
     });
 
     it('should be a global module', async () => {
@@ -116,6 +124,8 @@ describe('EventsToolkitModule', () => {
       expect(module.exports).toContain('EVENTS_TOOLKIT_OPTIONS');
       expect(module.exports).toContain(JETSTREAM_TOKEN);
       expect(module.exports).toContain(EventLoggerService);
+      expect(module.exports).toContain(RequestReplyService);
+      expect(module.exports).toContain(REQUEST_REPLY_DEPS_TOKEN);
     });
 
     it('should be a global module', () => {
@@ -168,6 +178,12 @@ describe('EventsToolkitModule', () => {
           (p as unknown as Record<string, unknown>).provide === JETSTREAM_TOKEN,
       );
       expect(hasJetStreamProvider).toBe(false);
+    });
+
+    it('should provide and export RequestReplyService and REQUEST_REPLY_DEPS_TOKEN', () => {
+      const module = EventsToolkitModule.forRootAsync(forRootAsyncOptions);
+      expect(findProvider(module.providers as Provider[] | undefined, REQUEST_REPLY_DEPS_TOKEN)).toBeDefined();
+      expect(findProvider(module.providers as Provider[] | undefined, RequestReplyService)).toBeDefined();
     });
   });
 

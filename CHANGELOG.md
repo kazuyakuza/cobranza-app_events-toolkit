@@ -5,6 +5,21 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.10.4] — unreleased
+
+### Fixed
+
+- **`RequestReplyService` never registered as a provider (Bug 3)**: `RequestReplyService` (and its dependency token `REQUEST_REPLY_DEPS_TOKEN`) had `@Injectable()` decoration but were never added to any module's `providers` or `exports` arrays. Consumers injecting `RequestReplyService` (e.g. `CrudHandlersModule`) failed at DI compilation with `Nest can't resolve dependencies of the RequestReplyService (RequestReplyService, ?)`. Both `EventsToolkitModule.forRoot` and `EventsToolkitModule.forRootAsync` now register and export `RequestReplyService` and `REQUEST_REPLY_DEPS_TOKEN`.
+
+### Changed
+
+- **Single NATS connection in the async path**: introduced an internal `RESOLVED_NATS_TOKEN` that resolves the NATS connection exactly once. `JETSTREAM_TOKEN` and the new `NATS_CONNECTION_TOKEN` are now thin derived providers over the single resolved connection, preventing duplicate NATS connections when both JetStream and request-reply are active.
+- Extracted all EventsToolkitModule provider factories into `src/events-toolkit-module.providers.ts` to keep `events-toolkit.module.ts` under the 200-line file limit and method bodies under 50 lines.
+
+### Added
+
+- Optional `requestReply?: Partial<RequestReplyConfig>` field on `EventsToolkitModuleOptions` to override `defaultTimeoutMs` (default: 5000ms).
+
 ## [0.10.3] — unreleased
 
 ### Fixed
