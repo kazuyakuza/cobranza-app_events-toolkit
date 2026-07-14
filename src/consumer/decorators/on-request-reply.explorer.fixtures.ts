@@ -1,3 +1,13 @@
+/**
+ * @file Unit-test fixtures for `OnRequestReplyExplorer`.
+ *
+ * Exports provider classes with `@OnRequestReply()` decorated methods, plain
+ * methods, and getter/setter accessors (including a throwing `listen$` getter).
+ * Used by `on-request-reply.explorer.spec.ts` to verify that the explorer
+ * correctly registers decorated handlers and safely skips accessor properties.
+ *
+ * AI agents: do not import these outside explorer unit tests.
+ */
 import { OnRequestReply } from './on-request-reply.decorator';
 
 export class SampleConsumer {

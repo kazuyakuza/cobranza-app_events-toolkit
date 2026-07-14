@@ -1,3 +1,15 @@
+/**
+ * @file Runtime e2e test fixtures for the EventsToolkitModule.
+ *
+ * Provides Injectable providers used by the full-lifecycle e2e spec
+ * (`events-toolkit.runtime.e2e-spec.ts`). These fixtures exercise the
+ * explorer prototype-scanning path with getter/setter accessors that throw
+ * when accessed on the prototype — the exact shape that caused the
+ * `Reflect.getMetadata(undefined)` crash fixed in 0.10.7.
+ *
+ * AI agents: do not import these outside test specs. They exist solely to
+ * guard against regressions in the explorer's property-descriptor logic.
+ */
 import { Injectable } from '@nestjs/common';
 import { OnEvent } from './consumer/decorators/on-event.decorator';
 import { OnRequestReply } from './consumer/decorators/on-request-reply.decorator';
@@ -5,9 +17,10 @@ import { OnRequestReply } from './consumer/decorators/on-request-reply.decorator
 /**
  * Test provider that combines decorated handlers with getter/setter accessors.
  *
- * The accessors trigger `Object.getOwnPropertyNames(prototype)` to return
- * non-function members, which is exactly the shape that produced the
- * `Reflect.getMetadata(undefined)` crash before the `typeof methodRef` guard.
+ * The `listen$` getter throws `TypeError` when accessed on the prototype,
+ * reproducing the crash shape from `HttpAdapterHost.prototype.listen$`.
+ * The explorers must skip this accessor via `Object.getOwnPropertyDescriptor`
+ * without invoking it.
  */
 @Injectable()
 export class HandlerWithAccessorsProvider {

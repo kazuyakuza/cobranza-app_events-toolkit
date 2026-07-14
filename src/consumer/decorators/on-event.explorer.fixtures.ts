@@ -1,3 +1,13 @@
+/**
+ * @file Unit-test fixtures for `OnEventExplorer`.
+ *
+ * Exports provider classes with `@OnEvent()` decorated methods, plain methods,
+ * and getter/setter accessors (including a throwing `listen$` getter). Used by
+ * `on-event.explorer.spec.ts` to verify that the explorer correctly registers
+ * decorated handlers and safely skips accessor properties.
+ *
+ * AI agents: do not import these outside explorer unit tests.
+ */
 import { OnEvent } from './on-event.decorator';
 
 export class SampleConsumer {
