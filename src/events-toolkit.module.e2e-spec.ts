@@ -34,10 +34,13 @@ jest.mock('nats', () => ({
       publish: jest.fn(),
       subscribe: jest.fn(),
     }),
+    jetstreamManager: jest.fn().mockResolvedValue({ streams: { find: jest.fn(), add: jest.fn() } }),
     request: jest.fn(),
     close: jest.fn(),
   }),
   AckPolicy: { Explicit: 'Explicit', All: 'All', None: 'None' },
+  RetentionPolicy: { Limits: 'Limits', Interest: 'Interest', WorkQueue: 'WorkQueue' },
+  StorageType: { File: 'File', Memory: 'Memory' },
   consumerOpts: () => ({
     manualAck: () => ({ ackExplicit: () => ({ getOpts: () => ({ config: { ack_policy: 'Explicit' } }) }) }),
   }),
