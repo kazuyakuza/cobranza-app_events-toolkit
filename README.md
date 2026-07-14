@@ -890,41 +890,9 @@ Full documentation: [`docs/testing-utilities.md`](docs/testing-utilities.md)
 
 ### JetStream Stream Configuration
 
-Configure event and DLQ streams with the following JetStream settings:
+Configure event, DLQ, and platform streams with JetStream. Streams can be created manually (CLI or programmatic) or auto-created by enabling `consumer.autoCreateStreams`.
 
-```ts
-// Event stream
-await nc.jetStreamManager.streams.add({
-  name: 'EVENTS',
-  subjects: ['company.>'],
-  retention: 'limits',
-  max_age: 7 * 24 * 60 * 60 * 1_000_000_000,    // 7 days in nanoseconds
-  max_msgs_per_subject: 10_000,
-  dedupe_window: 2 * 60 * 1_000_000_000,         // 2 minutes in nanoseconds
-  storage: 'file',
-});
-
-// DLQ stream
-await nc.jetStreamManager.streams.add({
-  name: 'DLQ',
-  subjects: ['dlq.>'],
-  retention: 'limits',
-  max_age: 30 * 24 * 60 * 60 * 1_000_000_000,   // 30 days in nanoseconds
-  max_msgs_per_subject: 100_000,
-  storage: 'file',
-  dedupe_window: 2 * 60 * 1_000_000_000,
-});
-
-// Platform events stream (for service discovery)
-await nc.jetStreamManager.streams.add({
-  name: 'PLATFORM',
-  subjects: ['platform.service.>'],
-  retention: 'limits',
-  max_age: 7 * 24 * 60 * 60 * 1_000_000_000,
-  max_msgs_per_subject: 1_000,
-  storage: 'file',
-});
-```
+For the full guide — server requirements, stream auto-creation, manual setup, resource limits, authentication, clustering, monitoring, and backup/restore — see [NATS JetStream Configuration](docs/nats-jetstream-configuration.md).
 
 ### Environment Variables
 
@@ -956,6 +924,7 @@ await nc.jetStreamManager.streams.add({
 - [Request-Reply Guidelines](docs/request-reply-guidelines.md) — Decision tree, timeout recommendations, performance trade-offs, and best practices
 - [Request-Reply Examples](docs/examples/) — Complete code examples for sync, async, and outbox request-reply patterns
 - [Testing Utilities](docs/testing-utilities.md) — Mock services, test module, and assertion helpers
+- [NATS JetStream Configuration](docs/nats-jetstream-configuration.md) — Server requirements, stream auto-creation, manual setup, and production recommendations
 - [Architecture](.agent/project-info/architecture.md) — Module design and data flows
 - [Tech Stack](.agent/project-info/tech.md) — Technology choices and development setup
 - [Product Overview](.agent/project-info/product.md) — Problem definition and goals
