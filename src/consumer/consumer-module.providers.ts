@@ -46,6 +46,8 @@ export function createOnEventExplorerDepsProvider(): Provider {
 export function createSyncJetStreamConsumerDepsProvider(
   jetStream: JetStreamClient,
   dlqSubjectBuilder?: (subject: string) => string,
+  connection?: import('nats').NatsConnection,
+  autoCreateStreams?: boolean,
 ): Provider {
   return {
     provide: JETSTREAM_CONSUMER_DEPS_TOKEN,
@@ -54,6 +56,8 @@ export function createSyncJetStreamConsumerDepsProvider(
       consumerService,
       logger,
       dlqSubjectBuilder,
+      connection,
+      autoCreateStreams,
     }),
     inject: [ConsumerService, EventLoggerService],
   };
@@ -105,6 +109,7 @@ export function createAsyncResolvedConnectionProvider(): Provider {
     provide: RESOLVED_CONNECTION_TOKEN,
     useFactory: (moduleOptions: ConsumerModuleOptions) => ({
       jetStream: resolveJetStreamFromOptions(moduleOptions),
+      connection: moduleOptions.connection,
       dlqSubjectBuilder: moduleOptions.dlqSubjectBuilder,
     }),
     inject: [CONSUMER_MODULE_OPTIONS],
@@ -130,13 +135,15 @@ export function createAsyncConsumerServicesProvider(): Provider {
 export function createAsyncJetStreamConsumerDepsProvider(): Provider {
   return {
     provide: JETSTREAM_CONSUMER_DEPS_TOKEN,
-    useFactory: (connection: ResolvedConnection, services: ConsumerServicesPair) => ({
+    useFactory: (connection: ResolvedConnection, services: ConsumerServicesPair, moduleOptions: ConsumerModuleOptions) => ({
       jetStream: connection.jetStream,
       consumerService: services.consumerService,
       logger: services.logger,
       dlqSubjectBuilder: connection.dlqSubjectBuilder,
+      connection: connection.connection ?? moduleOptions.connection,
+      autoCreateStreams: moduleOptions.autoCreateStreams,
     }),
-    inject: [RESOLVED_CONNECTION_TOKEN, CONSUMER_SERVICES_PAIR],
+    inject: [RESOLVED_CONNECTION_TOKEN, CONSUMER_SERVICES_PAIR, CONSUMER_MODULE_OPTIONS],
   };
 }
 
