@@ -1,5 +1,5 @@
 import { DynamicModule, ForwardReference, Module, OnModuleDestroy, Provider, Type } from '@nestjs/common';
-import { JetStreamClient } from 'nats';
+import { JetStreamClient, NatsConnection } from 'nats';
 import { ProducerModule } from './producer/producer.module';
 import { JETSTREAM_TOKEN } from './producer/producer.constants';
 import { ConsumerModule, ConsumerModuleOptions } from './consumer/consumer.module';
@@ -8,7 +8,7 @@ import { OutboxModuleOptions } from './outbox/outbox.types';
 import { EventLoggerService } from './logging/event-logger.service';
 import { DiscoveryModule } from './discovery/discovery.module';
 import { RequestReplyService } from './request-reply/request-reply.service';
-import { REQUEST_REPLY_DEPS_TOKEN } from './request-reply/request-reply.types';
+import { NATS_CONNECTION_TOKEN, REQUEST_REPLY_DEPS_TOKEN } from './request-reply/request-reply.types';
 import { EVENTS_TOOLKIT_OPTIONS, ResolvedNats } from './events-toolkit-module.tokens';
 import {
   resolveConnection,
@@ -106,7 +106,9 @@ function buildSyncImports(options: EventsToolkitModuleOptions, resolved: Resolve
   if (options.consumer?.enable !== false) {
     const consumerOpts: ConsumerModuleOptions = {
       jetStream: resolved.jetStream,
+      connection: resolved.connection,
       dlqSubjectBuilder: options.consumer?.dlqSubjectBuilder,
+      autoCreateStreams: options.consumer?.autoCreateStreams,
     };
     imports.push(ConsumerModule.forRoot(consumerOpts));
   }
@@ -146,12 +148,15 @@ function buildConsumerAsyncImport(): DynamicModule {
     useFactory: async (...args: unknown[]): Promise<ConsumerModuleOptions> => {
       const jetStream = args[0] as JetStreamClient;
       const opts = args[1] as EventsToolkitModuleOptions;
+      const connection = args[2] as NatsConnection;
       return {
         jetStream,
+        connection,
         dlqSubjectBuilder: opts.consumer?.dlqSubjectBuilder,
+        autoCreateStreams: opts.consumer?.autoCreateStreams,
       };
     },
-    inject: [JETSTREAM_TOKEN, EVENTS_TOOLKIT_OPTIONS],
+    inject: [JETSTREAM_TOKEN, EVENTS_TOOLKIT_OPTIONS, NATS_CONNECTION_TOKEN],
   });
 }
 
