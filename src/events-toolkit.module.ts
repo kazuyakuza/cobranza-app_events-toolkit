@@ -9,9 +9,8 @@ import { EventLoggerService } from './logging/event-logger.service';
 import { DiscoveryModule } from './discovery/discovery.module';
 import { RequestReplyService } from './request-reply/request-reply.service';
 import { REQUEST_REPLY_DEPS_TOKEN } from './request-reply/request-reply.types';
+import { EVENTS_TOOLKIT_OPTIONS, ResolvedNats } from './events-toolkit-module.tokens';
 import {
-  EVENTS_TOOLKIT_OPTIONS,
-  ResolvedNats,
   resolveConnection,
   buildOutboxModuleOptions,
   setOwnedNatsConnection,
