@@ -13,6 +13,7 @@ import {
   SubscribeOptions,
   defaultDlqSubjectBuilder,
   envelopeToContext,
+  resolveConsumerSubscribeOpts,
   ValidationErrorOptions,
   ErrorHandlingOptions,
 } from './subscribe-options.interface';
@@ -62,7 +63,8 @@ export class JetStreamConsumerService {
    */
   async subscribe(options: SubscribeOptions): Promise<void> {
     this.consumerService.registerHandler(options.subject, options.handler);
-    const subscription = await this.jetStream.subscribe(options.subject, options.consumerOpts ?? {});
+    const consumerOpts = resolveConsumerSubscribeOpts(options.consumerOpts);
+    const subscription = await this.jetStream.subscribe(options.subject, consumerOpts);
     this.processSubscription(subscription, options.subject).catch((error: unknown) =>
       this.logGeneralError(error, options.subject),
     );

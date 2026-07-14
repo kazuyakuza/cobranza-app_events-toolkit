@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { JsMsg } from 'nats';
+import { ConsumerOptsBuilder, JsMsg } from 'nats';
 import { RequestReplyConsumerService } from './request-reply-consumer.service';
 import { REQUEST_REPLY_CONSUMER_DEPS_TOKEN } from './request-reply-consumer-deps.interface';
 import { defaultDlqSubjectBuilder } from './subscribe-options.interface';
@@ -157,6 +157,22 @@ describe('RequestReplyConsumerService', () => {
       service.registerHandler({ eventType: 'type.a', handler: jest.fn() });
       service.registerHandler({ eventType: 'type.b', handler: jest.fn() });
       expect(service.handlerCount).toBe(2);
+    });
+  });
+
+  describe('subscribe', () => {
+    it('should subscribe with valid consumer options', async () => {
+      const asyncIterable = (async function* () {})();
+      jetStream.subscribe.mockResolvedValue(asyncIterable);
+
+      await service.subscribe('company.*.response.v1');
+
+      expect(jetStream.subscribe).toHaveBeenCalledTimes(1);
+      const [subjectArg, optsArg] = jetStream.subscribe.mock.calls[0];
+      expect(subjectArg).toBe('company.*.response.v1');
+      expect(typeof (optsArg as ConsumerOptsBuilder).getOpts).toBe('function');
+      const resolved = (optsArg as ConsumerOptsBuilder).getOpts();
+      expect(resolved.config.ack_policy).toBeDefined();
     });
   });
 });

@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { JsMsg } from 'nats';
+import { AckPolicy, consumerOpts, ConsumerOpts, ConsumerOptsBuilder, JsMsg } from 'nats';
 import { JetStreamConsumerService } from './jetstream-consumer.service';
 import { defaultDlqSubjectBuilder } from './subscribe-options.interface';
 import { ConsumerService } from './consumer.service';
@@ -302,7 +302,7 @@ describe('JetStreamConsumerService', () => {
   });
 
   describe('subscribe', () => {
-    it('should register handler and create JetStream subscription', async () => {
+    it('should register handler and create JetStream subscription with default consumer opts', async () => {
       const handler = jest.fn().mockResolvedValue(undefined);
       const asyncIterable = (async function* () {})();
       jetStream.subscribe.mockResolvedValue(asyncIterable);
@@ -310,7 +310,70 @@ describe('JetStreamConsumerService', () => {
       await service.subscribe({ subject: testSubject, handler });
 
       expect(consumerService.getHandler(testSubject)).toBe(handler);
-      expect(jetStream.subscribe).toHaveBeenCalledWith(testSubject, {});
+      expect(jetStream.subscribe).toHaveBeenCalledTimes(1);
+      const [subjectArg, optsArg] = jetStream.subscribe.mock.calls[0];
+      expect(subjectArg).toBe(testSubject);
+      expect(typeof (optsArg as ConsumerOptsBuilder).getOpts).toBe('function');
+      const resolved = (optsArg as ConsumerOptsBuilder).getOpts();
+      expect(resolved.config.ack_policy).toBe(AckPolicy.Explicit);
+      expect(resolved.mack).toBe(true);
+    });
+
+    it('should pass a caller-provided ConsumerOptsBuilder through unchanged', async () => {
+      const handler = jest.fn().mockResolvedValue(undefined);
+      const asyncIterable = (async function* () {})();
+      jetStream.subscribe.mockResolvedValue(asyncIterable);
+      const builder = consumerOpts().durable('my-durable').deliverTo('company.deliver.subject').ackExplicit();
+
+      await service.subscribe({ subject: testSubject, handler, consumerOpts: builder });
+
+      expect(jetStream.subscribe).toHaveBeenCalledWith(testSubject, builder);
+    });
+
+    it('should default ack_policy to Explicit for a plain empty consumerOpts object', async () => {
+      const handler = jest.fn().mockResolvedValue(undefined);
+      const asyncIterable = (async function* () {})();
+      jetStream.subscribe.mockResolvedValue(asyncIterable);
+
+      await service.subscribe({
+        subject: testSubject,
+        handler,
+        consumerOpts: {} as Partial<ConsumerOpts>,
+      });
+
+      const [, optsArg] = jetStream.subscribe.mock.calls[0] as [string, Partial<ConsumerOpts>];
+      expect(optsArg.config?.ack_policy).toBe(AckPolicy.Explicit);
+    });
+
+    it('should preserve caller config but default ack_policy when missing in a plain consumerOpts object', async () => {
+      const handler = jest.fn().mockResolvedValue(undefined);
+      const asyncIterable = (async function* () {})();
+      jetStream.subscribe.mockResolvedValue(asyncIterable);
+
+      await service.subscribe({
+        subject: testSubject,
+        handler,
+        consumerOpts: { config: { durable_name: 'd' } },
+      });
+
+      const [, optsArg] = jetStream.subscribe.mock.calls[0] as [string, Partial<ConsumerOpts>];
+      expect(optsArg.config?.ack_policy).toBe(AckPolicy.Explicit);
+      expect(optsArg.config?.durable_name).toBe('d');
+    });
+
+    it('should preserve a caller-supplied ack_policy in a plain consumerOpts object', async () => {
+      const handler = jest.fn().mockResolvedValue(undefined);
+      const asyncIterable = (async function* () {})();
+      jetStream.subscribe.mockResolvedValue(asyncIterable);
+
+      await service.subscribe({
+        subject: testSubject,
+        handler,
+        consumerOpts: { config: { ack_policy: AckPolicy.All } },
+      });
+
+      const [, optsArg] = jetStream.subscribe.mock.calls[0] as [string, Partial<ConsumerOpts>];
+      expect(optsArg.config?.ack_policy).toBe(AckPolicy.All);
     });
   });
 

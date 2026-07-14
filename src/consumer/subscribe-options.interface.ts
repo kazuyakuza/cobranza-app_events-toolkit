@@ -1,11 +1,39 @@
-import { JsMsg, ConsumerOptsBuilder, ConsumerOpts } from 'nats';
+import { AckPolicy, consumerOpts, ConsumerOptsBuilder, ConsumerOpts, JsMsg } from 'nats';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { EventContext } from '../common/envelope/event-context.interface';
 import { EventHandler } from './consumer.service';
 import { buildDlqSubject } from '../common/utils/subject.builder';
 
-/** Consumer subscription options accepted by {@link SubscribeOptions}. */
+/** Consumer subscription options accepted by {@link SubscribeOptions}.
+ * Plain `Partial<ConsumerOpts>` objects are normalized to guarantee `config.ack_policy`. */
 export type ConsumerSubscribeOpts = ConsumerOptsBuilder | Partial<ConsumerOpts>;
+
+/** Returns true when the value is a NATS ConsumerOptsBuilder (duck-typed via `getOpts`). */
+export function isConsumerOptsBuilder(value: unknown): value is ConsumerOptsBuilder {
+  return typeof (value as { getOpts?: unknown })?.getOpts === 'function';
+}
+
+/** Builds the default JetStream consumer options used when none are provided. */
+export function createDefaultConsumerOpts(): ConsumerOptsBuilder {
+  return consumerOpts().manualAck().ackExplicit();
+}
+
+/** Resolves caller consumer options so `ack_policy` is always set, preventing the NATS `ack_policy` undefined crash. */
+export function resolveConsumerSubscribeOpts(opts?: ConsumerSubscribeOpts): ConsumerSubscribeOpts {
+  if (opts === undefined) {
+    return createDefaultConsumerOpts();
+  }
+  if (isConsumerOptsBuilder(opts)) {
+    return opts;
+  }
+  return ensureValidConsumerConfig(opts);
+}
+
+/** Defaults `config.ack_policy` to `AckPolicy.Explicit` for a plain `Partial<ConsumerOpts>` value. */
+function ensureValidConsumerConfig(opts: Partial<ConsumerOpts>): Partial<ConsumerOpts> {
+  const config = { ack_policy: AckPolicy.Explicit, ...opts.config };
+  return { ...opts, config };
+}
 
 /** Builds a DLQ subject by delegating to the centralized {@link buildDlqSubject}. */
 export function defaultDlqSubjectBuilder(subject: string): string {

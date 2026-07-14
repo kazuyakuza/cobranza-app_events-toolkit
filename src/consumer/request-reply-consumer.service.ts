@@ -6,7 +6,7 @@ import { EventHandler } from './consumer.service';
 import { DispatchOptions } from './dispatch-options.interface';
 import { RegisterHandlerOptions } from './register-handler-options.interface';
 import { RequestReplyConsumerDeps, REQUEST_REPLY_CONSUMER_DEPS_TOKEN } from './request-reply-consumer-deps.interface';
-import { defaultDlqSubjectBuilder } from './subscribe-options.interface';
+import { defaultDlqSubjectBuilder, resolveConsumerSubscribeOpts } from './subscribe-options.interface';
 import { RequestReplyMessageProcessor } from './request-reply-message-processor';
 
 /**
@@ -89,7 +89,7 @@ export class RequestReplyConsumerService implements OnModuleInit {
 
   /** Subscribes to a NATS subject pattern for response messages. */
   async subscribe(subject: string): Promise<void> {
-    const subscription = await this.jetStream.subscribe(subject, {});
+    const subscription = await this.jetStream.subscribe(subject, resolveConsumerSubscribeOpts());
     this.processSubscription(subscription, subject).catch((error: unknown) =>
       this.logger.logEventError({
         eventId: 'unknown',
