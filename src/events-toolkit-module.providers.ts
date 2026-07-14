@@ -1,6 +1,6 @@
 import { Provider } from '@nestjs/common';
 import { connect, JetStreamClient, NatsConnection } from 'nats';
-import { EventLoggerService, EventLoggerOptions } from './logging/event-logger.service';
+import { EventLoggerService } from './logging/event-logger.service';
 import { ProducerService } from './producer/producer.service';
 import { JETSTREAM_TOKEN } from './producer/producer.constants';
 import { OutboxModuleOptions } from './outbox/outbox.types';
@@ -15,6 +15,7 @@ import {
   EventsToolkitModuleOptions,
   EventsToolkitModuleAsyncOptions,
   EventsToolkitOutboxOptions,
+  EventsToolkitLoggingOptions,
 } from './events-toolkit-options.interface';
 
 /** Injection token for the resolved EventsToolkitModule options object. */
@@ -81,16 +82,16 @@ export function buildOutboxModuleOptions(outbox: EventsToolkitOutboxOptions): Ou
   };
 }
 
+/** Constructs an EventLoggerService from optional logging options. */
+function buildEventLogger(logging?: EventsToolkitLoggingOptions): EventLoggerService {
+  return logging
+    ? new EventLoggerService({ level: logging.level, transports: logging.transports })
+    : new EventLoggerService();
+}
+
 /** Provider for EventLoggerService from synchronous options (forRoot path). */
 export function buildLoggingProvider(options: EventsToolkitModuleOptions): Provider {
-  if (options.logging) {
-    const loggerOptions: EventLoggerOptions = {
-      level: options.logging.level,
-      transports: options.logging.transports,
-    };
-    return { provide: EventLoggerService, useValue: new EventLoggerService(loggerOptions) };
-  }
-  return { provide: EventLoggerService, useClass: EventLoggerService };
+  return { provide: EventLoggerService, useValue: buildEventLogger(options.logging) };
 }
 
 /** Provider for NATS_CONNECTION_TOKEN from a pre-resolved connection (forRoot path). */
@@ -119,7 +120,7 @@ export function buildSyncRequestReplyDepsProvider(
 export function buildAsyncOptionsProvider(asyncOptions: EventsToolkitModuleAsyncOptions): Provider {
   return {
     provide: EVENTS_TOOLKIT_OPTIONS,
-    useFactory: async (...args: unknown[]): Promise<EventsToolkitModuleOptions> => asyncOptions.useFactory(...args),
+    useFactory: asyncOptions.useFactory,
     inject: asyncOptions.inject ?? [],
   };
 }
@@ -159,15 +160,7 @@ export function buildAsyncNatsConnectionProvider(): Provider {
 export function buildAsyncLoggingProvider(): Provider {
   return {
     provide: EventLoggerService,
-    useFactory: (opts: EventsToolkitModuleOptions): EventLoggerService => {
-      if (opts.logging) {
-        return new EventLoggerService({
-          level: opts.logging.level,
-          transports: opts.logging.transports,
-        });
-      }
-      return new EventLoggerService();
-    },
+    useFactory: (opts: EventsToolkitModuleOptions): EventLoggerService => buildEventLogger(opts.logging),
     inject: [EVENTS_TOOLKIT_OPTIONS],
   };
 }
