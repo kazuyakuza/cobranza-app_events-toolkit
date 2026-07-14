@@ -56,7 +56,12 @@ export interface EventsToolkitModuleOptions {
   consumer?: EventsToolkitConsumerOptions;
   /** Discovery subsystem toggle and options. */
   discovery?: EventsToolkitDiscoveryOptions;
-  /** Request-reply subsystem defaults. Omit to use built-in defaults (defaultTimeoutMs: 5000). */
+  /**
+   * Request-reply subsystem defaults applied to all RequestReplyService instances.
+   * Pass `defaultTimeoutMs` to override the built-in 5000ms timeout for sync `request()` calls.
+   * Omit entirely to use built-in defaults. Partial objects are merged with defaults
+   * via `resolveRequestReplyConfig()` at provider construction time.
+   */
   requestReply?: Partial<RequestReplyConfig>;
 }
 

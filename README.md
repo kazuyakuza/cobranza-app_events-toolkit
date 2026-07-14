@@ -242,11 +242,23 @@ import { EventsToolkitModule } from '@cobranza-apps/events-toolkit';
         serviceOptions: { maxRetries: 3 },
       },
       logging: { level: 'info' },
+      requestReply: { defaultTimeoutMs: 10000 },
     }),
   ],
 })
 export class AppModule {}
 ```
+
+#### Configuration Options
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `nats` | `EventsToolkitNatsOptions` | Yes | NATS connection settings — provide either `servers` (creates new connection) or `connection` (reuses existing). |
+| `outbox` | `EventsToolkitOutboxOptions` | No | Outbox persistence config (`sqlite` or `postgres`). Omit to disable the outbox subsystem. |
+| `logging` | `EventsToolkitLoggingOptions` | No | Winston logger config (`level`, `transports`). Defaults to `info` + Console transport. |
+| `consumer` | `EventsToolkitConsumerOptions` | No | Consumer subsystem toggle and DLQ subject builder. Set `enable: false` to skip consumer registration. |
+| `discovery` | `EventsToolkitDiscoveryOptions` | No | Service discovery config (manifest, heartbeat, schema publishing). Set `enabled: false` to skip. |
+| `requestReply` | `Partial<RequestReplyConfig>` | No | Request-reply defaults. Set `defaultTimeoutMs` to override the 5000ms sync timeout. |
 
 ### Defining an Event
 

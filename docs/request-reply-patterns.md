@@ -381,6 +381,19 @@ const responseEvent = this.requestReply.buildResponseEnvelope({
 
 ## 6. Timeout Handling
 
+### Module-level configuration
+
+Set a global default timeout for all sync `request()` calls via `EventsToolkitModule.forRoot()`:
+
+```typescript
+EventsToolkitModule.forRoot({
+  nats: { servers: ['nats://localhost:4222'] },
+  requestReply: { defaultTimeoutMs: 10000 },
+})
+```
+
+The same option is available in `forRootAsync()` — the factory can return `requestReply: { defaultTimeoutMs: ... }` alongside other options. If omitted, the built-in default of 5000 ms applies.
+
 ### Sync pattern timeouts
 
 - **Default**: 5000 ms (set via `RequestReplyConfig.defaultTimeoutMs`).

@@ -39,7 +39,11 @@ export class EventsToolkitModule implements OnModuleDestroy {
   /**
    * Registers the toolkit with synchronous, fully-resolved options.
    * Creates or reuses a NATS connection, conditionally imports Consumer/Outbox/Discovery,
-   * and registers+exports RequestReplyService for consumer injection.
+   * and registers+exports RequestReplyService and REQUEST_REPLY_DEPS_TOKEN so that
+   * any module importing EventsToolkitModule can inject RequestReplyService directly.
+   *
+   * @param options - Fully-resolved toolkit configuration (NATS, outbox, logging, consumer, discovery, requestReply).
+   * @returns A global DynamicModule with all subsystems wired.
    */
   static async forRoot(options: EventsToolkitModuleOptions): Promise<DynamicModule> {
     const resolved = await resolveConnection(options);
@@ -58,9 +62,14 @@ export class EventsToolkitModule implements OnModuleDestroy {
    * Registers the toolkit with asynchronous options resolved via a factory provider.
    * Defers NATS connection and sub-module configuration until runtime injection.
    *
-   * Exports EVENTS_TOOLKIT_OPTIONS, JETSTREAM_TOKEN, EventLoggerService,
-   * RequestReplyService, and REQUEST_REPLY_DEPS_TOKEN so imported sub-modules and
-   * external consumers resolve these dependencies during NestJS DI compilation.
+   * Registers and exports RequestReplyService and REQUEST_REPLY_DEPS_TOKEN, enabling
+   * consumer services to inject RequestReplyService without explicit per-service wiring.
+   * The async path uses RESOLVED_NATS_TOKEN as an intermediate singleton to guarantee
+   * that JETSTREAM_TOKEN, NATS_CONNECTION_TOKEN, and REQUEST_REPLY_DEPS_TOKEN all
+   * share the same underlying NATS connection.
+   *
+   * @param asyncOptions - Async configuration with `useFactory`, optional `inject` tokens, and optional `imports`.
+   * @returns A global DynamicModule with all subsystems wired via deferred resolution.
    */
   static forRootAsync(asyncOptions: EventsToolkitModuleAsyncOptions): DynamicModule {
     return {
