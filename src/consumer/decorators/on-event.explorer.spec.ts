@@ -119,17 +119,7 @@ describe('OnEventExplorer', () => {
       expect(consumerService.getHandler('company.*.client.profile.updated.v2')).toBeDefined();
     });
 
-    it('should skip getter/setter accessor properties without throwing', () => {
-      const instance = new GetterSetterConsumer();
-      (discovery.getProviders as jest.Mock).mockReturnValue([{ instance }]);
-      (discovery.getControllers as jest.Mock).mockReturnValue([]);
-
-      expect(() => explorer.onModuleInit()).not.toThrow();
-      expect(consumerService.handlerCount).toBe(1);
-      expect(consumerService.getHandler('company.*.audit.ledger.snapshot.v1')).toBeDefined();
-    });
-
-    it('should not access prototype getter that throws (HttpAdapterHost.listen$ regression)', () => {
+    it('should skip accessor properties, including throwing getters, without invoking them', () => {
       const instance = new GetterSetterConsumer();
       (discovery.getProviders as jest.Mock).mockReturnValue([{ instance }]);
       (discovery.getControllers as jest.Mock).mockReturnValue([]);
@@ -138,7 +128,10 @@ describe('OnEventExplorer', () => {
       const listenGetter = Object.getOwnPropertyDescriptor(prototype, 'listen$')?.get;
       expect(listenGetter).toBeDefined();
       expect(() => listenGetter!()).toThrow(TypeError);
+
       expect(() => explorer.onModuleInit()).not.toThrow();
+      expect(consumerService.handlerCount).toBe(1);
+      expect(consumerService.getHandler('company.*.audit.ledger.snapshot.v1')).toBeDefined();
     });
   });
 });

@@ -4,5 +4,5 @@
     "declarationMap": false,
     "sourceMap": false
   },
-  "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts", "**/*.e2e-spec.ts", "**/__mocks__/**"]
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts", "**/*.e2e-spec.ts", "**/*.e2e-fixtures.ts", "**/__mocks__/**"]
 }
