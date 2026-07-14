@@ -65,15 +65,14 @@ export class OnEventExplorer implements OnModuleInit {
   }
 
   private tryRegisterHandler(target: HandlerTarget, methodName: string): void {
-    const methodRef = (target.prototype as Record<string, (...args: unknown[]) => unknown>)[methodName];
-    // Accessor properties (getters/setters) appear in getOwnPropertyNames but are not callable; skip them.
-    if (typeof methodRef !== 'function') return;
+    const descriptor = Object.getOwnPropertyDescriptor(target.prototype, methodName);
+    if (!descriptor) return;
+    if (typeof descriptor.value !== 'function') return;
+    const methodRef = descriptor.value as (...args: unknown[]) => unknown;
     const metadata = this.deps.reflector.get<OnEventMetadata>(ON_EVENT_METADATA, methodRef);
     if (!metadata) return;
 
-    const handler = (target.instance as Record<string, (...args: unknown[]) => unknown>)[methodName].bind(
-      target.instance,
-    ) as EventHandler;
+    const handler = methodRef.bind(target.instance) as EventHandler;
     const subject = this.buildWildcardSubject(metadata);
     this.deps.consumerService.registerHandler(subject, handler);
   }

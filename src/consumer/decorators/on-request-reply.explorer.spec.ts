@@ -2,81 +2,15 @@ import 'reflect-metadata';
 import { DiscoveryService, Reflector } from '@nestjs/core';
 import { RequestReplyConsumerService } from '../request-reply-consumer.service';
 import { OnRequestReplyExplorer } from './on-request-reply.explorer';
-import { OnRequestReply } from './on-request-reply.decorator';
 import { ActorType } from '../../common/envelope/actor-type.enum';
 import { EventEnvelope } from '../../common/envelope/event-envelope.class';
 import { OnRequestReplyExplorerDeps } from './on-request-reply-explorer-deps.interface';
-
-class SampleConsumer {
-  handlerInvoked = false;
-
-  @OnRequestReply('payment.proof.uploaded', {
-    companyId: 'tenant-1',
-    description: 'Handles payment proof responses',
-    payloadExample: { proofId: 'proof-123' },
-  })
-  handleProofUploaded(): void {
-    this.handlerInvoked = true;
-  }
-
-  @OnRequestReply('debt.schedule.created', {
-    description: 'Handles debt schedule responses',
-    payloadExample: { scheduleId: 'sch-123' },
-  })
-  handleScheduleCreated(): void {
-    this.handlerInvoked = true;
-  }
-
-  plainMethod(): void {}
-}
-
-class ConsumerWithoutDecorator {
-  noEventMethod(): void {}
-}
-
-class CompanyScopedConsumer {
-  handlerInvoked = false;
-
-  @OnRequestReply('client.profile.updated', {
-    companyId: 'tenant-2',
-    description: 'Handles client profile responses',
-    payloadExample: { clientId: 'client-1' },
-  })
-  handleUpdated(): void {
-    this.handlerInvoked = true;
-  }
-}
-
-class GetterSetterConsumer {
-  handlerInvoked = false;
-
-  @OnRequestReply('audit.ledger.snapshot', {
-    companyId: 'tenant-1',
-    description: 'Handles audit ledger responses',
-    payloadExample: { ledgerId: 'led-1' },
-  })
-  handleSnapshot(): void {
-    this.handlerInvoked = true;
-  }
-
-  get readOnlyValue(): string {
-    return 'constant';
-  }
-
-  set writeOnlyValue(_value: string) {
-    void _value;
-  }
-
-  get computed(): number {
-    return 42;
-  }
-
-  set computed(_value: number) {
-    void _value;
-  }
-
-  plainMethod(): void {}
-}
+import {
+  SampleConsumer,
+  ConsumerWithoutDecorator,
+  CompanyScopedConsumer,
+  GetterSetterConsumer,
+} from './on-request-reply.explorer.fixtures';
 
 function createDeps(discovery: DiscoveryService): OnRequestReplyExplorerDeps {
   return {
@@ -211,6 +145,18 @@ describe('OnRequestReplyExplorer', () => {
       expect(() => explorer.onModuleInit()).not.toThrow();
       expect(requestReplyConsumerService.handlerCount).toBe(1);
       expect(requestReplyConsumerService.getHandler('audit.ledger.snapshot', 'tenant-1')).toBeDefined();
+    });
+
+    it('should not access prototype getter that throws (HttpAdapterHost.listen$ regression)', () => {
+      const instance = new GetterSetterConsumer();
+      (discovery.getProviders as jest.Mock).mockReturnValue([{ instance }]);
+      (discovery.getControllers as jest.Mock).mockReturnValue([]);
+
+      const prototype = Object.getPrototypeOf(instance);
+      const listenGetter = Object.getOwnPropertyDescriptor(prototype, 'listen$')?.get;
+      expect(listenGetter).toBeDefined();
+      expect(() => listenGetter!()).toThrow(TypeError);
+      expect(() => explorer.onModuleInit()).not.toThrow();
     });
   });
 });

@@ -6,9 +6,13 @@
  * test do not regress:
  *
  * 1. `OnEventExplorer` / `OnRequestReplyExplorer` must skip getter/setter
- *    accessor properties instead of throwing `Reflect.getMetadata(undefined)`.
- *    Guarded by a test provider that declares accessor properties alongside
- *    `@OnEvent` and `@OnRequestReply` handlers.
+ *    accessor properties instead of throwing during prototype scanning. The
+ *    fix uses `Object.getOwnPropertyDescriptor` which does not invoke
+ *    accessors, handling throwing getters like
+ *    `HttpAdapterHost.prototype.listen$` which reads `this._listen$`
+ *    (undefined on the prototype). Guarded by a test provider that declares
+ *    accessor properties alongside `@OnEvent` and `@OnRequestReply` handlers,
+ *    including a throwing `listen$` getter that reproduces the exact crash.
  * 2. `JetStreamConsumerService` / `RequestReplyConsumerService` must pass
  *    valid consumer options (never `{}`) to `jetStream.subscribe`, so NATS
  *    never reads `undefined.ack_policy`.
@@ -30,7 +34,6 @@ import { RequestReplyConsumerService } from './consumer/request-reply-consumer.s
 import { OnEvent } from './consumer/decorators/on-event.decorator';
 import { OnRequestReply } from './consumer/decorators/on-request-reply.decorator';
 import { isConsumerOptsBuilder } from './consumer/subscribe-options.interface';
-import { DiscoveryService } from '@nestjs/core';
 
 const RESPONSE_SUBJECT = 'company.*.response.v1';
 
@@ -70,6 +73,10 @@ class HandlerWithAccessorsProvider {
 
   set cachedValue(value: string) {
     this._cachedValue = value;
+  }
+
+  get listen$(): never {
+    throw new TypeError("Cannot read properties of undefined (reading 'asObservable')");
   }
 
   plainMethod(): void {}
@@ -130,20 +137,6 @@ async function compileToolkit(): Promise<TestingModule> {
   }).compile();
 }
 
-/**
- * Restricts DiscoveryService to return only the provider we care about,
- * preventing the explorers from iterating over internal NestJS providers
- * (e.g. HttpAdapterHost) whose getter accessors throw when accessed on
- * the prototype rather than the instance.
- */
-function limitDiscoveryToHandlerProvider(moduleRef: TestingModule): void {
-  const handlerProvider = moduleRef.get(HandlerWithAccessorsProvider);
-  const discoveryService = moduleRef.get(DiscoveryService);
-
-  jest.spyOn(discoveryService, 'getProviders').mockReturnValue([{ instance: handlerProvider } as never]);
-  jest.spyOn(discoveryService, 'getControllers').mockReturnValue([]);
-}
-
 function hasValidConsumerConfig(arg: unknown): boolean {
   if (isConsumerOptsBuilder(arg)) return true;
   return argHasAckPolicy(arg);
@@ -163,7 +156,6 @@ describe('EventsToolkitModule.forRootAsync runtime e2e', () => {
 
   beforeEach(async () => {
     moduleRef = await compileToolkit();
-    limitDiscoveryToHandlerProvider(moduleRef);
     await moduleRef.init();
   });
 

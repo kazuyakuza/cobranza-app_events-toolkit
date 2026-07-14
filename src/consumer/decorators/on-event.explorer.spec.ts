@@ -2,83 +2,16 @@ import 'reflect-metadata';
 import { DiscoveryService, Reflector } from '@nestjs/core';
 import { ConsumerService } from '../consumer.service';
 import { OnEventExplorer } from './on-event.explorer';
-import { OnEvent } from './on-event.decorator';
 import { OnEventExplorerDeps } from './on-event-explorer-deps.interface';
 import { EventEnvelope } from '../../common/envelope/event-envelope.class';
 import { ActorType } from '../../common/envelope/actor-type.enum';
 import { EventContext } from '../../common/envelope/event-context.interface';
-
-class SampleConsumer {
-  handlerInvoked = false;
-
-  @OnEvent('payment.proof.uploaded', {
-    version: '1',
-    description: 'Handles payment proof uploads',
-    payloadExample: { proofId: 'proof-123' },
-  })
-  handleProofUploaded(): void {
-    this.handlerInvoked = true;
-  }
-
-  @OnEvent('debt.schedule.created', {
-    version: '1',
-    description: 'Handles debt schedule creation',
-    payloadExample: { scheduleId: 'sch-123' },
-  })
-  handleScheduleCreated(): void {
-    this.handlerInvoked = true;
-  }
-
-  plainMethod(): void {}
-}
-
-class ConsumerWithoutDecorator {
-  noEventMethod(): void {}
-}
-
-class CustomVersionConsumer {
-  handlerInvoked = false;
-
-  @OnEvent('client.profile.updated', {
-    version: '2',
-    description: 'Handles client profile updates',
-    payloadExample: { clientId: 'client-1' },
-  })
-  handleUpdated(): void {
-    this.handlerInvoked = true;
-  }
-}
-
-class GetterSetterConsumer {
-  handlerInvoked = false;
-
-  @OnEvent('audit.ledger.snapshot', {
-    version: '1',
-    description: 'Handles audit ledger snapshots',
-    payloadExample: { ledgerId: 'led-1' },
-  })
-  handleSnapshot(): void {
-    this.handlerInvoked = true;
-  }
-
-  get readOnlyValue(): string {
-    return 'constant';
-  }
-
-  set writeOnlyValue(_value: string) {
-    void _value;
-  }
-
-  get computed(): number {
-    return 42;
-  }
-
-  set computed(_value: number) {
-    void _value;
-  }
-
-  plainMethod(): void {}
-}
+import {
+  SampleConsumer,
+  ConsumerWithoutDecorator,
+  CustomVersionConsumer,
+  GetterSetterConsumer,
+} from './on-event.explorer.fixtures';
 
 function createDeps(discovery: DiscoveryService): OnEventExplorerDeps {
   return { discovery, reflector: new Reflector(), consumerService: new ConsumerService() };
@@ -194,6 +127,18 @@ describe('OnEventExplorer', () => {
       expect(() => explorer.onModuleInit()).not.toThrow();
       expect(consumerService.handlerCount).toBe(1);
       expect(consumerService.getHandler('company.*.audit.ledger.snapshot.v1')).toBeDefined();
+    });
+
+    it('should not access prototype getter that throws (HttpAdapterHost.listen$ regression)', () => {
+      const instance = new GetterSetterConsumer();
+      (discovery.getProviders as jest.Mock).mockReturnValue([{ instance }]);
+      (discovery.getControllers as jest.Mock).mockReturnValue([]);
+
+      const prototype = Object.getPrototypeOf(instance);
+      const listenGetter = Object.getOwnPropertyDescriptor(prototype, 'listen$')?.get;
+      expect(listenGetter).toBeDefined();
+      expect(() => listenGetter!()).toThrow(TypeError);
+      expect(() => explorer.onModuleInit()).not.toThrow();
     });
   });
 });

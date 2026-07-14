@@ -59,15 +59,14 @@ export class OnRequestReplyExplorer implements OnModuleInit {
   }
 
   private tryRegisterHandler(target: HandlerTarget, methodName: string): void {
-    const methodRef = (target.prototype as Record<string, (...args: unknown[]) => unknown>)[methodName];
-    // Accessor properties (getters/setters) appear in getOwnPropertyNames but are not callable; skip them.
-    if (typeof methodRef !== 'function') return;
+    const descriptor = Object.getOwnPropertyDescriptor(target.prototype, methodName);
+    if (!descriptor) return;
+    if (typeof descriptor.value !== 'function') return;
+    const methodRef = descriptor.value as (...args: unknown[]) => unknown;
     const metadata = this.deps.reflector.get<OnRequestReplyMetadata>(ON_REQUEST_REPLY_METADATA, methodRef);
     if (!metadata) return;
 
-    const handler = (target.instance as Record<string, (...args: unknown[]) => unknown>)[methodName].bind(
-      target.instance,
-    ) as EventHandler;
+    const handler = methodRef.bind(target.instance) as EventHandler;
 
     this.deps.requestReplyConsumerService.registerHandler({
       eventType: metadata.eventType,

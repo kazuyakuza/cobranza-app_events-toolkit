@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.10.7] — 2026-07-14
+
+### Fixed
+
+- **Explorer crash on getter properties that throw during prototype scanning:** The `typeof methodRef === 'function'` guard added in 0.10.5 was incomplete — the expression `target.prototype[methodName]` invokes accessors **before** the guard runs. When `Object.getOwnPropertyNames(prototype)` includes accessor properties such as `HttpAdapterHost.prototype.listen$` (which reads `this._listen$.asObservable()` where `this._listen$` is `undefined` on the prototype), accessing the property throws `TypeError: Cannot read properties of undefined (reading 'asObservable')`. Both `OnEventExplorer` and `OnRequestReplyExplorer` now use `Object.getOwnPropertyDescriptor(target.prototype, methodName)` to inspect properties **without invoking accessors**, and only process entries whose descriptor `value` is a function (data properties only). Accessor properties are skipped entirely, never invoked.
+- Removed the `limitDiscoveryToHandlerProvider` workaround from the runtime e2e regression test, so the explorers now scan all providers (including internal NestJS providers with accessor properties) and confirm the fix holds in the real `DiscoveryService` iteration path.
+
+### Changed
+
+- Explorers now bind the handler via the descriptor's `value` (`methodRef.bind(target.instance)`) instead of re-accessing `target.instance[methodName]`, eliminating a redundant property lookup and avoiding any accidental accessor invocation.
+
 ## [0.10.5] — 2026-07-14
 
 ### Fixed
