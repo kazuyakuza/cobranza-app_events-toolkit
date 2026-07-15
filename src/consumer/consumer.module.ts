@@ -115,6 +115,8 @@ export class ConsumerModule {
           jetStream,
           responseSubjectPattern: options.responseSubjectPattern,
           dlqSubjectBuilder: options.dlqSubjectBuilder,
+          connection: options.connection,
+          autoCreateStreams: options.autoCreateStreams,
         }),
         ConsumerService,
         JetStreamConsumerService,

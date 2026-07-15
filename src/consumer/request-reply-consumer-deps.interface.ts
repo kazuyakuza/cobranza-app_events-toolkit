@@ -1,4 +1,4 @@
-import { JetStreamClient } from 'nats';
+import { JetStreamClient, NatsConnection } from 'nats';
 import { EventLoggerService } from '../logging/event-logger.service';
 
 /** Injection token for {@link RequestReplyConsumerDeps}. */
@@ -22,4 +22,8 @@ export interface RequestReplyConsumerDeps {
    * Defaults to prepending `dlq.` to the original subject.
    */
   dlqSubjectBuilder?: (subject: string) => string;
+  /** NATS connection used to create streams when auto-creation is enabled. */
+  connection?: NatsConnection;
+  /** When true, auto-create a JetStream stream for the response subject pattern. Default: false. */
+  autoCreateStreams?: boolean;
 }

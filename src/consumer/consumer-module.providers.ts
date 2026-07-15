@@ -86,6 +86,8 @@ export function createSyncRequestReplyConsumerDepsProvider(options: SyncRequestR
       logger,
       responseSubjectPattern: options.responseSubjectPattern,
       dlqSubjectBuilder: options.dlqSubjectBuilder,
+      connection: options.connection,
+      autoCreateStreams: options.autoCreateStreams,
     }),
     inject: [EventLoggerService],
   };
@@ -177,6 +179,8 @@ export function createAsyncRequestReplyConsumerDepsProvider(): Provider {
       logger,
       responseSubjectPattern: combined.moduleOptions.responseSubjectPattern,
       dlqSubjectBuilder: combined.connection.dlqSubjectBuilder,
+      connection: combined.connection.connection ?? combined.moduleOptions.connection,
+      autoCreateStreams: combined.moduleOptions.autoCreateStreams,
     }),
     inject: [REQUEST_REPLY_CONSUMER_ASYNC_DEPS_TOKEN, EventLoggerService],
   };

@@ -8,6 +8,7 @@ import { RegisterHandlerOptions } from './register-handler-options.interface';
 import { RequestReplyConsumerDeps, REQUEST_REPLY_CONSUMER_DEPS_TOKEN } from './request-reply-consumer-deps.interface';
 import { defaultDlqSubjectBuilder, resolveConsumerSubscribeOpts } from './subscribe-options.interface';
 import { RequestReplyMessageProcessor } from './request-reply-message-processor';
+import { StreamAutoCreator } from './stream-auto-creator';
 
 /**
  * Registry and dispatch service for async request-reply response handlers.
@@ -24,6 +25,7 @@ export class RequestReplyConsumerService implements OnModuleInit {
   private readonly logger: EventLoggerService;
   private readonly responseSubjectPattern: string;
   private readonly processor: RequestReplyMessageProcessor;
+  private readonly streamAutoCreator?: StreamAutoCreator;
 
   constructor(@Inject(REQUEST_REPLY_CONSUMER_DEPS_TOKEN) deps: RequestReplyConsumerDeps) {
     this.jetStream = deps.jetStream;
@@ -36,6 +38,8 @@ export class RequestReplyConsumerService implements OnModuleInit {
       dlqSubjectBuilder,
       dispatch: (options: DispatchOptions) => this.dispatch(options),
     });
+    this.streamAutoCreator =
+      deps.autoCreateStreams && deps.connection ? new StreamAutoCreator({ connection: deps.connection }) : undefined;
   }
 
   /** Auto-subscribes to the response subject pattern on module init. */
@@ -89,6 +93,7 @@ export class RequestReplyConsumerService implements OnModuleInit {
 
   /** Subscribes to a NATS subject pattern for response messages. */
   async subscribe(subject: string): Promise<void> {
+    await this.ensureStreamIfNeeded(subject);
     const subscription = await this.jetStream.subscribe(subject, resolveConsumerSubscribeOpts());
     this.processSubscription(subscription, subject).catch((error: unknown) =>
       this.logger.logEventError({
@@ -108,6 +113,12 @@ export class RequestReplyConsumerService implements OnModuleInit {
 
   private buildHandlerKey(eventType: string, companyId?: string): string {
     return companyId ? `${eventType}:${companyId}` : eventType;
+  }
+
+  private async ensureStreamIfNeeded(subject: string): Promise<void> {
+    if (this.streamAutoCreator) {
+      await this.streamAutoCreator.ensureStreamExists(subject);
+    }
   }
 
   private async processSubscription(subscription: AsyncIterable<JsMsg>, subject: string): Promise<void> {

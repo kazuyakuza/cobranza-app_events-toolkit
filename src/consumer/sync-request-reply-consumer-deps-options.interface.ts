@@ -1,4 +1,4 @@
-import { JetStreamClient } from 'nats';
+import { JetStreamClient, NatsConnection } from 'nats';
 
 /**
  * Options for creating a synchronous Request-Reply consumer dependencies provider.
@@ -11,4 +11,8 @@ export interface SyncRequestReplyConsumerDepsOptions {
   responseSubjectPattern?: string;
   /** Custom DLQ subject builder. Defaults to prepending `dlq.`. */
   dlqSubjectBuilder?: (subject: string) => string;
+  /** NATS connection used to create streams when auto-creation is enabled. */
+  connection?: NatsConnection;
+  /** When true, auto-create a JetStream stream for the response subject pattern. */
+  autoCreateStreams?: boolean;
 }
