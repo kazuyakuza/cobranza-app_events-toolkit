@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.11.2] — 2026-07-14
+
+### Fixed
+
+- **`RequestReplyConsumerService` now supports `consumer.autoCreateStreams`**: Previously only `JetStreamConsumerService` auto-created JetStream streams on subscribe. The request-reply response consumer subscribed to its `responseSubjectPattern` (default `company.*.response.v1`) without ensuring a stream existed, causing `Error: no stream matches subject` at startup in services using request-reply with `autoCreateStreams: true`. `RequestReplyConsumerService` now instantiates `StreamAutoCreator` when both `connection` and `autoCreateStreams` are provided and calls `ensureStreamExists()` before `jetStream.subscribe()`.
+
+### Changed
+
+- `RequestReplyConsumerDeps` and `SyncRequestReplyConsumerDepsOptions` now accept optional `connection` and `autoCreateStreams` fields.
+- `createSyncRequestReplyConsumerDepsProvider` and `createAsyncRequestReplyConsumerDepsProvider` propagate `connection` and `autoCreateStreams` to the request-reply consumer deps.
+- `ConsumerModule.forRoot()` forwards `connection` and `autoCreateStreams` to the sync request-reply deps provider (`forRootAsync` already wired via the combined async deps token).
+
+### Tests
+
+- Added `src/consumer/request-reply-consumer.service.auto-create.spec.ts` covering stream auto-creation (enabled + missing → created, enabled + exists → skipped, disabled → no manager call), mirroring `jetstream-consumer.service.auto-create.spec.ts`.
+
 ## [0.11.0] — 2026-07-14
 
 ### Added
