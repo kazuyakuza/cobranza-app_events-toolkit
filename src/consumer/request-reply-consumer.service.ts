@@ -45,13 +45,7 @@ export class RequestReplyConsumerService implements OnModuleInit {
   /** Auto-subscribes to the response subject pattern on module init. */
   onModuleInit(): void {
     this.subscribe(this.responseSubjectPattern).catch((error: unknown) =>
-      this.logger.logEventError({
-        eventId: 'unknown',
-        eventType: 'unknown',
-        subject: this.responseSubjectPattern,
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      }),
+      this.logGeneralError(error, this.responseSubjectPattern),
     );
   }
 
@@ -95,15 +89,7 @@ export class RequestReplyConsumerService implements OnModuleInit {
   async subscribe(subject: string): Promise<void> {
     await this.ensureStreamIfNeeded(subject);
     const subscription = await this.jetStream.subscribe(subject, resolveConsumerSubscribeOpts());
-    this.processSubscription(subscription, subject).catch((error: unknown) =>
-      this.logger.logEventError({
-        eventId: 'unknown',
-        eventType: 'unknown',
-        subject,
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      }),
-    );
+    this.processSubscription(subscription, subject).catch((error: unknown) => this.logGeneralError(error, subject));
   }
 
   private findHandler(eventType: string, companyId?: string): EventHandler | undefined {
@@ -119,6 +105,16 @@ export class RequestReplyConsumerService implements OnModuleInit {
     if (this.streamAutoCreator) {
       await this.streamAutoCreator.ensureStreamExists(subject);
     }
+  }
+
+  private logGeneralError(error: unknown, subject: string): void {
+    this.logger.logEventError({
+      eventId: 'unknown',
+      eventType: 'unknown',
+      subject,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
   }
 
   private async processSubscription(subscription: AsyncIterable<JsMsg>, subject: string): Promise<void> {

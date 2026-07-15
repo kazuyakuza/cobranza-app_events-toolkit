@@ -1,4 +1,4 @@
-import { Provider } from '@nestjs/common';
+import { Provider, Type } from '@nestjs/common';
 import { DiscoveryService, Reflector } from '@nestjs/core';
 import { JetStreamClient } from 'nats';
 import { EventLoggerService } from '../logging/event-logger.service';
@@ -130,16 +130,20 @@ export function createAsyncConsumerServicesProvider(): Provider {
   };
 }
 
-/** Provider that combines ResolvedConnection and ConsumerModuleOptions for JetStream async deps. */
-export function createJetStreamAsyncDepsProvider(): Provider {
+function createAsyncCombinedDepsProvider(token: string | symbol | Type<unknown>): Provider {
   return {
-    provide: JETSTREAM_CONSUMER_ASYNC_DEPS_TOKEN,
+    provide: token,
     useFactory: (connection: ResolvedConnection, moduleOptions: ConsumerModuleOptions) => ({
       connection,
       moduleOptions,
     }),
     inject: [RESOLVED_CONNECTION_TOKEN, CONSUMER_MODULE_OPTIONS],
   };
+}
+
+/** Provider that combines ResolvedConnection and ConsumerModuleOptions for JetStream async deps. */
+export function createJetStreamAsyncDepsProvider(): Provider {
+  return createAsyncCombinedDepsProvider(JETSTREAM_CONSUMER_ASYNC_DEPS_TOKEN);
 }
 
 /** Provider for JetStream consumer dependencies (async forRootAsync variant). */
@@ -160,14 +164,7 @@ export function createAsyncJetStreamConsumerDepsProvider(): Provider {
 
 /** Provider that combines ResolvedConnection and ConsumerModuleOptions for request-reply async deps. */
 export function createRequestReplyAsyncDepsProvider(): Provider {
-  return {
-    provide: REQUEST_REPLY_CONSUMER_ASYNC_DEPS_TOKEN,
-    useFactory: (connection: ResolvedConnection, moduleOptions: ConsumerModuleOptions) => ({
-      connection,
-      moduleOptions,
-    }),
-    inject: [RESOLVED_CONNECTION_TOKEN, CONSUMER_MODULE_OPTIONS],
-  };
+  return createAsyncCombinedDepsProvider(REQUEST_REPLY_CONSUMER_ASYNC_DEPS_TOKEN);
 }
 
 /** Provider for request-reply consumer dependencies (async forRootAsync variant). */
