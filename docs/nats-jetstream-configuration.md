@@ -179,6 +179,10 @@ const natsConnection = await connect({ servers: ['nats://localhost:4222'] });
 export class AppModule {}
 ```
 
+### Affected Consumers
+
+When `autoCreateStreams` is enabled, **both** `JetStreamConsumerService` (subject-based event handlers via `@OnEvent`) and `RequestReplyConsumerService` (response-pattern subscription via `@OnRequestReply`) auto-create streams before subscribing. The request-reply consumer uses its `responseSubjectPattern` (default `company.*.response.v1`) as the subject for auto-creation.
+
 ### How It Works
 
 1. Before subscribing to a subject, the consumer calls `StreamAutoCreator.ensureStreamExists()`.
