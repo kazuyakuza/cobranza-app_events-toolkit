@@ -1,4 +1,4 @@
-import { AckPolicy, consumerOpts, ConsumerOptsBuilder, ConsumerOpts, JsMsg } from 'nats';
+import { AckPolicy, consumerOpts, ConsumerOptsBuilder, ConsumerOpts, createInbox, JsMsg } from 'nats';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { EventContext } from '../common/envelope/event-context.interface';
 import { EventHandler } from './consumer.service';
@@ -13,12 +13,14 @@ export type ConsumerSubscribeOpts = ConsumerOptsBuilder | Partial<ConsumerOpts>;
 
 /** Returns true when the value is a NATS ConsumerOptsBuilder (duck-typed via `getOpts`). */
 export function isConsumerOptsBuilder(value: unknown): value is ConsumerOptsBuilder {
-  return typeof (value as { getOpts?: unknown })?.getOpts === 'function';
+  return typeof (value as { getOpts?: unknown; })?.getOpts === 'function';
 }
 
-/** Builds the default JetStream consumer options used when none are provided. */
+/** Builds the default JetStream consumer options used when none are provided.
+ * Chains `.deliverTo(createInbox())` so the push consumer gets a unique `deliver_subject`,
+ * required by NATS 2.29.3 `jetStream.subscribe()` (`push consumer requires deliver_subject`). */
 export function createDefaultConsumerOpts(): ConsumerOptsBuilder {
-  return consumerOpts().manualAck().ackExplicit();
+  return consumerOpts().manualAck().ackExplicit().deliverTo(createInbox());
 }
 
 /** Resolves caller consumer options so `ack_policy` is always set, preventing the NATS `ack_policy` undefined crash. */
