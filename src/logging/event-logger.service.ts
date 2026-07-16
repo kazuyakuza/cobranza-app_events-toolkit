@@ -1,5 +1,12 @@
 import { Injectable, Optional } from '@nestjs/common';
 import * as winston from 'winston';
+import {
+  EventLoggerOptions,
+  EventLogContext,
+  EventErrorLogContext,
+  OutboxLogContext,
+  OutboxErrorLogContext,
+} from './event-logger-context.interface';
 
 /**
  * Structured logging service for all event operations across the platform.
@@ -108,6 +115,32 @@ export class EventLoggerService {
   }
 
   /**
+   * Logs a generic informational message with arbitrary structured metadata.
+   *
+   * Use for lifecycle events that don't fit specialized `logEvent*` / `logOutbox*` shapes
+   * (e.g. JetStream stream auto-creation with custom overrides).
+   *
+   * @param message - Human-readable log message.
+   * @param meta - Optional structured metadata merged into the log entry.
+   */
+  logInfo(message: string, meta?: Record<string, unknown>): void {
+    this.logger.info(message, meta);
+  }
+
+  /**
+   * Logs a generic error message with arbitrary structured metadata.
+   *
+   * Use for failures that don't map to the event/DLQ domain (e.g. NATS server rejecting
+   * a stream auto-creation request).
+   *
+   * @param message - Human-readable log message.
+   * @param meta - Optional structured metadata merged into the log entry.
+   */
+  logError(message: string, meta?: Record<string, unknown>): void {
+    this.logger.error(message, meta);
+  }
+
+  /**
    * Creates a Winston logger instance from the provided options.
    *
    * Falls back to Console transport at `info` level with JSON format
@@ -124,60 +157,4 @@ export class EventLoggerService {
   }
 }
 
-/** Configuration options for {@link EventLoggerService}. */
-export interface EventLoggerOptions {
-  /** Winston transports. Defaults to Console if not provided. */
-  transports?: winston.transport[];
-  /** Minimum log level. Defaults to `'info'`. */
-  level?: string;
-}
-
-/** Metadata context for standard event log entries. */
-export interface EventLogContext {
-  /** Unique event identifier. */
-  eventId: string;
-  /** Event type in dot-notation. */
-  eventType: string;
-  /** NATS subject the event was published/consumed on. */
-  subject: string;
-  /** Correlation ID for request chain tracing. Optional. */
-  correlationId?: string;
-  /** OpenTelemetry trace ID. Optional. */
-  traceId?: string;
-}
-
-/** Metadata context for error and DLQ event log entries. */
-export interface EventErrorLogContext extends EventLogContext {
-  /** Error message describing the failure. */
-  error: string;
-  /** Stack trace of the underlying error. Optional. */
-  stack?: string;
-  /** Human-readable reason for DLQ routing. Optional. */
-  dlqReason?: string;
-  /** Number of delivery attempts before routing to DLQ. Optional. */
-  retryCount?: number;
-}
-
-/** Metadata context for outbox event log entries. */
-export interface OutboxLogContext {
-  /** Unique event identifier. */
-  eventId: string;
-  /** Event type in dot-notation. */
-  eventType: string;
-  /** NATS subject the event will be published to. */
-  subject: string;
-  /** Current delivery attempt number (0 for initial save). */
-  attempt: number;
-  /** Correlation ID for request chain tracing. Optional. */
-  correlationId?: string;
-  /** OpenTelemetry trace ID. Optional. */
-  traceId?: string;
-}
-
-/** Metadata context for outbox error and DLQ event log entries. */
-export interface OutboxErrorLogContext extends OutboxLogContext {
-  /** Error message describing the failure. */
-  error: string;
-  /** Stack trace of the underlying error. Optional. */
-  stack?: string;
-}
+export { EventLoggerOptions, EventLogContext, EventErrorLogContext, OutboxLogContext, OutboxErrorLogContext } from './event-logger-context.interface';
