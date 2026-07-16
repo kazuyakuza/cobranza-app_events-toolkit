@@ -46,9 +46,11 @@ export function resolveConsumerSubscribeOpts(opts?: ConsumerSubscribeOpts): Cons
 }
 
 /** Normalizes a plain {@link ConsumerOpts} so it is safe for `jetStream.subscribe()`.
- * Defaults `config.ack_policy` and `config.deliver_subject` only when the caller
- * omitted them; explicitly-supplied values (including the push invariant
- * `deliver_subject`) are preserved verbatim. */
+ *
+ * Uses nullish coalescing (`??=`) to default `config.ack_policy` (to
+ * {@link DEFAULT_ACK_POLICY}) and `config.deliver_subject` (to a unique
+ * {@link createInbox}) when the caller left them `null` or `undefined`.
+ * Explicitly-supplied values are preserved verbatim. */
 function ensureValidConsumerConfig(opts: Partial<ConsumerOpts>): Partial<ConsumerOpts> {
   const config = { ...opts.config };
   config.ack_policy ??= DEFAULT_ACK_POLICY;
