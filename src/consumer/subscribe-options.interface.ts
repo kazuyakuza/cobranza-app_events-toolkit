@@ -1,4 +1,6 @@
 import { AckPolicy, consumerOpts, ConsumerOptsBuilder, ConsumerOpts, createInbox, JsMsg } from 'nats';
+import { ValidationError } from 'class-validator';
+import { EventConsumerException } from '../common/errors/event-consumer.exception';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { EventContext } from '../common/envelope/event-context.interface';
 import { EventHandler } from './consumer.service';
@@ -73,7 +75,7 @@ export interface SubscribeOptions {
 
 /** Options for creating a validation exception from class-validator errors. */
 export interface ValidationErrorOptions {
-  errors: import('class-validator').ValidationError[];
+  errors: ValidationError[];
   subject: string;
   plain: Record<string, unknown>;
 }
@@ -88,7 +90,7 @@ export interface ErrorHandlingOptions {
 
 /** Options for routing a failed message to the Dead Letter Queue. */
 export interface DlqRoutingOptions {
-  exception: import('../common/errors/event-consumer.exception').EventConsumerException;
+  exception: EventConsumerException;
   msg: JsMsg;
   subject: string;
   originalPayload?: Record<string, unknown>;
