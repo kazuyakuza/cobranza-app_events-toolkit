@@ -1,4 +1,4 @@
-import { NatsConnection } from 'nats';
+import { NatsConnection, StreamConfig } from 'nats';
 import { OutboxServiceOptions } from './outbox/outbox-service-options.interface';
 import { EntityManagerLike } from './outbox/outbox.types';
 import { Type, DynamicModule, ForwardReference } from '@nestjs/common';
@@ -42,6 +42,12 @@ export interface EventsToolkitConsumerOptions {
   dlqSubjectBuilder?: (subject: string) => string;
   /** When true, auto-create a JetStream stream covering each subscribed subject. Default: false. */
   autoCreateStreams?: boolean;
+  /**
+   * Optional overrides merged over the auto-creator's default JetStream stream config
+   * for every stream created via `autoCreateStreams`. Every NATS field is supported
+   * (e.g. `max_bytes`, `max_msgs`, `num_replicas`, `max_age`). User-supplied fields win.
+   */
+  streamConfig?: Partial<StreamConfig>;
 }
 
 /** Top-level options for EventsToolkitModule.forRoot. */

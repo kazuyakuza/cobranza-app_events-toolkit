@@ -1,7 +1,7 @@
 import { DynamicModule, Module, Type, ForwardReference } from '@nestjs/common';
 import { DiscoveryModule } from '@nestjs/core';
 import { DiscoveryService, Reflector } from '@nestjs/core';
-import { JetStreamClient, NatsConnection } from 'nats';
+import { JetStreamClient, NatsConnection, StreamConfig } from 'nats';
 import { EventLoggerService } from '../logging/event-logger.service';
 import { ConsumerService } from './consumer.service';
 import { JetStreamConsumerService } from './jetstream-consumer.service';
@@ -71,6 +71,11 @@ export interface ConsumerModuleOptions {
   responseSubjectPattern?: string;
   /** When true, auto-create a JetStream stream for each subscribe subject. Default: false. */
   autoCreateStreams?: boolean;
+  /**
+   * Optional overrides for the JetStream stream auto-creator. Merged over
+   * built-in defaults so user-supplied fields (e.g. `max_bytes`) win.
+   */
+  streamConfig?: Partial<StreamConfig>;
 }
 
 /** Asynchronous options for {@link ConsumerModule.forRootAsync}. */

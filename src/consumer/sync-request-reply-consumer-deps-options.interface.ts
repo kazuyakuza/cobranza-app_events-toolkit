@@ -1,4 +1,4 @@
-import { JetStreamClient, NatsConnection } from 'nats';
+import { JetStreamClient, NatsConnection, StreamConfig } from 'nats';
 
 /**
  * Options for creating a synchronous Request-Reply consumer dependencies provider.
@@ -15,4 +15,6 @@ export interface SyncRequestReplyConsumerDepsOptions {
   connection?: NatsConnection;
   /** When true, auto-create a JetStream stream for the response subject pattern. */
   autoCreateStreams?: boolean;
+  /** Optional NATS stream config overrides forwarded to {@link StreamAutoCreator}. */
+  streamConfig?: Partial<StreamConfig>;
 }

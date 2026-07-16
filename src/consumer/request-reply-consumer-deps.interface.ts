@@ -1,4 +1,4 @@
-import { JetStreamClient, NatsConnection } from 'nats';
+import { JetStreamClient, NatsConnection, StreamConfig } from 'nats';
 import { EventLoggerService } from '../logging/event-logger.service';
 
 /** Injection token for {@link RequestReplyConsumerDeps}. */
@@ -26,4 +26,6 @@ export interface RequestReplyConsumerDeps {
   connection?: NatsConnection;
   /** When true, auto-create a JetStream stream for the response subject pattern. Default: false. */
   autoCreateStreams?: boolean;
+  /** Optional NATS stream config overrides forwarded to {@link StreamAutoCreator}. */
+  streamConfig?: Partial<StreamConfig>;
 }

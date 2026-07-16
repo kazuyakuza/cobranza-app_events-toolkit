@@ -1,4 +1,4 @@
-import { JetStreamClient, NatsConnection } from 'nats';
+import { JetStreamClient, NatsConnection, StreamConfig } from 'nats';
 
 /**
  * Options for creating a synchronous JetStream consumer dependencies provider.
@@ -13,4 +13,6 @@ export interface SyncJetStreamConsumerDepsOptions {
   connection?: NatsConnection;
   /** When true, auto-create a JetStream stream for each subscribe subject. */
   autoCreateStreams?: boolean;
+  /** Optional NATS stream config overrides forwarded to {@link StreamAutoCreator}. */
+  streamConfig?: Partial<StreamConfig>;
 }
