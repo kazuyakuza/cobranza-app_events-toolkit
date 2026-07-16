@@ -2,6 +2,13 @@ import { DiscardPolicy, NatsConnection, RetentionPolicy, StorageType } from 'nat
 import { StreamAutoCreator } from './stream-auto-creator';
 import { buildStreamName } from './build-stream-name.util';
 
+function createMockLogger(): {
+  logInfo: jest.Mock;
+  logError: jest.Mock;
+} {
+  return { logInfo: jest.fn(), logError: jest.fn() };
+}
+
 function createMockConnection(): {
   connection: NatsConnection;
   jetStreamManagerMock: { streams: { find: jest.Mock; add: jest.Mock } };
@@ -98,6 +105,86 @@ describe('StreamAutoCreator', () => {
       const creator = new StreamAutoCreator({ connection });
 
       await expect(creator.ensureStreamExists('test.subject')).rejects.toThrow('permission denied');
+    });
+  });
+
+  describe('with streamConfig overrides', () => {
+    it('should merge overrides over defaults (user max_bytes wins)', async () => {
+      const { connection, jetStreamManagerMock } = createMockConnection();
+      jetStreamManagerMock.find.mockRejectedValue(new Error('no stream matches subject'));
+      jetStreamManagerMock.add.mockResolvedValue({});
+      const creator = new StreamAutoCreator({
+        connection: connection,
+        streamConfig: { max_bytes: 100_000 },
+      });
+
+      await creator.ensureStreamExists('test.subject');
+
+      const sent = jetStreamManagerMock.add.mock.calls[0][0] as { max_bytes: number };
+      expect(sent.max_bytes).toBe(100_000);
+      expect(sent.name).toBe('auto-test-subject');
+      expect(sent.subjects).toEqual(['test.subject']);
+      expect(sent.retention).toBe(RetentionPolicy.Limits);
+    });
+
+    it('should INFO-log overrides when logger is provided and overrides exist', async () => {
+      const { connection, jetStreamManagerMock } = createMockConnection();
+      const logger = createMockLogger();
+      jetStreamManagerMock.find.mockRejectedValue(new Error('no stream matches subject'));
+      jetStreamManagerMock.add.mockResolvedValue({});
+      const creator = new StreamAutoCreator({
+        connection,
+        streamConfig: { max_bytes: 100_000 },
+        logger,
+      });
+
+      await creator.ensureStreamExists('test.subject');
+
+      expect(logger.logInfo).toHaveBeenCalledTimes(1);
+      const [message, meta] = logger.logInfo.mock.calls[0];
+      expect(message).toBe('Stream auto-creation with custom config overrides');
+      expect((meta as { subject: string }).subject).toBe('test.subject');
+      expect((meta as { config: { max_bytes: number } }).config.max_bytes).toBe(100_000);
+    });
+
+    it('should not INFO-log when no streamConfig is provided', async () => {
+      const { connection, jetStreamManagerMock } = createMockConnection();
+      const logger = createMockLogger();
+      jetStreamManagerMock.find.mockRejectedValue(new Error('no stream matches subject'));
+      jetStreamManagerMock.add.mockResolvedValue({});
+      const creator = new StreamAutoCreator({ connection, logger });
+
+      await creator.ensureStreamExists('test.subject');
+
+      expect(logger.logInfo).not.toHaveBeenCalled();
+    });
+
+    it('should ERROR-log server rejection and rethrow unknown errors', async () => {
+      const { connection, jetStreamManagerMock } = createMockConnection();
+      const logger = createMockLogger();
+      jetStreamManagerMock.find.mockRejectedValue(new Error('no stream matches subject'));
+      jetStreamManagerMock.add.mockRejectedValue(new Error('account requires a stream config to have max bytes set'));
+      const creator = new StreamAutoCreator({ connection, logger });
+
+      await expect(creator.ensureStreamExists('test.subject')).rejects.toThrow(
+        'account requires a stream config to have max bytes set',
+      );
+      expect(logger.logError).toHaveBeenCalledTimes(1);
+      const [message, meta] = logger.logError.mock.calls[0];
+      expect(message).toBe('NATS server rejected stream config');
+      expect((meta as { subject: string }).subject).toBe('test.subject');
+      expect((meta as { error: string }).error).toContain('max bytes set');
+    });
+
+    it('should not ERROR-log race-condition errors (stream name in use)', async () => {
+      const { connection, jetStreamManagerMock } = createMockConnection();
+      const logger = createMockLogger();
+      jetStreamManagerMock.find.mockRejectedValue(new Error('no stream matches subject'));
+      jetStreamManagerMock.add.mockRejectedValue(new Error('stream name already in use'));
+      const creator = new StreamAutoCreator({ connection, logger });
+
+      await expect(creator.ensureStreamExists('test.subject')).resolves.toBeUndefined();
+      expect(logger.logError).not.toHaveBeenCalled();
     });
   });
 });

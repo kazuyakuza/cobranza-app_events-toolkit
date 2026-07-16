@@ -12,6 +12,8 @@ describe('JetStreamConsumerService — subscribe with autoCreateStreams', () => 
     logEventError: jest.Mock;
     logEventDlq: jest.Mock;
     logEventEmitted: jest.Mock;
+    logInfo: jest.Mock;
+    logError: jest.Mock;
   };
   let jetStreamManagerMock: { streams: { find: jest.Mock; add: jest.Mock } };
   let connectionMock: { jetstreamManager: jest.Mock };
@@ -25,13 +27,15 @@ describe('JetStreamConsumerService — subscribe with autoCreateStreams', () => 
       logEventError: jest.fn(),
       logEventDlq: jest.fn(),
       logEventEmitted: jest.fn(),
+      logInfo: jest.fn(),
+      logError: jest.fn(),
     };
     jetStreamManagerMock = { streams: { find: jest.fn(), add: jest.fn().mockResolvedValue({}) } };
     connectionMock = { jetstreamManager: jest.fn().mockResolvedValue(jetStreamManagerMock) };
   });
 
   async function buildServiceWithAutoCreate(
-    options: { connection?: unknown; autoCreateStreams?: boolean } = {},
+    options: { connection?: unknown; autoCreateStreams?: boolean; streamConfig?: Record<string, unknown> } = {},
   ): Promise<JetStreamConsumerService> {
     const module = await Test.createTestingModule({
       providers: [
@@ -44,6 +48,7 @@ describe('JetStreamConsumerService — subscribe with autoCreateStreams', () => 
             dlqSubjectBuilder: defaultDlqSubjectBuilder,
             connection: options.connection,
             autoCreateStreams: options.autoCreateStreams,
+            streamConfig: options.streamConfig,
           }),
           inject: [ConsumerService, EventLoggerService],
         },
@@ -106,5 +111,36 @@ describe('JetStreamConsumerService — subscribe with autoCreateStreams', () => 
     jetStream.subscribe.mockResolvedValue(asyncIterable);
 
     await expect(serviceWithAuto.subscribe({ subject: testSubject, handler: jest.fn() })).resolves.toBeUndefined();
+  });
+
+  it('forwards streamConfig overrides to jetStreamManager.streams.add', async () => {
+    jetStreamManagerMock.streams.find.mockRejectedValue(new Error('no stream matches subject'));
+    const serviceWithAuto = await buildServiceWithAutoCreate({
+      connection: connectionMock,
+      autoCreateStreams: true,
+      streamConfig: { max_bytes: 42 },
+    });
+    const asyncIterable = (async function* () {})();
+    jetStream.subscribe.mockResolvedValue(asyncIterable);
+
+    await serviceWithAuto.subscribe({ subject: testSubject, handler: jest.fn() });
+
+    const sent = jetStreamManagerMock.streams.add.mock.calls[0][0] as { max_bytes: number };
+    expect(sent.max_bytes).toBe(42);
+  });
+
+  it('INFO-logs custom overrides via the injected logger', async () => {
+    jetStreamManagerMock.streams.find.mockRejectedValue(new Error('no stream matches subject'));
+    const serviceWithAuto = await buildServiceWithAutoCreate({
+      connection: connectionMock,
+      autoCreateStreams: true,
+      streamConfig: { max_bytes: 42 },
+    });
+    const asyncIterable = (async function* () {})();
+    jetStream.subscribe.mockResolvedValue(asyncIterable);
+
+    await serviceWithAuto.subscribe({ subject: testSubject, handler: jest.fn() });
+
+    expect(mockLogger.logInfo).toHaveBeenCalledTimes(1);
   });
 });

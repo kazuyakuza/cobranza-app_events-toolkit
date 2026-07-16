@@ -141,4 +141,20 @@ describe('EventLoggerService', () => {
       expect(mockWarn).toHaveBeenCalledWith('Outbox event routed to DLQ', outboxErrorContext);
     });
   });
+
+  describe('logInfo', () => {
+    it('logs at info level with message and meta', () => {
+      const service = new EventLoggerService();
+      service.logInfo('Custom info', { foo: 'bar' });
+      expect(mockInfo).toHaveBeenCalledWith('Custom info', { foo: 'bar' });
+    });
+  });
+
+  describe('logError', () => {
+    it('logs at error level with message and meta', () => {
+      const service = new EventLoggerService();
+      service.logError('Custom error', { baz: 42 });
+      expect(mockError).toHaveBeenCalledWith('Custom error', { baz: 42 });
+    });
+  });
 });

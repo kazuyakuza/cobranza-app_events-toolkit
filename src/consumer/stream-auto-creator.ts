@@ -104,11 +104,11 @@ export class StreamAutoCreator {
   }
 
   private buildStreamConfig(subject: string): StreamConfig {
-    const config: StreamConfig = {
+    const config = {
       ...this.defaultStreamFields(),
       name: this.buildStreamName(subject),
       subjects: [subject],
-    };
+    } as StreamConfig;
     if (this.streamConfig) Object.assign(config, this.streamConfig);
     return config;
   }

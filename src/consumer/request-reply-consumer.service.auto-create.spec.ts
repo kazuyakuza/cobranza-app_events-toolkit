@@ -11,6 +11,8 @@ describe('RequestReplyConsumerService — subscribe with autoCreateStreams', () 
     logEventError: jest.Mock;
     logEventDlq: jest.Mock;
     logEventEmitted: jest.Mock;
+    logInfo: jest.Mock;
+    logError: jest.Mock;
   };
   let jetStreamManagerMock: { streams: { find: jest.Mock; add: jest.Mock } };
   let connectionMock: { jetstreamManager: jest.Mock };
@@ -24,13 +26,15 @@ describe('RequestReplyConsumerService — subscribe with autoCreateStreams', () 
       logEventError: jest.fn(),
       logEventDlq: jest.fn(),
       logEventEmitted: jest.fn(),
+      logInfo: jest.fn(),
+      logError: jest.fn(),
     };
     jetStreamManagerMock = { streams: { find: jest.fn(), add: jest.fn().mockResolvedValue({}) } };
     connectionMock = { jetstreamManager: jest.fn().mockResolvedValue(jetStreamManagerMock) };
   });
 
   async function buildServiceWithAutoCreate(
-    options: { connection?: unknown; autoCreateStreams?: boolean } = {},
+    options: { connection?: unknown; autoCreateStreams?: boolean; streamConfig?: Record<string, unknown> } = {},
   ): Promise<RequestReplyConsumerService> {
     const module = await Test.createTestingModule({
       providers: [
@@ -43,6 +47,7 @@ describe('RequestReplyConsumerService — subscribe with autoCreateStreams', () 
             responseSubjectPattern: testSubject,
             connection: options.connection,
             autoCreateStreams: options.autoCreateStreams,
+            streamConfig: options.streamConfig,
           }),
           inject: [EventLoggerService],
         },
@@ -91,5 +96,21 @@ describe('RequestReplyConsumerService — subscribe with autoCreateStreams', () 
     await serviceWithoutAuto.subscribe(testSubject);
 
     expect(connectionMock.jetstreamManager).not.toHaveBeenCalled();
+  });
+
+  it('forwards streamConfig overrides to jetStreamManager.streams.add', async () => {
+    jetStreamManagerMock.streams.find.mockRejectedValue(new Error('no stream matches subject'));
+    const serviceWithAuto = await buildServiceWithAutoCreate({
+      connection: connectionMock,
+      autoCreateStreams: true,
+      streamConfig: { max_bytes: 42 },
+    });
+    const asyncIterable = (async function* () {})();
+    jetStream.subscribe.mockResolvedValue(asyncIterable);
+
+    await serviceWithAuto.subscribe(testSubject);
+
+    const sent = jetStreamManagerMock.streams.add.mock.calls[0][0] as { max_bytes: number };
+    expect(sent.max_bytes).toBe(42);
   });
 });

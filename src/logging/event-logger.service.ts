@@ -157,4 +157,10 @@ export class EventLoggerService {
   }
 }
 
-export { EventLoggerOptions, EventLogContext, EventErrorLogContext, OutboxLogContext, OutboxErrorLogContext } from './event-logger-context.interface';
+export {
+  EventLoggerOptions,
+  EventLogContext,
+  EventErrorLogContext,
+  OutboxLogContext,
+  OutboxErrorLogContext,
+} from './event-logger-context.interface';
