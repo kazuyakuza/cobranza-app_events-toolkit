@@ -25,7 +25,14 @@ export function createDefaultConsumerOpts(): ConsumerOptsBuilder {
   return consumerOpts().manualAck().ackExplicit().deliverTo(createInbox());
 }
 
-/** Resolves caller consumer options so `ack_policy` is always set, preventing the NATS `ack_policy` undefined crash. */
+/**
+ * Normalizes caller-supplied consumer options into a value safe for `jetStream.subscribe()`.
+ *
+ * - `undefined` → returns {@link createDefaultConsumerOpts} (includes `deliverTo(createInbox())`).
+ * - {@link ConsumerOptsBuilder} → returned as-is (caller is responsible for `deliverTo`).
+ * - `Partial<ConsumerOpts>` → `config.ack_policy` is defaulted to {@link DEFAULT_ACK_POLICY}
+ *   to prevent the NATS `ack_policy` undefined crash.
+ */
 export function resolveConsumerSubscribeOpts(opts?: ConsumerSubscribeOpts): ConsumerSubscribeOpts {
   if (opts === undefined) {
     return createDefaultConsumerOpts();
