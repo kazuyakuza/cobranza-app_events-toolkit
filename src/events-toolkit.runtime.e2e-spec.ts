@@ -45,6 +45,9 @@ jest.mock('nats', () => {
     ackExplicit() {
       return builder;
     },
+    deliverTo() {
+      return builder;
+    },
     getOpts() {
       return { config: { ack_policy: ackPolicyExplicit } };
     },
@@ -52,6 +55,7 @@ jest.mock('nats', () => {
   return {
     _subscribeFn: subscribe,
     AckPolicy: { Explicit: ackPolicyExplicit, All: 'All', None: 'None' },
+    createInbox: () => '_INBOX.test',
     consumerOpts: () => builder,
     connect: jest.fn().mockResolvedValue({
       jetstream: jest.fn().mockReturnValue({
