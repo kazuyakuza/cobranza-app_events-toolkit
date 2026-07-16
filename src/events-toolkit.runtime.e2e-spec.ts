@@ -36,7 +36,7 @@ import { HandlerWithAccessorsProvider } from './events-toolkit.runtime.e2e-fixtu
 const RESPONSE_SUBJECT = 'company.*.response.v1';
 
 jest.mock('nats', () => {
-  const subscribe = jest.fn();
+  const subscribe = jest.fn().mockResolvedValue((async function* () { })());
   const ackPolicyExplicit = 'Explicit';
   const builder = {
     manualAck() {
@@ -100,12 +100,12 @@ function hasValidConsumerConfig(arg: unknown): boolean {
 }
 
 function argHasAckPolicy(arg: unknown): boolean {
-  const config = (arg as { config?: { ack_policy?: unknown } })?.config;
+  const config = (arg as { config?: { ack_policy?: unknown; }; })?.config;
   return Boolean(config?.ack_policy);
 }
 
 function resolveSubscribe(): jest.Mock {
-  return (jest.requireMock('nats') as { _subscribeFn: jest.Mock })._subscribeFn;
+  return (jest.requireMock('nats') as { _subscribeFn: jest.Mock; })._subscribeFn;
 }
 
 describe('EventsToolkitModule.forRootAsync runtime e2e', () => {
