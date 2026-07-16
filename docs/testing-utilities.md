@@ -151,7 +151,7 @@ Replaces `RequestReplyService`. Records request/response calls and returns confi
 | `getSendRequestCalls()` | Returns recorded `SendRequestOptions[]` |
 | `clear()` | Resets all calls and restores default mock response |
 
-> **Consumer defaults:** `JetStreamConsumerService.subscribe()` applies `AckPolicy.Explicit` + `manualAck` when `consumerOpts` is omitted, preventing the NATS `ack_policy` undefined crash that occurs when an empty `{}` is passed to `jetStream.subscribe()`.
+> **Consumer defaults:** `JetStreamConsumerService.subscribe()` applies `AckPolicy.Explicit` + `manualAck` + `.deliverTo(createInbox())` when `consumerOpts` is omitted. This guarantees a unique `deliver_subject` for the push consumer (required by NATS 2.29.3 `jetStream.subscribe()`, which throws `push consumer requires deliver_subject` when it is absent) and prevents the `ack_policy` undefined crash that occurs when an empty `{}` is passed to `jetStream.subscribe()`.
 
 ## Assertion Helpers
 
@@ -384,6 +384,7 @@ npm test -- --testPathPattern='e2e-spec|di.spec'
 |-----|-----------|-------|
 | Explorer accessor-property crash | `OnEventExplorer` / `OnRequestReplyExplorer` called `Reflect.getMetadata` on getter/setter property descriptors, yielding `undefined` | `HandlerWithAccessorsProvider` declares `get`/`set` alongside `@OnEvent` and `@OnRequestReply` handlers; `moduleRef.init()` must not throw |
 | Empty consumer-options crash | `JetStreamConsumerService` / `RequestReplyConsumerService` passed `{}` to `jetStream.subscribe`, causing NATS to read `undefined.ack_policy` | Assertions verify every `subscribe` call receives a config with a defined `ack_policy` (via `consumerOpts` builder or explicit config) |
+| Push consumer missing `deliver_subject` (0.11.4) | Default push-consumer options lacked `deliver_subject`; NATS 2.29.3 `jetStream.subscribe()` throws `push consumer requires deliver_subject` | `createDefaultConsumerOpts()` chains `.deliverTo(createInbox())`; `resolveConsumerSubscribeOpts` defaults `config.deliver_subject` for plain `Partial<ConsumerOpts>`; covered by `subscribe-options.interface.spec.ts` |
 
 ### Difference from DI Compilation e2e
 

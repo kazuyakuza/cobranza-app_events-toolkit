@@ -2,9 +2,16 @@
 
 ## Current Work Focus
 
-**Fix EventsToolkitModule.forRootAsync missing exports (v0.10.2).** The async registration path now explicitly exports `EVENTS_TOOLKIT_OPTIONS`, `JETSTREAM_TOKEN`, and `EventLoggerService` so that imported sub-modules resolve DI correctly.
+**Fix push consumer missing deliver_subject (v0.11.4).** `createDefaultConsumerOpts()` now chains `.deliverTo(createInbox())` and `resolveConsumerSubscribeOpts` defaults `config.deliver_subject` for plain consumer options, restoring NATS 2.29.3 push-consumer subscription.
 
 ## Recent Changes
+
+### 2026-07-16 — Fix push consumer missing deliver_subject (v0.11.4)
+- `createDefaultConsumerOpts()` in `src/consumer/subscribe-options.interface.ts` now chains `.deliverTo(createInbox())`, giving each push consumer a unique `deliver_subject` required by NATS 2.29.3 `jetStream.subscribe()` (`push consumer requires deliver_subject`).
+- `resolveConsumerSubscribeOpts` gained `ensureValidConsumerConfig` helper: plain `Partial<ConsumerOpts>` now default both `config.ack_policy` (Explicit) and `config.deliver_subject` (unique `createInbox()`) via `??=`, preserving caller values and not mutating the input.
+- Added `src/consumer/subscribe-options.interface.spec.ts` (96 lines) covering default + preserve/default paths and the `isConsumerOptsBuilder` type guard.
+- Updated `CHANGELOG.md` (`## [0.11.4]`) and `docs/testing-utilities.md` (consumer defaults note + bugs-guarded table).
+- Branch: `feat/fix-deliverTo-push-consumer`.
 
 ### 2026-07-13 — Fix forRootAsync missing exports (v0.10.2)
 - Added `exports` array to `EventsToolkitModule.forRootAsync` so that `EVENTS_TOOLKIT_OPTIONS`, `JETSTREAM_TOKEN`, and `EventLoggerService` are globally available.
