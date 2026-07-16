@@ -17,10 +17,10 @@
  *    valid consumer options (never `{}`) to `jetStream.subscribe`, so NATS
  *    never reads `undefined.ack_policy`.
  *
- * AI AGENT NOTE: This file owns a richer `nats` mock (with `consumerOpts` and
- * `AckPolicy`) than `events-toolkit.module.e2e-spec.ts`. Keep them separate —
- * `jest.mock` is file-scoped and the DI spec intentionally mocks a minimal
- * `nats` surface.
+ * AI AGENT NOTE: This file owns a richer `nats` mock (with `consumerOpts`,
+ * `AckPolicy`, and `createInbox`) than `events-toolkit.module.e2e-spec.ts`.
+ * Keep them separate — `jest.mock` is file-scoped and the DI spec intentionally
+ * mocks a minimal `nats` surface.
  */
 import 'reflect-metadata';
 import { Test, TestingModule } from '@nestjs/testing';
