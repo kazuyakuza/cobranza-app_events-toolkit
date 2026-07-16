@@ -1,4 +1,4 @@
-import { AckPolicy, ConsumerConfig, consumerOpts, ConsumerOptsBuilder, ConsumerOpts, createInbox, JsMsg } from 'nats';
+import { AckPolicy, consumerOpts, ConsumerOptsBuilder, ConsumerOpts, createInbox, JsMsg } from 'nats';
 import { ValidationError } from 'class-validator';
 import { EventConsumerException } from '../common/errors/event-consumer.exception';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
@@ -15,7 +15,7 @@ export type ConsumerSubscribeOpts = ConsumerOptsBuilder | Partial<ConsumerOpts>;
 
 /** Returns true when the value is a NATS ConsumerOptsBuilder (duck-typed via `getOpts`). */
 export function isConsumerOptsBuilder(value: unknown): value is ConsumerOptsBuilder {
-  return typeof (value as { getOpts?: unknown; })?.getOpts === 'function';
+  return typeof (value as { getOpts?: unknown })?.getOpts === 'function';
 }
 
 /** Builds the default JetStream consumer options used when none are provided.
@@ -51,25 +51,9 @@ export function resolveConsumerSubscribeOpts(opts?: ConsumerSubscribeOpts): Cons
  * `deliver_subject`) are preserved verbatim. */
 function ensureValidConsumerConfig(opts: Partial<ConsumerOpts>): Partial<ConsumerOpts> {
   const config = { ...opts.config };
-  applyDefaultAckPolicy(config);
-  applyDefaultDeliverSubject(config);
+  config.ack_policy ??= DEFAULT_ACK_POLICY;
+  config.deliver_subject ??= createInbox();
   return { ...opts, config };
-}
-
-/** Sets {@link DEFAULT_ACK_POLICY} when the caller did not supply an ack policy. */
-function applyDefaultAckPolicy(config: Partial<ConsumerConfig>): void {
-  if (config.ack_policy === undefined) {
-    config.ack_policy = DEFAULT_ACK_POLICY;
-  }
-}
-
-/** Sets a unique `deliver_subject` (via {@link createInbox}) when the caller did not
- * supply one, satisfying the NATS 2.29.3 `push consumer requires deliver_subject`
- * guard for non-bound push consumers. */
-function applyDefaultDeliverSubject(config: Partial<ConsumerConfig>): void {
-  if (config.deliver_subject === undefined) {
-    config.deliver_subject = createInbox();
-  }
 }
 
 /** Builds a DLQ subject by delegating to the centralized {@link buildDlqSubject}. */
