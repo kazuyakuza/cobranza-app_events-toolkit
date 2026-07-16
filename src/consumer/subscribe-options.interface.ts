@@ -1,4 +1,4 @@
-import { AckPolicy, consumerOpts, ConsumerOptsBuilder, ConsumerOpts, createInbox, JsMsg } from 'nats';
+import { AckPolicy, ConsumerConfig, consumerOpts, ConsumerOptsBuilder, ConsumerOpts, createInbox, JsMsg } from 'nats';
 import { ValidationError } from 'class-validator';
 import { EventConsumerException } from '../common/errors/event-consumer.exception';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
@@ -30,8 +30,10 @@ export function createDefaultConsumerOpts(): ConsumerOptsBuilder {
  *
  * - `undefined` → returns {@link createDefaultConsumerOpts} (includes `deliverTo(createInbox())`).
  * - {@link ConsumerOptsBuilder} → returned as-is (caller is responsible for `deliverTo`).
- * - `Partial<ConsumerOpts>` → `config.ack_policy` is defaulted to {@link DEFAULT_ACK_POLICY}
- *   to prevent the NATS `ack_policy` undefined crash.
+ * - `Partial<ConsumerOpts>` → `config.ack_policy` and `config.deliver_subject` are defaulted
+ *   (to {@link DEFAULT_ACK_POLICY} and a unique {@link createInbox}, respectively) when omitted;
+ *   supplied values are preserved. This prevents the NATS `ack_policy` undefined crash and the
+ *   `push consumer requires deliver_subject` error.
  */
 export function resolveConsumerSubscribeOpts(opts?: ConsumerSubscribeOpts): ConsumerSubscribeOpts {
   if (opts === undefined) {
@@ -43,10 +45,31 @@ export function resolveConsumerSubscribeOpts(opts?: ConsumerSubscribeOpts): Cons
   return ensureValidConsumerConfig(opts);
 }
 
-/** Defaults `config.ack_policy` for a plain `Partial<ConsumerOpts>` value. */
+/** Normalizes a plain {@link ConsumerOpts} so it is safe for `jetStream.subscribe()`.
+ * Defaults `config.ack_policy` and `config.deliver_subject` only when the caller
+ * omitted them; explicitly-supplied values (including the push invariant
+ * `deliver_subject`) are preserved verbatim. */
 function ensureValidConsumerConfig(opts: Partial<ConsumerOpts>): Partial<ConsumerOpts> {
-  const config = { ack_policy: DEFAULT_ACK_POLICY, ...opts.config };
+  const config = { ...opts.config };
+  applyDefaultAckPolicy(config);
+  applyDefaultDeliverSubject(config);
   return { ...opts, config };
+}
+
+/** Sets {@link DEFAULT_ACK_POLICY} when the caller did not supply an ack policy. */
+function applyDefaultAckPolicy(config: Partial<ConsumerConfig>): void {
+  if (config.ack_policy === undefined) {
+    config.ack_policy = DEFAULT_ACK_POLICY;
+  }
+}
+
+/** Sets a unique `deliver_subject` (via {@link createInbox}) when the caller did not
+ * supply one, satisfying the NATS 2.29.3 `push consumer requires deliver_subject`
+ * guard for non-bound push consumers. */
+function applyDefaultDeliverSubject(config: Partial<ConsumerConfig>): void {
+  if (config.deliver_subject === undefined) {
+    config.deliver_subject = createInbox();
+  }
 }
 
 /** Builds a DLQ subject by delegating to the centralized {@link buildDlqSubject}. */
