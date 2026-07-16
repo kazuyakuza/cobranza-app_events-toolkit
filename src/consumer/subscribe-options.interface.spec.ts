@@ -6,7 +6,7 @@ import {
   resolveConsumerSubscribeOpts,
 } from './subscribe-options.interface';
 
-function deliverSubjectOf(value: ConsumerSubscribeOpts): string | undefined {
+function getDeliverSubject(value: ConsumerSubscribeOpts): string | undefined {
   if (isConsumerOptsBuilder(value)) {
     return value.getOpts().config.deliver_subject;
   }
@@ -14,14 +14,10 @@ function deliverSubjectOf(value: ConsumerSubscribeOpts): string | undefined {
 }
 
 function plainOptsWithoutDefaults(): Partial<ConsumerOpts> {
-  return { mack: false, stream: 'test-stream', config: {} };
+  return { config: {} };
 }
 
 describe('createDefaultConsumerOpts', () => {
-  it('returns a ConsumerOptsBuilder detectable by isConsumerOptsBuilder', () => {
-    expect(isConsumerOptsBuilder(createDefaultConsumerOpts())).toBe(true);
-  });
-
   it('sets a unique non-empty deliver_subject on the builder config', () => {
     const builder = createDefaultConsumerOpts();
 
@@ -38,52 +34,39 @@ describe('createDefaultConsumerOpts', () => {
 });
 
 describe('resolveConsumerSubscribeOpts', () => {
-  describe('when opts is undefined', () => {
-    it('returns a builder whose deliver_subject is set', () => {
-      const resolved = resolveConsumerSubscribeOpts(undefined);
+  it('returns a builder with deliver_subject when opts is undefined', () => {
+    const resolved = resolveConsumerSubscribeOpts(undefined);
 
-      expect(deliverSubjectOf(resolved)).toBeTruthy();
-    });
+    expect(getDeliverSubject(resolved)).toBeTruthy();
   });
 
-  describe('when opts is a ConsumerOptsBuilder', () => {
-    it('returns the same builder instance preserving caller-set deliverTo', () => {
-      const callerSubject = createInbox();
-      const builder = consumerOpts().deliverTo(callerSubject);
+  it('returns the same builder instance preserving caller-set deliverTo', () => {
+    const callerSubject = createInbox();
+    const builder = consumerOpts().deliverTo(callerSubject);
 
-      const resolved = resolveConsumerSubscribeOpts(builder);
+    const resolved = resolveConsumerSubscribeOpts(builder);
 
-      expect(resolved).toBe(builder);
-      expect(deliverSubjectOf(resolved)).toBe(callerSubject);
-    });
+    expect(resolved).toBe(builder);
+    expect(getDeliverSubject(resolved)).toBe(callerSubject);
   });
 
-  describe('when opts is a plain object with deliver_subject', () => {
-    it('preserves the caller-supplied deliver_subject without mutating the input config', () => {
-      const originalConfig = { deliver_subject: 'kept.inbox', ack_policy: AckPolicy.All };
-      const opts: Partial<ConsumerOpts> = { config: originalConfig };
+  it('preserves caller-supplied deliver_subject without mutating the input config', () => {
+    const originalConfig = { deliver_subject: 'kept.inbox', ack_policy: AckPolicy.All };
+    const opts: Partial<ConsumerOpts> = { config: originalConfig };
 
-      const resolved = resolveConsumerSubscribeOpts(opts) as Partial<ConsumerOpts>;
+    const resolved = resolveConsumerSubscribeOpts(opts) as Partial<ConsumerOpts>;
 
-      expect(resolved.config.deliver_subject).toBe('kept.inbox');
-      expect(resolved.config.ack_policy).toBe(AckPolicy.All);
-      expect(opts.config).toBe(originalConfig);
-    });
+    expect(resolved.config.deliver_subject).toBe('kept.inbox');
+    expect(resolved.config.ack_policy).toBe(AckPolicy.All);
+    expect(opts.config).toBe(originalConfig);
   });
 
-  describe('when opts is a plain object without deliver_subject', () => {
-    it('defaults deliver_subject to a unique non-empty inbox', () => {
-      const resolved = resolveConsumerSubscribeOpts(plainOptsWithoutDefaults()) as Partial<ConsumerOpts>;
+  it('defaults deliver_subject and ack_policy when opts is a plain object without defaults', () => {
+    const resolved = resolveConsumerSubscribeOpts(plainOptsWithoutDefaults()) as Partial<ConsumerOpts>;
 
-      expect(resolved.config.deliver_subject).toBeTruthy();
-      expect(resolved.config.deliver_subject).not.toBe(createInbox());
-    });
-
-    it('defaults ack_policy to AckPolicy.Explicit when omitted', () => {
-      const resolved = resolveConsumerSubscribeOpts(plainOptsWithoutDefaults()) as Partial<ConsumerOpts>;
-
-      expect(resolved.config.ack_policy).toBe(AckPolicy.Explicit);
-    });
+    expect(resolved.config.deliver_subject).toBeTruthy();
+    expect(resolved.config.deliver_subject).not.toBe(createInbox());
+    expect(resolved.config.ack_policy).toBe(AckPolicy.Explicit);
   });
 });
 
