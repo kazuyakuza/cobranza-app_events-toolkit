@@ -1,10 +1,24 @@
 import { DiscardPolicy, NatsConnection, RetentionPolicy, StorageType, StreamConfig } from 'nats';
+import { EventLoggerService } from '../logging/event-logger.service';
 import { buildStreamName, NO_STREAM_MATCHES_FRAGMENT, STREAM_NAME_INUSE_FRAGMENT } from './build-stream-name.util';
+
+const CUSTOM_CONFIG_LOG_MESSAGE = 'Stream auto-creation with custom config overrides';
+const REJECTED_CONFIG_LOG_MESSAGE = 'NATS server rejected stream config';
 
 /** Dependencies required by {@link StreamAutoCreator}. */
 export interface StreamAutoCreatorDeps {
   /** Active NATS connection used to access the JetStream manager. */
   connection: NatsConnection;
+  /**
+   * Optional overrides merged over the auto-creator's default JetStream stream config.
+   * User-supplied fields (e.g. `max_bytes`) win over built-in defaults.
+   */
+  streamConfig?: Partial<StreamConfig>;
+  /**
+   * Optional structured logger. When provided, custom overrides and server rejections
+   * are logged at INFO/ERROR respectively for diagnostics.
+   */
+  logger?: EventLoggerService;
 }
 
 /**
@@ -19,9 +33,13 @@ export interface StreamAutoCreatorDeps {
  */
 export class StreamAutoCreator {
   private readonly connection: NatsConnection;
+  private readonly streamConfig?: Partial<StreamConfig>;
+  private readonly logger?: EventLoggerService;
 
   constructor(deps: StreamAutoCreatorDeps) {
     this.connection = deps.connection;
+    this.streamConfig = deps.streamConfig;
+    this.logger = deps.logger;
   }
 
   /**
@@ -59,18 +77,44 @@ export class StreamAutoCreator {
     jsm: Awaited<ReturnType<NatsConnection['jetstreamManager']>>,
     subject: string,
   ): Promise<void> {
+    const config = this.buildStreamConfig(subject);
+    this.logCustomConfig(subject, config);
     try {
-      await jsm.streams.add(this.buildStreamConfig(subject));
+      await jsm.streams.add(config);
     } catch (error) {
       if (this.isStreamNameInUseError(error)) return;
+      this.logRejectedConfig(subject, config, error);
       throw error;
     }
   }
 
+  private logCustomConfig(subject: string, config: StreamConfig): void {
+    if (!this.hasOverrides() || !this.logger) return;
+    this.logger.logInfo(CUSTOM_CONFIG_LOG_MESSAGE, { subject, config });
+  }
+
+  private logRejectedConfig(subject: string, config: StreamConfig, error: unknown): void {
+    if (!this.logger) return;
+    const message = error instanceof Error ? error.message : String(error);
+    this.logger.logError(REJECTED_CONFIG_LOG_MESSAGE, { subject, config, error: message });
+  }
+
+  private hasOverrides(): boolean {
+    return Boolean(this.streamConfig && Object.keys(this.streamConfig).length > 0);
+  }
+
   private buildStreamConfig(subject: string): StreamConfig {
-    return {
+    const config: StreamConfig = {
+      ...this.defaultStreamFields(),
       name: this.buildStreamName(subject),
       subjects: [subject],
+    };
+    if (this.streamConfig) Object.assign(config, this.streamConfig);
+    return config;
+  }
+
+  private defaultStreamFields(): Partial<StreamConfig> {
+    return {
       retention: RetentionPolicy.Limits,
       storage: StorageType.File,
       max_consumers: -1,
