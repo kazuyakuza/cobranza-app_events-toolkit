@@ -72,8 +72,16 @@ export interface ConsumerModuleOptions {
   /** When true, auto-create a JetStream stream for each subscribe subject. Default: false. */
   autoCreateStreams?: boolean;
   /**
-   * Optional overrides for the JetStream stream auto-creator. Merged over
-   * built-in defaults so user-supplied fields (e.g. `max_bytes`) win.
+   * Optional overrides merged over the auto-creator's default JetStream stream config
+   * for every stream created via `autoCreateStreams`.
+   *
+   * Accepts `Partial<StreamConfig>` from the `nats` package. Any NATS-native stream
+   * configuration field can be set — e.g. `max_bytes`, `max_msgs`, `num_replicas`,
+   * `max_age`. User-supplied fields take precedence over built-in defaults.
+   *
+   * Required when the NATS server account mandates `max_bytes` on every stream.
+   *
+   * @see {@link docs/nats-jetstream-configuration.md} for examples and field reference.
    */
   streamConfig?: Partial<StreamConfig>;
 }

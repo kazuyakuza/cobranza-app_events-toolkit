@@ -205,6 +205,41 @@ When `autoCreateStreams` is enabled, **both** `JetStreamConsumerService` (subjec
 
 > **Note:** Auto-created streams use unlimited limits. For production, prefer manual stream setup with explicit retention policies and size limits.
 
+### Custom Stream Config Overrides
+
+When the NATS server account requires specific stream configuration (e.g. mandatory `max_bytes`), pass `streamConfig` in the consumer options to override any default field:
+
+```typescript
+import { Module } from '@nestjs/common';
+import { EventsToolkitModule } from '@cobranza-apps/events-toolkit';
+import { connect } from 'nats';
+
+const natsConnection = await connect({ servers: ['nats://localhost:4222'] });
+
+@Module({
+  imports: [
+    EventsToolkitModule.forRoot({
+      nats: { connection: natsConnection },
+      consumer: {
+        enable: true,
+        autoCreateStreams: true,
+        streamConfig: {
+          max_bytes: 100 * 1024 * 1024,   // 100 MB per stream
+          max_msgs: 50_000,
+          num_replicas: 1,
+          max_age: 7 * 24 * 60 * 60 * 1_000_000_000, // 7 days in nanoseconds
+        },
+      },
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+> **Note:** `streamConfig` uses NATS-native field names (`max_bytes`, `max_msgs`, `max_msgs_per_subject`, `num_replicas`, `max_age`, etc.) — not camelCase aliases. The type is `Partial<StreamConfig>` from the `nats` package. Any field not supplied falls back to the auto-creator's built-in defaults.
+
+> **Warning:** Auto-creation with overrides is acceptable for development and small-scale deployments. For production at scale, prefer manual stream setup (see below) with tuned retention policies, explicit size limits, and proper replication.
+
 ## Manual Stream Setup
 
 For production environments, create streams manually with tuned configuration using the NATS CLI or programmatically.

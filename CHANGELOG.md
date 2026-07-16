@@ -5,6 +5,23 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.11.3] — 2026-07-16
+
+### Added
+
+- **`streamConfig?: Partial<StreamConfig>`** on consumer options (`EventsToolkitConsumerOptions`, `ConsumerModuleOptions`, and all sync/async deps interfaces), enabling override of any NATS JetStream stream configuration field during auto-creation. This fixes startup failures on NATS accounts that require `max_bytes` on every stream (`NatsError: account requires a stream config to have max bytes set`, err_code 10113).
+
+### Changed
+
+- **`StreamAutoCreator`** now merges user-provided `streamConfig` with its built-in defaults before calling `jsm.streams.add()`. User-supplied fields (e.g. `max_bytes`, `max_msgs`, `num_replicas`, `max_age`) take precedence over defaults. Custom overrides are INFO-logged with the resolved config before stream creation; server rejections are ERROR-logged with the config and error details.
+- **`EventLoggerService`** now exposes generic `logInfo(message, context?)` and `logError(message, context?)` methods for structured logging from non-event-specific subsystems (e.g. `StreamAutoCreator`).
+
+### Tests
+
+- Updated `stream-auto-creator.spec.ts` to cover custom config override propagation, INFO logging of overrides, and ERROR logging of server rejections.
+- Updated consumer service auto-creation specs (`jetstream-consumer.service.auto-create.spec.ts`, `request-reply-consumer.service.auto-create.spec.ts`) to forward `streamConfig` through to `StreamAutoCreator`.
+- Updated `consumer.module.auto-create.spec.ts` to verify `streamConfig` propagation from module options through sync and async provider factories.
+
 ## [0.11.2] — 2026-07-14
 
 ### Fixed

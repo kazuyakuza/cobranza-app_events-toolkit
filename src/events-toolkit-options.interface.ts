@@ -44,8 +44,17 @@ export interface EventsToolkitConsumerOptions {
   autoCreateStreams?: boolean;
   /**
    * Optional overrides merged over the auto-creator's default JetStream stream config
-   * for every stream created via `autoCreateStreams`. Every NATS field is supported
-   * (e.g. `max_bytes`, `max_msgs`, `num_replicas`, `max_age`). User-supplied fields win.
+   * for every stream created via `autoCreateStreams`.
+   *
+   * Accepts `Partial<StreamConfig>` from the `nats` package. Any NATS-native stream
+   * configuration field can be set — e.g. `max_bytes`, `max_msgs`, `num_replicas`,
+   * `max_age`, `max_msgs_per_subject`. User-supplied fields take precedence over the
+   * built-in defaults.
+   *
+   * This is required when the NATS server account mandates `max_bytes` on every stream.
+   *
+   * @see {@link https://github.com/nats-io/nats.js/blob/main/jetstream/src/mod.ts StreamConfig}
+   * @see {@link docs/nats-jetstream-configuration.md} for examples and field reference.
    */
   streamConfig?: Partial<StreamConfig>;
 }

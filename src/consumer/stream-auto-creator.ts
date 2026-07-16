@@ -11,7 +11,12 @@ export interface StreamAutoCreatorDeps {
   connection: NatsConnection;
   /**
    * Optional overrides merged over the auto-creator's default JetStream stream config.
-   * User-supplied fields (e.g. `max_bytes`) win over built-in defaults.
+   *
+   * Accepts `Partial<StreamConfig>` from the `nats` package. Any NATS-native stream
+   * configuration field can be set — e.g. `max_bytes`, `max_msgs`, `num_replicas`,
+   * `max_age`. User-supplied fields take precedence over built-in defaults.
+   *
+   * @see {@link docs/nats-jetstream-configuration.md} for examples and field reference.
    */
   streamConfig?: Partial<StreamConfig>;
   /**
@@ -28,6 +33,11 @@ export interface StreamAutoCreatorDeps {
  * subsystem calls {@link ensureStreamExists} before subscribing to a subject. If no
  * stream matches the subject, a new stream is created with sensible defaults
  * (file storage, limits retention, unlimited consumers/messages).
+ *
+ * Supports config overrides via `streamConfig` in {@link StreamAutoCreatorDeps}: any
+ * `Partial<StreamConfig>` fields supplied there are merged over the built-in defaults,
+ * allowing consumers to set `max_bytes`, `max_msgs`, `num_replicas`, `max_age`, etc.
+ * Custom overrides are INFO-logged before the stream is created.
  *
  * @see {@link docs/nats-jetstream-configuration.md} for full JetStream configuration guide.
  */

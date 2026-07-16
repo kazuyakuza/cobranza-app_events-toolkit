@@ -13,6 +13,16 @@ export interface SyncJetStreamConsumerDepsOptions {
   connection?: NatsConnection;
   /** When true, auto-create a JetStream stream for each subscribe subject. */
   autoCreateStreams?: boolean;
-  /** Optional NATS stream config overrides forwarded to {@link StreamAutoCreator}. */
+  /**
+   * Optional overrides merged over the auto-creator's default JetStream stream config.
+   *
+   * Accepts `Partial<StreamConfig>` from the `nats` package. Any NATS-native stream
+   * configuration field can be set — e.g. `max_bytes`, `max_msgs`, `num_replicas`,
+   * `max_age`. User-supplied fields take precedence over built-in defaults.
+   *
+   * Forwarded to {@link StreamAutoCreator} when auto-creating streams.
+   *
+   * @see {@link docs/nats-jetstream-configuration.md} for examples and field reference.
+   */
   streamConfig?: Partial<StreamConfig>;
 }
