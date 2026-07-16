@@ -46,7 +46,9 @@ export class JetStreamConsumerService {
       dlqSubjectBuilder: this.dlqSubjectBuilder,
     });
     this.streamAutoCreator =
-      deps.autoCreateStreams && deps.connection ? new StreamAutoCreator({ connection: deps.connection }) : undefined;
+      deps.autoCreateStreams && deps.connection
+        ? new StreamAutoCreator({ connection: deps.connection, streamConfig: deps.streamConfig, logger: deps.logger })
+        : undefined;
   }
 
   async subscribe(options: SubscribeOptions): Promise<void> {

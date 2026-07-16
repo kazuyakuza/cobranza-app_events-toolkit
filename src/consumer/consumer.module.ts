@@ -114,6 +114,7 @@ export class ConsumerModule {
           dlqSubjectBuilder: options.dlqSubjectBuilder,
           connection: options.connection,
           autoCreateStreams: options.autoCreateStreams,
+          streamConfig: options.streamConfig,
         }),
         createRequestReplyExplorerDepsProvider(),
         createSyncRequestReplyConsumerDepsProvider({
@@ -122,6 +123,7 @@ export class ConsumerModule {
           dlqSubjectBuilder: options.dlqSubjectBuilder,
           connection: options.connection,
           autoCreateStreams: options.autoCreateStreams,
+          streamConfig: options.streamConfig,
         }),
         ConsumerService,
         JetStreamConsumerService,

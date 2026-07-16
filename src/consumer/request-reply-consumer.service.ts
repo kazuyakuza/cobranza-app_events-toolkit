@@ -39,7 +39,9 @@ export class RequestReplyConsumerService implements OnModuleInit {
       dispatch: (options: DispatchOptions) => this.dispatch(options),
     });
     this.streamAutoCreator =
-      deps.autoCreateStreams && deps.connection ? new StreamAutoCreator({ connection: deps.connection }) : undefined;
+      deps.autoCreateStreams && deps.connection
+        ? new StreamAutoCreator({ connection: deps.connection, streamConfig: deps.streamConfig, logger: deps.logger })
+        : undefined;
   }
 
   /** Auto-subscribes to the response subject pattern on module init. */
