@@ -56,10 +56,6 @@ export class StreamAutoCreator {
     await this.createStream(jsm, subject);
   }
 
-  private buildStreamName(subject: string): string {
-    return buildStreamName(subject);
-  }
-
   private async streamExists(
     jsm: Awaited<ReturnType<NatsConnection['jetstreamManager']>>,
     subject: string,
@@ -89,8 +85,12 @@ export class StreamAutoCreator {
   }
 
   private logCustomConfig(subject: string, config: StreamConfig): void {
-    if (!this.hasOverrides() || !this.logger) return;
-    this.logger.logInfo(CUSTOM_CONFIG_LOG_MESSAGE, { subject, config });
+    if (this.shouldSkipCustomConfigLog()) return;
+    this.logger!.logInfo(CUSTOM_CONFIG_LOG_MESSAGE, { subject, config });
+  }
+
+  private shouldSkipCustomConfigLog(): boolean {
+    return !this.hasOverrides() || !this.logger;
   }
 
   private logRejectedConfig(subject: string, config: StreamConfig, error: unknown): void {
@@ -100,20 +100,20 @@ export class StreamAutoCreator {
   }
 
   private hasOverrides(): boolean {
-    return Boolean(this.streamConfig && Object.keys(this.streamConfig).length > 0);
+    return Object.keys(this.streamConfig ?? {}).length > 0;
   }
 
   private buildStreamConfig(subject: string): StreamConfig {
-    const config = {
+    const config: StreamConfig = {
       ...this.defaultStreamFields(),
-      name: this.buildStreamName(subject),
+      name: buildStreamName(subject),
       subjects: [subject],
-    } as StreamConfig;
+    };
     if (this.streamConfig) Object.assign(config, this.streamConfig);
     return config;
   }
 
-  private defaultStreamFields(): Partial<StreamConfig> {
+  private defaultStreamFields(): Omit<StreamConfig, 'name' | 'subjects'> {
     return {
       retention: RetentionPolicy.Limits,
       storage: StorageType.File,

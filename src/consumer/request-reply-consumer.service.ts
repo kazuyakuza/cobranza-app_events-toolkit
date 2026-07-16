@@ -38,10 +38,20 @@ export class RequestReplyConsumerService implements OnModuleInit {
       dlqSubjectBuilder,
       dispatch: (options: DispatchOptions) => this.dispatch(options),
     });
-    this.streamAutoCreator =
-      deps.autoCreateStreams && deps.connection
-        ? new StreamAutoCreator({ connection: deps.connection, streamConfig: deps.streamConfig, logger: deps.logger })
-        : undefined;
+    this.streamAutoCreator = this.buildStreamAutoCreator(deps);
+  }
+
+  private buildStreamAutoCreator(deps: RequestReplyConsumerDeps): StreamAutoCreator | undefined {
+    if (!this.isStreamAutoCreationEnabled(deps)) return undefined;
+    return new StreamAutoCreator({
+      connection: deps.connection!,
+      streamConfig: deps.streamConfig,
+      logger: deps.logger,
+    });
+  }
+
+  private isStreamAutoCreationEnabled(deps: RequestReplyConsumerDeps): boolean {
+    return !!(deps.autoCreateStreams && deps.connection);
   }
 
   /** Auto-subscribes to the response subject pattern on module init. */

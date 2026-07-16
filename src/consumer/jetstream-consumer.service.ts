@@ -45,10 +45,20 @@ export class JetStreamConsumerService {
       logger: this.logger,
       dlqSubjectBuilder: this.dlqSubjectBuilder,
     });
-    this.streamAutoCreator =
-      deps.autoCreateStreams && deps.connection
-        ? new StreamAutoCreator({ connection: deps.connection, streamConfig: deps.streamConfig, logger: deps.logger })
-        : undefined;
+    this.streamAutoCreator = this.buildStreamAutoCreator(deps);
+  }
+
+  private buildStreamAutoCreator(deps: JetStreamConsumerDeps): StreamAutoCreator | undefined {
+    if (!this.isStreamAutoCreationEnabled(deps)) return undefined;
+    return new StreamAutoCreator({
+      connection: deps.connection!,
+      streamConfig: deps.streamConfig,
+      logger: deps.logger,
+    });
+  }
+
+  private isStreamAutoCreationEnabled(deps: JetStreamConsumerDeps): boolean {
+    return !!(deps.autoCreateStreams && deps.connection);
   }
 
   async subscribe(options: SubscribeOptions): Promise<void> {
