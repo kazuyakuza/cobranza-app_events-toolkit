@@ -1,3 +1,13 @@
+/**
+ * Unit tests for the consumer subscribe-options helpers.
+ *
+ * Covers:
+ * - createDefaultConsumerOpts: ensures the default push-consumer builder
+ *   sets a unique deliver_subject and enables manual + explicit ack.
+ * - resolveConsumerSubscribeOpts: ensures caller-provided deliver_subject
+ *   is preserved, and missing values are filled with safe defaults.
+ * - isConsumerOptsBuilder: type-guard behaviour for builders vs plain objects.
+ */
 import { AckPolicy, ConsumerOpts, consumerOpts, createInbox } from 'nats';
 import {
   ConsumerSubscribeOpts,
