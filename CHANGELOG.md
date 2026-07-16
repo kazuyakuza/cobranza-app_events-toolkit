@@ -9,15 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-- **Push consumer missing `deliver_subject` (`createDefaultConsumerOpts`)**: The toolkit's default JetStream consumer options (`consumerOpts().manualAck().ackExplicit()`) produced a push-consumer configuration without a `deliver_subject`. NATS 2.29.3 `jetStream.subscribe()` validates `if (!cso.isBind && !cso.config.deliver_subject) throw new Error("push consumer requires deliver_subject")`, so `RequestReplyConsumerService` / `JetStreamConsumerService` failed to subscribe after `StreamAutoCreator` created the stream. `createDefaultConsumerOpts()` now chains `.deliverTo(createInbox())`, assigning each push consumer a unique inbox as its `deliver_subject`. This restores startup for consumers (e.g. `ms-db-gateway`) that omit `consumerOpts`.
+- **Push consumer missing `deliver_subject` (`createDefaultConsumerOpts`)**: The toolkit's default JetStream consumer options produced a push-consumer configuration without a `deliver_subject`. NATS 2.29.3 rejects such subscriptions with `push consumer requires deliver_subject`, causing `RequestReplyConsumerService` / `JetStreamConsumerService` to fail after `StreamAutoCreator` created the stream. `createDefaultConsumerOpts()` now chains `.deliverTo(createInbox())`, giving each push consumer a unique inbox as its `deliver_subject` and restoring startup for consumers that omit `consumerOpts`.
 
 ### Changed
 
-- **`resolveConsumerSubscribeOpts` now guarantees `deliver_subject`**: When a caller supplies a plain `Partial<ConsumerOpts>` whose `config` omits `deliver_subject`, the new `ensureValidConsumerConfig` helper defaults it to a unique `createInbox()` via nullish coalescing (`??=`) — the same mechanism already used for `config.ack_policy` (defaulted to `AckPolicy.Explicit`). Caller-supplied `deliver_subject`/`ack_policy` are preserved verbatim, and the input `config` object is not mutated (a shallow copy is returned). `ConsumerOptsBuilder` values are still returned as-is, leaving the caller responsible for `.deliverTo()` on that path.
+- **`resolveConsumerSubscribeOpts` now defaults `deliver_subject`**: Plain `Partial<ConsumerOpts>` objects that omit `config.deliver_subject` now receive a unique `createInbox()` default, mirroring the existing `config.ack_policy` default. Caller-supplied values are preserved and the input config is not mutated. `ConsumerOptsBuilder` values are still returned unchanged, leaving `.deliverTo()` up to the caller on that path.
 
 ### Tests
 
-- Added `src/consumer/subscribe-options.interface.spec.ts`: `createDefaultConsumerOpts()` sets a unique non-empty `deliver_subject` with manual + explicit ack; `resolveConsumerSubscribeOpts(undefined)` returns a builder with `deliver_subject`; `resolveConsumerSubscribeOpts(builder)` preserves the caller's `deliverTo` (same instance); `resolveConsumerSubscribeOpts(plainOpts)` preserves caller `deliver_subject`/`ack_policy` without mutating the input config; plain config without defaults receives both fields; `isConsumerOptsBuilder` distinguishes builders from plain objects/`undefined`/`null`.
+- Added `src/consumer/subscribe-options.interface.spec.ts`:
+  - `createDefaultConsumerOpts()` sets a unique non-empty `deliver_subject` with manual + explicit ack.
+  - `resolveConsumerSubscribeOpts(undefined)` returns a builder with `deliver_subject`.
+  - `resolveConsumerSubscribeOpts(builder)` preserves the caller's `deliverTo` (same instance).
+  - `resolveConsumerSubscribeOpts(plainOpts)` preserves caller `deliver_subject`/`ack_policy` without mutating the input config.
+  - Plain config without defaults receives both `ack_policy` and `deliver_subject`.
+  - `isConsumerOptsBuilder` distinguishes builders from plain objects, `undefined`, and `null`.
 
 ## [0.11.3] — 2026-07-16
 

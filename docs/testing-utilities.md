@@ -151,7 +151,7 @@ Replaces `RequestReplyService`. Records request/response calls and returns confi
 | `getSendRequestCalls()` | Returns recorded `SendRequestOptions[]` |
 | `clear()` | Resets all calls and restores default mock response |
 
-> **Consumer defaults:** `JetStreamConsumerService.subscribe()` applies `AckPolicy.Explicit` + `manualAck` + `.deliverTo(createInbox())` when `consumerOpts` is omitted. This guarantees a unique `deliver_subject` for the push consumer (required by NATS 2.29.3 `jetStream.subscribe()`, which throws `push consumer requires deliver_subject` when it is absent) and prevents the `ack_policy` undefined crash that occurs when an empty `{}` is passed to `jetStream.subscribe()`.
+> **Consumer defaults:** `JetStreamConsumerService.subscribe()` applies `AckPolicy.Explicit` + `manualAck` + `.deliverTo(createInbox())` when `consumerOpts` is omitted. This guarantees a unique `deliver_subject` for the push consumer, which NATS 2.29.3 `jetStream.subscribe()` requires (`push consumer requires deliver_subject`). It also prevents the `ack_policy` undefined crash that occurs when an empty `{}` is passed to `jetStream.subscribe()`.
 
 ## Assertion Helpers
 
