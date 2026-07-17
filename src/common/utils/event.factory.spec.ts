@@ -89,6 +89,13 @@ describe('event.factory', () => {
       expect(event.causation_id).toBeUndefined();
     });
 
+    it('leaves actor_id undefined when actorId is not provided', () => {
+      const context = buildContext();
+      delete context.actorId;
+      const event = createEvent({}, context);
+      expect(event.actor_id).toBeUndefined();
+    });
+
     it('maps optional traceId to trace_id when provided', () => {
       const event = createEvent({}, buildContext({ traceId: 'trace-abc-123' }));
       expect(event.trace_id).toBe('trace-abc-123');

@@ -1,5 +1,6 @@
 import { IsString, IsUUID, IsEnum, IsOptional, IsNotEmpty, IsObject, IsISO8601, Matches } from 'class-validator';
 import { ActorType } from './actor-type.enum';
+import { IsOptionalForSystemActors } from './validators/is-optional-for-system-actors.validator';
 
 /**
  * Standard event envelope for all NATS JetStream messages in the Cobranza App platform.
@@ -70,11 +71,12 @@ export class EventEnvelope<T = Record<string, unknown>> {
   actor_type!: ActorType;
 
   /**
-   * Unique identifier of the actor (user_id, client_id, etc.)
+   * Unique identifier of the actor (user_id, client_id, etc.).
+   * Required for human actors (`client`, `company_user`); optional for
+   * automated actors (`system`, `scheduler`, `external_api`).
    */
-  @IsString()
-  @IsNotEmpty()
-  actor_id!: string;
+  @IsOptionalForSystemActors()
+  actor_id?: string;
 
   /**
    * Identifier shared across all events in a single request/transaction chain.

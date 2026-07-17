@@ -41,9 +41,11 @@ export interface EventContext {
   actorType: ActorType;
 
   /**
-   * Unique identifier of the actor (user_id, client_id, etc.)
+   * Unique identifier of the actor (user_id, client_id, etc.).
+   * Required for human actors (`client`, `company_user`); optional for
+   * automated actors (`system`, `scheduler`, `external_api`).
    */
-  actorId: string;
+  actorId?: string;
 
   /**
    * Identifier shared across all events in a single request/transaction chain.
