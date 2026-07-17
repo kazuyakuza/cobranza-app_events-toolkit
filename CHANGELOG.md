@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.11.6] — 2026-07-16
+
+### Removed
+
+- **`STREAM_NAME_PREFIX` from `buildStreamName()`**: The `auto-` prefix was removed from stream name generation in `src/consumer/build-stream-name.util.ts`. Auto-created JetStream streams now use sanitized subject names directly, aligning stream names with the auto-generated manifest entries without the `auto-` prefix.
+
+### Tests
+
+- Updated `stream-auto-creator.spec.ts` expectations to match stream names without the `auto-` prefix.
+
 ## [0.11.4] — 2026-07-16
 
 ### Fixed
