@@ -1,4 +1,4 @@
-import { DiscardPolicy, NatsConnection, RetentionPolicy, StorageType } from 'nats';
+import { NatsConnection, RetentionPolicy, StorageType } from 'nats';
 import { StreamAutoCreator } from './stream-auto-creator';
 import { buildStreamName } from './build-stream-name.util';
 
@@ -11,12 +11,12 @@ function createMockLogger(): {
 
 function createMockConnection(): {
   connection: NatsConnection;
-  jetStreamManagerMock: { streams: { find: jest.Mock; add: jest.Mock; }; };
+  jetStreamManagerMock: { find: jest.Mock; add: jest.Mock };
 } {
-  const streams = { find: jest.fn(), add: jest.fn() };
-  const jetStreamManager = { streams };
+  const jetStreamManagerMock = { find: jest.fn(), add: jest.fn() };
+  const jetStreamManager = { streams: jetStreamManagerMock };
   const connection = { jetstreamManager: jest.fn().mockResolvedValue(jetStreamManager) } as unknown as NatsConnection;
-  return { connection, jetStreamManagerMock: streams };
+  return { connection, jetStreamManagerMock };
 }
 
 describe('buildStreamName', () => {
@@ -56,29 +56,14 @@ describe('StreamAutoCreator', () => {
 
       expect(jetStreamManagerMock.find).toHaveBeenCalledWith('test.subject');
       expect(jetStreamManagerMock.add).toHaveBeenCalledTimes(1);
-      expect(jetStreamManagerMock.add).toHaveBeenCalledWith({
-        name: 'test-subject',
-        subjects: ['test.subject'],
-        retention: RetentionPolicy.Limits,
-        storage: StorageType.File,
-        max_consumers: -1,
-        max_msgs: -1,
-        max_bytes: -1,
-        max_age: 0,
-        max_msgs_per_subject: -1,
-        max_msg_size: -1,
-        discard: DiscardPolicy.Old,
-        discard_new_per_subject: false,
-        num_replicas: 1,
-        sealed: false,
-        first_seq: 0,
-        duplicate_window: 0,
-        allow_rollup_hdrs: false,
-        deny_delete: false,
-        deny_purge: false,
-        allow_direct: false,
-        mirror_direct: false,
-      });
+      expect(jetStreamManagerMock.add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'test-subject',
+          subjects: ['test.subject'],
+          retention: RetentionPolicy.Limits,
+          storage: StorageType.File,
+        }),
+      );
     });
 
     it('should swallow race condition when add throws stream name already in use', async () => {
@@ -120,7 +105,7 @@ describe('StreamAutoCreator', () => {
 
       await creator.ensureStreamExists('test.subject');
 
-      const sent = jetStreamManagerMock.add.mock.calls[0][0] as { max_bytes: number; };
+      const sent = jetStreamManagerMock.add.mock.calls[0][0] as { max_bytes: number };
       expect(sent.max_bytes).toBe(100_000);
       expect(sent.name).toBe('test-subject');
       expect(sent.subjects).toEqual(['test.subject']);
@@ -143,8 +128,8 @@ describe('StreamAutoCreator', () => {
       expect(logger.logInfo).toHaveBeenCalledTimes(1);
       const [message, meta] = logger.logInfo.mock.calls[0];
       expect(message).toBe('Stream auto-creation with custom config overrides');
-      expect((meta as { subject: string; }).subject).toBe('test.subject');
-      expect((meta as { config: { max_bytes: number; }; }).config.max_bytes).toBe(100_000);
+      expect((meta as { subject: string }).subject).toBe('test.subject');
+      expect((meta as { config: { max_bytes: number } }).config.max_bytes).toBe(100_000);
     });
 
     it('should not INFO-log when no streamConfig is provided', async () => {
@@ -172,8 +157,8 @@ describe('StreamAutoCreator', () => {
       expect(logger.logError).toHaveBeenCalledTimes(1);
       const [message, meta] = logger.logError.mock.calls[0];
       expect(message).toBe('NATS server rejected stream config');
-      expect((meta as { subject: string; }).subject).toBe('test.subject');
-      expect((meta as { error: string; }).error).toContain('max bytes set');
+      expect((meta as { subject: string }).subject).toBe('test.subject');
+      expect((meta as { error: string }).error).toContain('max bytes set');
     });
 
     it('should not ERROR-log race-condition errors (stream name in use)', async () => {

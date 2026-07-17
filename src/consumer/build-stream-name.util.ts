@@ -8,7 +8,7 @@ export const STREAM_NAME_INUSE_FRAGMENT = 'stream name already in use';
  * Builds a valid JetStream stream name from a NATS subject.
  *
  * Consecutive non-alphanumeric characters are collapsed into a single hyphen
- * and the result is lowercased. The subject is returned verbatim (sanitized)
+ * and the result is lowercased. The sanitized subject is returned
  * with no added prefix, keeping auto-created stream names consistent with the
  * discovery manifest. For example:
  * - `company.*.response.v1` → `company-response-v1`
