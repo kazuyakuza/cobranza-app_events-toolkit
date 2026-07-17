@@ -11,7 +11,7 @@ function createMockLogger(): {
 
 function createMockConnection(): {
   connection: NatsConnection;
-  jetStreamManagerMock: { streams: { find: jest.Mock; add: jest.Mock } };
+  jetStreamManagerMock: { streams: { find: jest.Mock; add: jest.Mock; }; };
 } {
   const streams = { find: jest.fn(), add: jest.fn() };
   const jetStreamManager = { streams };
@@ -21,15 +21,15 @@ function createMockConnection(): {
 
 describe('buildStreamName', () => {
   it('should sanitize wildcard subject with dots and asterisks collapsing consecutive separators', () => {
-    expect(buildStreamName('company.*.response.v1')).toBe('auto-company-response-v1');
+    expect(buildStreamName('company.*.response.v1')).toBe('company-response-v1');
   });
 
   it('should preserve digits and lowercase the result', () => {
-    expect(buildStreamName('EVENT.v2')).toBe('auto-event-v2');
+    expect(buildStreamName('EVENT.v2')).toBe('event-v2');
   });
 
   it('should replace multiple special characters with a single hyphen', () => {
-    expect(buildStreamName('test.subject.123')).toBe('auto-test-subject-123');
+    expect(buildStreamName('test.subject.123')).toBe('test-subject-123');
   });
 });
 
@@ -57,7 +57,7 @@ describe('StreamAutoCreator', () => {
       expect(jetStreamManagerMock.find).toHaveBeenCalledWith('test.subject');
       expect(jetStreamManagerMock.add).toHaveBeenCalledTimes(1);
       expect(jetStreamManagerMock.add).toHaveBeenCalledWith({
-        name: 'auto-test-subject',
+        name: 'test-subject',
         subjects: ['test.subject'],
         retention: RetentionPolicy.Limits,
         storage: StorageType.File,
@@ -120,9 +120,9 @@ describe('StreamAutoCreator', () => {
 
       await creator.ensureStreamExists('test.subject');
 
-      const sent = jetStreamManagerMock.add.mock.calls[0][0] as { max_bytes: number };
+      const sent = jetStreamManagerMock.add.mock.calls[0][0] as { max_bytes: number; };
       expect(sent.max_bytes).toBe(100_000);
-      expect(sent.name).toBe('auto-test-subject');
+      expect(sent.name).toBe('test-subject');
       expect(sent.subjects).toEqual(['test.subject']);
       expect(sent.retention).toBe(RetentionPolicy.Limits);
     });
@@ -143,8 +143,8 @@ describe('StreamAutoCreator', () => {
       expect(logger.logInfo).toHaveBeenCalledTimes(1);
       const [message, meta] = logger.logInfo.mock.calls[0];
       expect(message).toBe('Stream auto-creation with custom config overrides');
-      expect((meta as { subject: string }).subject).toBe('test.subject');
-      expect((meta as { config: { max_bytes: number } }).config.max_bytes).toBe(100_000);
+      expect((meta as { subject: string; }).subject).toBe('test.subject');
+      expect((meta as { config: { max_bytes: number; }; }).config.max_bytes).toBe(100_000);
     });
 
     it('should not INFO-log when no streamConfig is provided', async () => {
@@ -172,8 +172,8 @@ describe('StreamAutoCreator', () => {
       expect(logger.logError).toHaveBeenCalledTimes(1);
       const [message, meta] = logger.logError.mock.calls[0];
       expect(message).toBe('NATS server rejected stream config');
-      expect((meta as { subject: string }).subject).toBe('test.subject');
-      expect((meta as { error: string }).error).toContain('max bytes set');
+      expect((meta as { subject: string; }).subject).toBe('test.subject');
+      expect((meta as { error: string; }).error).toContain('max bytes set');
     });
 
     it('should not ERROR-log race-condition errors (stream name in use)', async () => {
