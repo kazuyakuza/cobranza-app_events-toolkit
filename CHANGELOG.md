@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
-- **`STREAM_NAME_PREFIX` from `buildStreamName()`**: The `auto-` prefix was removed from stream name generation in `src/consumer/build-stream-name.util.ts`. Auto-created JetStream streams now use sanitized subject names directly, aligning stream names with the auto-generated manifest entries without the `auto-` prefix.
+- **`STREAM_NAME_PREFIX` from `buildStreamName()`**: The `auto-` prefix was removed from stream name generation in `src/consumer/build-stream-name.util.ts`. Auto-created JetStream streams now use sanitized subject names directly, aligning stream names with the auto-generated manifest entries.
 
 ### Tests
 
