@@ -19,6 +19,12 @@ function buildContext(overrides?: Partial<EventContext>): EventContext {
   };
 }
 
+function buildContextWithout(key: keyof EventContext): EventContext {
+  const context = buildContext();
+  delete (context as Partial<EventContext>)[key];
+  return context;
+}
+
 describe('event.factory', () => {
   describe('createEvent', () => {
     it('returns an EventEnvelope instance', () => {
@@ -83,16 +89,12 @@ describe('event.factory', () => {
     });
 
     it('leaves causation_id undefined when causationId is not provided', () => {
-      const context = buildContext();
-      delete context.causationId;
-      const event = createEvent({}, context);
+      const event = createEvent({}, buildContextWithout('causationId'));
       expect(event.causation_id).toBeUndefined();
     });
 
     it('leaves actor_id undefined when actorId is not provided', () => {
-      const context = buildContext();
-      delete context.actorId;
-      const event = createEvent({}, context);
+      const event = createEvent({}, buildContextWithout('actorId'));
       expect(event.actor_id).toBeUndefined();
     });
 

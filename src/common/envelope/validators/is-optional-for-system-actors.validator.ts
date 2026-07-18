@@ -20,9 +20,9 @@ function isNonEmptyString(value: unknown): boolean {
   return typeof value === 'string' && value.length > 0;
 }
 
-/** Returns true when the validated object's actor_type is an automated actor. */
-function isAutomatedActor(target: { actor_type?: ActorType }): boolean {
-  return AUTOMATED_ACTOR_TYPES.includes(target.actor_type as ActorType);
+/** Returns true when the actor type is an automated (non-human) actor. */
+function isAutomatedActor(actorType?: ActorType): boolean {
+  return actorType !== undefined && AUTOMATED_ACTOR_TYPES.includes(actorType);
 }
 
 /**
@@ -36,7 +36,7 @@ function isAutomatedActor(target: { actor_type?: ActorType }): boolean {
 class IsOptionalForSystemActorsConstraint implements ValidatorConstraintInterface {
   validate(value: unknown, args: ValidationArguments): boolean {
     const target = args.object as { actor_type?: ActorType };
-    if (isAutomatedActor(target) && isAbsent(value)) {
+    if (isAutomatedActor(target.actor_type) && isAbsent(value)) {
       return true;
     }
     return isNonEmptyString(value);
