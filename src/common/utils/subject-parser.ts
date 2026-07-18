@@ -15,17 +15,25 @@ export interface SubjectParseResult {
   version: string;
 }
 
-/** Parsed components of a global NATS subject. */
+/**
+ * Parsed components of a global NATS subject.
+ *
+ * Returned by the internal global subject parser for subjects matching:
+ * `global.{domain}.{entity}.{action}.v{version}`
+ *
+ * @see buildGlobalResponseSubject
+ */
 export interface GlobalSubjectParseResult {
-  /** Business domain extracted from the subject. */
+  /** Business domain extracted from the subject (e.g., `iam`, `system`). */
   domain: string;
-  /** Main entity extracted from the subject. */
+  /** Main entity extracted from the subject (e.g., `company`, `user`). */
   entity: string;
   /** Action (verb) extracted from the subject, including `.response` if present. */
   action: string;
   /** Version number string (digits only, without `v` prefix). */
   version: string;
 }
+
 
 /** Regex that matches the convention tenant subject format and captures each segment. */
 const SUBJECT_SEGMENTS_PATTERN =

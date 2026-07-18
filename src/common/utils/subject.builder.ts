@@ -77,7 +77,13 @@ export function buildGlobalSubject(dto: BuildGlobalSubjectDto): string {
   return new SubjectBuilder().buildGlobal(dto);
 }
 
-/** Returns true when the subject starts with the `global.` prefix. */
+/**
+ * Returns `true` when the subject starts with the `global.` prefix,
+ * indicating it follows the global (tenant-less) subject format.
+ *
+ * @param subject - NATS subject string to check.
+ * @returns `true` if the subject is a global subject.
+ */
 export function isGlobalSubject(subject: string): boolean {
   return subject.startsWith('global.');
 }

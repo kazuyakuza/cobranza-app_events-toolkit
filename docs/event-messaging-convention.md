@@ -6,8 +6,12 @@ NATS + JetStream Event Standard v1.0
 
 - [1. Purpose](#1-purpose)
 - [2. Subject Naming Convention](#2-subject-naming-convention-natsjetstream)
-- [2.2 Platform Event Subjects](#22-platform-event-subjects)
+  - [Global Subject Format](#global-subject-format)
+  - [2.1 Response Subject Naming Convention](#21-response-subject-naming-convention)
+  - [2.2 Platform Event Subjects](#22-platform-event-subjects)
 - [3. Event Envelope (Payload Structure)](#3-event-envelope-payload-structure)
+  - [3.1 Tenant Event Envelope](#31-tenant-event-envelope)
+  - [3.2 Global Event Envelope](#32-global-event-envelope)
 - [4. Good Practices](#4-good-practices)
 - [5. Actor Types](#5-actor-types-enum)
 
@@ -48,6 +52,31 @@ company.{company_id}.{domain}.{entity}.{action}.v{version}
 - `company.550e8400e29b41d4a716446655440000.bank.statement.processed.v1`
 - `company.550e8400e29b41d4a716446655440000.notification.sent.v1`
 - `company.550e8400e29b41d4a716446655440000.client.updated.v1`
+
+### Global Subject Format
+
+For tenant-less operations (e.g., creating cross-tenant entities like `company`, `user`, `role`, or system-wide configuration changes), the global subject format omits the `company_id` segment:
+
+**Format:**
+
+```text
+global.{domain}.{entity}.{action}.v{version}
+```
+
+**Rules:**
+
+- `domain`: Business domain (e.g., `iam`, `system`, `config`).
+- `entity`: The main entity involved (e.g., `company`, `user`, `role`).
+- `action`: Verb in **past tense** (same rules as tenant subjects).
+- `version`: `v1`, `v2`, etc. (major version only).
+
+**Examples:**
+
+- `global.iam.company.created.v1`
+- `global.iam.user.updated.v1`
+- `global.config.feature-flag.toggled.v1`
+
+Use `SubjectBuilder.buildGlobal()` or `buildGlobalSubject()` to construct global subjects — never concatenate strings manually.
 
 > **Platform subjects** follow a different pattern (`platform.service.{action}.v{version}`) and are not tenant-isolated. See [Section 2.2](#22-platform-event-subjects) for details.
 
@@ -127,7 +156,9 @@ For full details, see [Event Discovery & Service Registry](event-discovery-and-s
 
 ## 3. Event Envelope (Payload Structure)
 
-All messages published to JetStream **must** follow this JSON structure:
+### 3.1 Tenant Event Envelope
+
+All tenant-scoped messages published to JetStream **must** follow this JSON structure:
 
 ```json
 {
@@ -158,6 +189,35 @@ All messages published to JetStream **must** follow this JSON structure:
 }
 ```
 
+### 3.2 Global Event Envelope
+
+For tenant-less operations, the global event envelope has the **same structure** as the tenant envelope but **omits `company_id`**:
+
+```json
+{
+  "id": "evt_01JXYZABC123456789012345",
+  "type": "iam.company.created",
+  "version": "1.0.0",
+
+  "produced_at": "2025-06-08T16:45:12.345Z",
+  "producer": "iam-service",
+
+  // === Actor Context (no company_id) ===
+  "actor_type": "system",
+
+  // === Tracing & Correlation ===
+  "correlation_id": "req_987fcdeb-51a2-43e8-9c4f-123456789abc",
+  "trace_id": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+
+  // === Business Payload ===
+  "data": {
+    // Domain-specific data goes here
+  }
+}
+```
+
+> **Note:** `company_id` is omitted entirely for global events — do NOT use a placeholder UUID. Use `GlobalEventEnvelope` / `GlobalEventBase` classes and `createGlobalEvent()` factory to ensure the field is absent.
+
 ### Field Details
 
 | Field              | Required | Description |
@@ -167,9 +227,9 @@ All messages published to JetStream **must** follow this JSON structure:
 | `version`          | Yes      | Schema version of this event |
 | `produced_at`      | Yes      | ISO 8601 UTC timestamp with milliseconds |
 | `producer`         | Yes      | Microservice name (kebab-case) |
-| `company_id`       | Yes      | Always present - critical for tenant isolation |
+| `company_id`       | Yes (tenant) / Omitted (global) | Present in tenant envelopes for tenant isolation; absent in global envelopes |
 | `actor_type`       | Yes      | Who performed the action. See [Actor Types](#5-actor-types) |
-| `actor_id`         | Yes      | ID of the actor (`user_id`, `client_id`, etc.) |
+| `actor_id`         | Conditional | Required for `client` and `company_user`; optional for `system`, `scheduler`, `external_api` |
 | `correlation_id`   | Yes      | Same across the entire request / transaction chain |
 | `causation_id`     | No       | ID of the event that triggered this one |
 | `trace_id`         | Recommended | OpenTelemetry trace ID |
@@ -377,3 +437,15 @@ enum ActorType {
   EXTERNAL_API = "external_api",
 }
 ```
+
+### `actor_id` Requirements
+
+| Actor Type | `actor_id` Required? | Notes |
+|------------|----------------------|-------|
+| `client` | **Yes** | Must be a non-empty string identifying the client |
+| `company_user` | **Yes** | Must be a non-empty string identifying the user |
+| `system` | No | Automated system processes; `actor_id` may be omitted |
+| `scheduler` | No | Scheduled/cron jobs; `actor_id` may be omitted |
+| `external_api` | No | Third-party integrations; `actor_id` may be omitted |
+
+> **Validation:** The toolkit enforces this conditionally via `@IsOptionalForSystemActors()`. Human actors (`client`, `company_user`) always require `actor_id`; automated actors (`system`, `scheduler`, `external_api`) may omit it.

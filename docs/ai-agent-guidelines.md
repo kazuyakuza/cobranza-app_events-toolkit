@@ -28,14 +28,15 @@ For the full convention specification, see [`event-messaging-convention.md`](eve
 
 | Rule | Detail |
 | ---- | ------ |
-| Subject format | `company.{company_id}.{domain}.{entity}.{action}.v{version}` |
+| Subject format (tenant) | `company.{company_id}.{domain}.{entity}.{action}.v{version}` |
+| Subject format (global) | `global.{domain}.{entity}.{action}.v{version}` |
 | Event IDs | UUIDv7 with `evt_` prefix via `generateEventId()` |
 | Actions | Past tense only: `created`, `uploaded`, `processed`, `sent` |
 | Version | Major only: `v1`, `v2` |
 | Payloads | IDs over full objects; keep under 256KB |
 | Consumers | MUST be idempotent |
 | Actor context | `actor_type` always required; `actor_id` required for `client` and `company_user`, optional for `system`, `scheduler`, `external_api` |
-| Tenant isolation | `company_id` mandatory in every envelope |
+| Tenant isolation | `company_id` mandatory in tenant envelopes; omitted in global envelopes (`EventScope.GLOBAL`) |
 
 ## Step-by-Step: Creating a New Event Class
 
@@ -63,16 +64,31 @@ class PaymentProofUploadedData {
 
 ### 2. Extend EventEnvelope
 
-```typescript
-import { EventEnvelope } from '@cobranza-apps/events-toolkit';
+**Tenant-scoped event** (most common — requires `companyId`):
 
-class PaymentProofUploadedEvent extends EventEnvelope<PaymentProofUploadedData> {
+```typescript
+import { EventBase } from '@cobranza-apps/events-toolkit';
+
+class PaymentProofUploadedEvent extends EventBase<PaymentProofUploadedData> {
   readonly type = 'payment.proof.uploaded';
   readonly version = '1.0.0';
 }
 ```
 
+**Global event** (tenant-less — for cross-tenant entities like `company`, `user`, `role`):
+
+```typescript
+import { GlobalEventBase } from '@cobranza-apps/events-toolkit';
+
+class CompanyCreatedEvent extends GlobalEventBase<CompanyCreatedData> {
+  readonly type = 'iam.company.created';
+  readonly version = '1.0.0';
+}
+```
+
 ### 3. Construct with context
+
+**Tenant-scoped:**
 
 ```typescript
 import { createEvent } from '@cobranza-apps/events-toolkit';
@@ -84,6 +100,20 @@ const event = createEvent(data, {
   companyId: '550e8400-e29b-41d4-a716-446655440000',
   actorType: ActorType.CLIENT,
   actorId: 'clt_123e4567-e89b-12d3-a456-426614174000',
+  correlationId: '987fcdeb-51a2-43e8-9c4f-123456789abc',
+});
+```
+
+**Global:**
+
+```typescript
+import { createGlobalEvent } from '@cobranza-apps/events-toolkit';
+
+const event = createGlobalEvent(data, {
+  type: 'iam.company.created',
+  version: '1.0.0',
+  producer: 'iam-service',
+  actorType: ActorType.SYSTEM,
   correlationId: '987fcdeb-51a2-43e8-9c4f-123456789abc',
 });
 ```
@@ -149,6 +179,44 @@ class PaymentService {
   }
 }
 ```
+
+### Option 3 — Global event (tenant-less)
+
+For events not scoped to a company (e.g., creating a `company`, `user`, or `role`):
+
+```typescript
+import { createGlobalEvent, ProducerService, SubjectBuilder, GlobalEventContext } from '@cobranza-apps/events-toolkit';
+
+class IamService {
+  constructor(
+    private readonly producerService: ProducerService,
+    private readonly subjectBuilder: SubjectBuilder,
+  ) {}
+
+  async createCompany(data: CompanyCreatedData, context: GlobalEventContext): Promise<void> {
+    const subject = this.subjectBuilder.buildGlobal({
+      domain: 'iam',
+      entity: 'company',
+      action: 'created',
+      version: '1',
+    });
+    const event = createGlobalEvent(data, context);
+    await this.producerService.publish(subject, event);
+  }
+}
+```
+
+Or via `emitGlobal()`:
+
+```typescript
+await this.producerService.emitGlobal({
+  subject,
+  data,
+  context: { type: 'iam.company.created', version: '1.0.0', producer: 'iam-service', actorType: ActorType.SYSTEM, correlationId },
+});
+```
+
+> **Decorators:** Use `scope: EventScope.GLOBAL` in `@EmitEvent()` and `@OnEvent()` to route global events automatically.
 
 ## Step-by-Step: Consuming Events
 
@@ -399,31 +467,38 @@ These fields appear in the DLQ payload for monitoring and alerting systems.
 Before submitting event-related code, verify:
 
 - [ ] Data class has `@IsUUID`, `@IsString`, `@IsNumber`, etc. on every field
-- [ ] Event class extends `EventEnvelope<T>`
+- [ ] Event class extends `EventBase<T>` (tenant) or `GlobalEventBase<T>` (global)
 - [ ] `type` follows the `domain.entity.action` pattern
 - [ ] `version` is a string like `'1.0.0'`
-- [ ] `company_id` is always provided in context
+- [ ] `company_id` is provided in tenant context; omitted for global events
 - [ ] `actor_type` is always provided; `actor_id` is provided for `client` and `company_user` (optional for `system`, `scheduler`, `external_api`)
-- [ ] Subject is built with `SubjectBuilder.build()` — never string concatenation
+- [ ] Subject is built with `SubjectBuilder.build()` (tenant) or `SubjectBuilder.buildGlobal()` (global) — never string concatenation
 
 ## Common Mistakes
 
 | # | Mistake | Fix |
 |---|---------|-----|
-| 1 | Manual subject concatenation | Use `SubjectBuilder.build()` |
+| 1 | Manual subject concatenation | Use `SubjectBuilder.build()` or `SubjectBuilder.buildGlobal()` |
 | 2 | Present-tense verbs for actions | Use past tense: `uploaded`, not `upload` |
 | 3 | Forgetting actor context | Always include `actorType` in `EventContext`; include `actorId` for `client` and `company_user` (omit for `system`, `scheduler`, `external_api`) |
 | 4 | Non-idempotent consumers | Design handlers to safely process duplicate messages |
 | 5 | Storing full objects instead of IDs | Keep payloads under 256KB; reference IDs |
 | 6 | Missing `@IsUUID` on ID fields | Decorate all UUID fields with `@IsUUID()` |
 | 7 | Events exceeding 256KB | Keep payloads lean — use IDs, not full entities |
+| 8 | Using tenant envelope for global operations | Use `GlobalEventEnvelope`/`GlobalEventBase` + `buildGlobalSubject()` for tenant-less events |
+| 9 | Sending placeholder `company_id` for global events | Omit `company_id` entirely; use `createGlobalEvent()` and `GlobalEventContext` |
 
 ## Public API Quick Reference
 
 | Concern | Exports |
 | ------- | ------- |
-| Envelope | `EventEnvelope`, `EventBase`, `ActorType`, `EventContext` |
-| Subject | `SubjectBuilder`, `buildSubject`, `BuildSubjectDto` |
+| Envelope (tenant) | `EventEnvelope`, `EventBase`, `EventContext` |
+| Envelope (global) | `GlobalEventEnvelope`, `GlobalEventBase`, `GlobalEventContext` |
+| Envelope (shared) | `BaseEventEnvelope`, `BaseEventContext`, `ActorType`, `EventScope` |
+| Envelope (types/guards) | `AnyEventEnvelope`, `AnyEventContext`, `isGlobalEnvelope`, `isGlobalContext` |
+| Subject (tenant) | `SubjectBuilder`, `buildSubject`, `BuildSubjectDto` |
+| Subject (global) | `buildGlobalSubject`, `BuildGlobalSubjectDto`, `isGlobalSubject` |
+| Factory | `createEvent`, `createGlobalEvent` |
 | ID | `generateEventId`, `generateUuidV7` |
 | Producer | `ProducerModule`, `ProducerService`, `@EmitEvent()` |
 | Consumer | `ConsumerModule`, `@OnEvent()`, `EventConsumerException` |
@@ -432,7 +507,7 @@ Before submitting event-related code, verify:
 | Unified | `EventsToolkitModule`, `EventsToolkitModuleOptions` |
 | Logging | `EventLoggerService` |
 | Errors | `EventConsumerException`, `RequestReplyException` |
-| Subject (response/DLQ) | `buildResponseSubject`, `buildDlqSubject`, `RESPONSE_SUFFIX`, `DLQ_SUBJECT_PREFIX` |
+| Subject (response/DLQ) | `buildResponseSubject`, `buildGlobalResponseSubject`, `buildDlqSubject`, `RESPONSE_SUFFIX`, `DLQ_SUBJECT_PREFIX` |
 | Consumer services | `ConsumerService`, `JetStreamConsumerService`, `RequestReplyConsumerService` |
 | Discovery | `DiscoveryModule`, `DiscoveryService`, `ManifestService`, `ManifestEntryBuilder` |
 | Testing | `EventsToolkitTestModule`, `MockProducerService`, `MockConsumerService`, `MockOutboxService`, `MockRequestReplyService`, `expectEventPublished`, `expectEventConsumed` — import from `@cobranza-apps/events-toolkit/testing` |
