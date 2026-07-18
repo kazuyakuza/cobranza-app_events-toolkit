@@ -65,7 +65,8 @@ export class RequestReplyConsumerService implements OnModuleInit {
    * Looks up by `eventType:companyId` first, then falls back to `eventType`.
    */
   async dispatch(options: DispatchOptions): Promise<void> {
-    const handler = this.findHandler(options.event.type, options.event.company_id);
+    const tenantId = 'company_id' in options.event ? options.event.company_id : undefined;
+    const handler = this.findHandler(options.event.type, tenantId);
     if (!handler) {
       throw new EventConsumerException({
         message: `No request-reply handler registered for event type: ${options.event.type}`,

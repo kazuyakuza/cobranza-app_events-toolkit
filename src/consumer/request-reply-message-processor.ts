@@ -1,17 +1,16 @@
 import { JsMsg } from 'nats';
-import { plainToInstance } from 'class-transformer';
-import { validateSync } from 'class-validator';
-import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { EventConsumerException } from '../common/errors/event-consumer.exception';
+import { AnyEventEnvelope } from '../common/envelope/envelope-types';
 import { encodeEvent } from '../common/utils/serialization.utils';
 import { EventLoggerService, EventLogContext, EventErrorLogContext } from '../logging/event-logger.service';
 import { DispatchOptions } from './dispatch-options.interface';
-import { envelopeToContext, ValidationErrorOptions, DlqRoutingOptions } from './subscribe-options.interface';
+import { envelopeToContext, DlqRoutingOptions } from './subscribe-options.interface';
+import { EnvelopeValidationUtil } from './envelope-validation.util';
 
 /** Dependencies required by {@link RequestReplyMessageProcessor}. */
 export interface MessageProcessorDeps {
   /** NATS JetStream client used to publish messages to the Dead Letter Queue. */
-  jetStream: { publish: (subject: string, data: Uint8Array) => Promise<unknown> };
+  jetStream: { publish: (subject: string, data: Uint8Array) => Promise<unknown>; };
   /** Logger for structured event logging (consumed, errors, DLQ). */
   logger: EventLoggerService;
   /** Builds the DLQ subject from the original message subject. */
@@ -21,7 +20,7 @@ export interface MessageProcessorDeps {
 }
 /** Handles the NATS message processing pipeline for request-reply responses. */
 export class RequestReplyMessageProcessor {
-  private readonly jetStream: { publish: (subject: string, data: Uint8Array) => Promise<unknown> };
+  private readonly jetStream: { publish: (subject: string, data: Uint8Array) => Promise<unknown>; };
   private readonly logger: EventLoggerService;
   private readonly dlqSubjectBuilder: (subject: string) => string;
   private readonly dispatch: (options: DispatchOptions) => Promise<void>;
@@ -35,9 +34,9 @@ export class RequestReplyMessageProcessor {
   async processMessage(msg: JsMsg, subject: string): Promise<void> {
     let plain: Record<string, unknown> | undefined;
     try {
-      plain = this.parseMessageData(msg);
-      const envelope = this.validateEnvelope(plain, msg.subject);
-      const context = envelopeToContext(envelope);
+      plain = EnvelopeValidationUtil.parseMessageData(msg);
+      const envelope = EnvelopeValidationUtil.validateEnvelope(plain, msg.subject);
+      const context = envelopeToContext(envelope, msg.subject);
       const logCtx = this.toLogContext(subject, envelope);
       const dispatchOptions: DispatchOptions = { subject, event: envelope, context };
       await this.dispatch(dispatchOptions);
@@ -50,55 +49,6 @@ export class RequestReplyMessageProcessor {
     } catch (error: unknown) {
       await this.handleError({ error, msg, subject, originalPayload: plain });
     }
-  }
-  private parseMessageData(msg: JsMsg): Record<string, unknown> {
-    const text = new TextDecoder().decode(msg.data);
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      throw new EventConsumerException({
-        message: 'Message payload is not valid JSON',
-        eventId: 'unknown',
-        eventType: 'unknown',
-      });
-    }
-    if (this.isInvalidEventPayload(parsed)) {
-      throw new EventConsumerException({
-        message: 'Message payload is not a valid JSON object',
-        eventId: 'unknown',
-        eventType: 'unknown',
-      });
-    }
-    return parsed as Record<string, unknown>;
-  }
-
-  private isInvalidEventPayload(parsed: unknown): boolean {
-    return typeof parsed !== 'object' || parsed === null || Array.isArray(parsed);
-  }
-
-  private validateEnvelope(plain: Record<string, unknown>, subject: string): EventEnvelope<unknown> {
-    const envelope = plainToInstance(EventEnvelope, plain);
-    const errors = validateSync(envelope);
-    if (errors.length > 0) {
-      throw this.createValidationException({ errors, subject, plain });
-    }
-    return envelope;
-  }
-
-  private createValidationException(options: ValidationErrorOptions): EventConsumerException {
-    const { errors, subject, plain } = options;
-    const eventId = typeof plain.id === 'string' ? plain.id : 'unknown';
-    const eventType = typeof plain.type === 'string' ? plain.type : 'unknown';
-    const correlationId = typeof plain.correlation_id === 'string' ? plain.correlation_id : undefined;
-    const messages = errors.map((e) => Object.values(e.constraints ?? {}).join('; ')).join(', ');
-    return new EventConsumerException({
-      message: `Event validation failed on subject ${subject}: ${messages}`,
-      eventId,
-      eventType,
-      correlationId,
-      cause: new Error(JSON.stringify(errors)),
-    });
   }
 
   private async handleError(options: {
@@ -173,7 +123,7 @@ export class RequestReplyMessageProcessor {
     };
   }
 
-  private toLogContext(subject: string, envelope: EventEnvelope<unknown>): EventLogContext {
+  private toLogContext(subject: string, envelope: AnyEventEnvelope<unknown>): EventLogContext {
     return {
       eventId: envelope.id,
       eventType: envelope.type,

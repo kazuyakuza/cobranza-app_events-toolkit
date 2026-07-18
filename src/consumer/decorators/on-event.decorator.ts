@@ -1,4 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
+import { EventScope } from '../../common/envelope/event-scope.enum';
 
 /** Metadata key for @OnEvent() decorator. */
 export const ON_EVENT_METADATA = 'on_event_metadata';
@@ -17,6 +18,8 @@ export interface OnEventMetadata {
   payloadSchemaRef?: string;
   /** Example payload object for documentation in discovery manifests. */
   payloadExample: Record<string, unknown>;
+  /** Event scope (tenant or global). Defaults to tenant for backward compatibility. */
+  scope?: EventScope;
 }
 
 /** Options for the @OnEvent() method decorator (second argument, required). */
@@ -31,6 +34,8 @@ export interface OnEventOptions {
   payloadSchemaRef?: string;
   /** Example payload object for documentation in discovery manifests. Required. */
   payloadExample: Record<string, unknown>;
+  /** Event scope (tenant or global). Defaults to tenant for backward compatibility. */
+  scope?: EventScope;
 }
 
 /**
@@ -42,18 +47,6 @@ export interface OnEventOptions {
  * @param eventType - NATS event type identifier (e.g., 'payment.proof.uploaded').
  * @param options - Required metadata options including version, description, and payloadExample.
  * @returns A MethodDecorator that stores on-event metadata via NestJS SetMetadata.
- *
- * @example
- * ```ts
- * @OnEvent('payment.proof.uploaded', {
- *   version: '1',
- *   description: 'Proof was uploaded',
- *   payloadExample: { proofId: 'uuid' },
- * })
- * async handleProofUploaded(event: EventEnvelope<PaymentProofUploadedData>) {
- *   // handle event
- * }
- * ```
  */
 export function OnEvent(eventType: string, options: OnEventOptions): MethodDecorator {
   const metadata: OnEventMetadata = { eventType, ...options };

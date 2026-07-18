@@ -3,8 +3,11 @@ import { ValidationError } from 'class-validator';
 import { EventConsumerException } from '../common/errors/event-consumer.exception';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { EventContext } from '../common/envelope/event-context.interface';
+import { GlobalEventEnvelope } from '../common/envelope/global-event-envelope.class';
+import { GlobalEventContext } from '../common/envelope/global-event-context.interface';
+import { AnyEventEnvelope, AnyEventContext } from '../common/envelope/envelope-types';
 import { EventHandler } from './consumer.service';
-import { buildDlqSubject } from '../common/utils/subject.builder';
+import { buildDlqSubject, isGlobalSubject } from '../common/utils/subject.builder';
 
 /** Default ack policy applied when a caller omits consumer options. */
 const DEFAULT_ACK_POLICY = AckPolicy.Explicit;
@@ -15,7 +18,7 @@ export type ConsumerSubscribeOpts = ConsumerOptsBuilder | Partial<ConsumerOpts>;
 
 /** Returns true when the value is a NATS ConsumerOptsBuilder (duck-typed via `getOpts`). */
 export function isConsumerOptsBuilder(value: unknown): value is ConsumerOptsBuilder {
-  return typeof (value as { getOpts?: unknown })?.getOpts === 'function';
+  return typeof (value as { getOpts?: unknown; })?.getOpts === 'function';
 }
 
 /** Builds the default JetStream consumer options used when none are provided.
@@ -63,8 +66,8 @@ export function defaultDlqSubjectBuilder(subject: string): string {
   return buildDlqSubject(subject);
 }
 
-/** Extracts {@link EventContext} fields from a validated {@link EventEnvelope}. */
-export function envelopeToContext(envelope: EventEnvelope<unknown>): EventContext {
+/** Extracts {@link EventContext} fields from a validated tenant {@link EventEnvelope}. */
+export function envelopeToTenantContext(envelope: EventEnvelope<unknown>): EventContext {
   return {
     type: envelope.type,
     version: envelope.version,
@@ -77,6 +80,35 @@ export function envelopeToContext(envelope: EventEnvelope<unknown>): EventContex
     traceId: envelope.trace_id,
     replyTo: envelope.reply_to,
   };
+}
+
+/** Extracts {@link GlobalEventContext} fields from a validated {@link GlobalEventEnvelope}. */
+export function envelopeToGlobalContext(envelope: GlobalEventEnvelope<unknown>): GlobalEventContext {
+  return {
+    type: envelope.type,
+    version: envelope.version,
+    producer: envelope.producer,
+    actorType: envelope.actor_type,
+    actorId: envelope.actor_id,
+    correlationId: envelope.correlation_id,
+    causationId: envelope.causation_id,
+    traceId: envelope.trace_id,
+    replyTo: envelope.reply_to,
+  };
+}
+
+/**
+ * Dispatches to the appropriate context extractor based on the subject prefix.
+ *
+ * @param envelope - The validated event envelope (tenant or global).
+ * @param subject - The NATS subject the message was received on.
+ * @returns The corresponding event context.
+ */
+export function envelopeToContext(envelope: AnyEventEnvelope<unknown>, subject: string): AnyEventContext {
+  if (isGlobalSubject(subject)) {
+    return envelopeToGlobalContext(envelope as GlobalEventEnvelope<unknown>);
+  }
+  return envelopeToTenantContext(envelope as EventEnvelope<unknown>);
 }
 
 /** Options for subscribing a handler to a NATS JetStream subject. */

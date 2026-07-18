@@ -52,7 +52,7 @@ export class MockConsumerService {
    * Convenience method for simulating incoming events in tests.
    */
   async simulateEvent(subject: string, event: EventEnvelope<unknown>): Promise<void> {
-    const context = envelopeToContext(event);
+    const context = envelopeToContext(event, subject);
     await this.dispatch({ subject, event, context });
   }
 

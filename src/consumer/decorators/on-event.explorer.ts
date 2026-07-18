@@ -2,6 +2,7 @@ import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { EventHandler } from '../consumer.service';
 import { ON_EVENT_METADATA, OnEventMetadata } from './on-event.decorator';
 import { ON_EVENT_EXPLORER_DEPS_TOKEN, OnEventExplorerDeps } from './on-event-explorer-deps.interface';
+import { EventScope } from '../../common/envelope/event-scope.enum';
 
 /** Pairs a class instance with its prototype for method metadata scanning. */
 interface HandlerTarget {
@@ -15,7 +16,7 @@ interface HandlerTarget {
  *
  * Uses NestJS DiscoveryService to find all provider and controller instances,
  * then uses Reflector to read OnEvent metadata from their methods.
- * Builds a wildcard NATS subject (company.*) for each handler registration.
+ * Builds a wildcard NATS subject (company.* or global.*) for each handler registration.
  *
  * Note: This explorer only registers handlers with ConsumerService.
  * The host application is responsible for calling
@@ -26,7 +27,7 @@ interface HandlerTarget {
  */
 @Injectable()
 export class OnEventExplorer implements OnModuleInit {
-  constructor(@Inject(ON_EVENT_EXPLORER_DEPS_TOKEN) private readonly deps: OnEventExplorerDeps) {}
+  constructor(@Inject(ON_EVENT_EXPLORER_DEPS_TOKEN) private readonly deps: OnEventExplorerDeps) { }
 
   /**
    * NestJS lifecycle hook — triggers handler discovery and registration at startup.
@@ -47,11 +48,11 @@ export class OnEventExplorer implements OnModuleInit {
     return allWrappers.filter((w) => this.isValidWrapper(w)).map((w) => w.instance as object);
   }
 
-  private isValidWrapper(wrapper: { instance?: unknown }): boolean {
+  private isValidWrapper(wrapper: { instance?: unknown; }): boolean {
     return this.hasObjectInstance(wrapper);
   }
 
-  private hasObjectInstance(wrapper: { instance?: unknown }): boolean {
+  private hasObjectInstance(wrapper: { instance?: unknown; }): boolean {
     return wrapper.instance != null && typeof wrapper.instance === 'object';
   }
 
@@ -78,6 +79,9 @@ export class OnEventExplorer implements OnModuleInit {
   }
 
   private buildWildcardSubject(metadata: OnEventMetadata): string {
+    if (metadata.scope === EventScope.GLOBAL) {
+      return `global.${metadata.eventType}.v${metadata.version}`;
+    }
     return `company.*.${metadata.eventType}.v${metadata.version}`;
   }
 }

@@ -1,11 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { EventEnvelope } from '../common/envelope/event-envelope.class';
-import { EventContext } from '../common/envelope/event-context.interface';
+import { AnyEventEnvelope, AnyEventContext } from '../common/envelope/envelope-types';
 import { EventConsumerException } from '../common/errors/event-consumer.exception';
 import { DispatchOptions } from './dispatch-options.interface';
 
 /** Handler function invoked when a consumed event matches a registered subject. */
-export type EventHandler = (event: EventEnvelope<unknown>, context: EventContext) => Promise<void>;
+export type EventHandler = (event: AnyEventEnvelope<unknown>, context: AnyEventContext) => Promise<void>;
 
 /**
  * Registry that maps NATS subjects to event handler functions.
