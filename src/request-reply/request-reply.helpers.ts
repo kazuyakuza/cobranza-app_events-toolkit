@@ -1,3 +1,6 @@
+import { GlobalEventContext } from '../common/envelope/global-event-context.interface';
+import { GlobalEventEnvelope } from '../common/envelope/global-event-envelope.class';
+import { AnyEventEnvelope } from '../common/envelope/envelope-types';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { EventContext } from '../common/envelope/event-context.interface';
 import { RequestReplyException } from '../common/errors/request-reply.exception';
@@ -5,7 +8,7 @@ import { generateEventId } from '../common/utils/uuid.utils';
 import { nowIso } from '../common/utils/date.utils';
 import { EventLoggerService, EventLogContext, EventErrorLogContext } from '../logging/event-logger.service';
 
-/** Builds a fully-populated {@link EventEnvelope} from domain context and payload. */
+/** Builds a fully-populated tenant {@link EventEnvelope} from domain context and payload. */
 export function buildEnvelope<T>(context: EventContext, payload: T): EventEnvelope<T> {
   return new EventEnvelope<T>({
     id: generateEventId(),
@@ -14,6 +17,24 @@ export function buildEnvelope<T>(context: EventContext, payload: T): EventEnvelo
     version: context.version,
     producer: context.producer,
     company_id: context.companyId,
+    actor_type: context.actorType,
+    actor_id: context.actorId,
+    correlation_id: context.correlationId,
+    causation_id: context.causationId,
+    trace_id: context.traceId,
+    reply_to: context.replyTo,
+    data: payload,
+  });
+}
+
+/** Builds a fully-populated global {@link GlobalEventEnvelope} from domain context and payload. */
+export function buildGlobalEnvelope<T>(context: GlobalEventContext, payload: T): GlobalEventEnvelope<T> {
+  return new GlobalEventEnvelope<T>({
+    id: generateEventId(),
+    produced_at: nowIso(),
+    type: context.type,
+    version: context.version,
+    producer: context.producer,
     actor_type: context.actorType,
     actor_id: context.actorId,
     correlation_id: context.correlationId,
@@ -49,12 +70,12 @@ export function ensureReplyToSet(replyTo: string | undefined): asserts replyTo i
 }
 
 /** Logs that a request event was emitted to the given subject. */
-export function logRequestSent(logger: EventLoggerService, subject: string, envelope: EventEnvelope<unknown>): void {
+export function logRequestSent(logger: EventLoggerService, subject: string, envelope: AnyEventEnvelope<unknown>): void {
   logger.logEventEmitted(toLogContext(subject, envelope));
 }
 
 /** Logs that a reply event was received from the given subject. */
-export function logReplyReceived(logger: EventLoggerService, subject: string, envelope: EventEnvelope<unknown>): void {
+export function logReplyReceived(logger: EventLoggerService, subject: string, envelope: AnyEventEnvelope<unknown>): void {
   logger.logEventConsumed(toLogContext(subject, envelope));
 }
 
@@ -62,14 +83,14 @@ export function logReplyReceived(logger: EventLoggerService, subject: string, en
 export function logRequestError(
   logger: EventLoggerService,
   subject: string,
-  envelope: EventEnvelope<unknown>,
+  envelope: AnyEventEnvelope<unknown>,
   error: unknown,
 ): void {
   logger.logEventError(toErrorLogContext(subject, envelope, error));
 }
 
 /** Converts a subject and envelope into an {@link EventLogContext} for structured logging. */
-export function toLogContext(subject: string, envelope: EventEnvelope<unknown>): EventLogContext {
+export function toLogContext(subject: string, envelope: AnyEventEnvelope<unknown>): EventLogContext {
   return {
     eventId: envelope.id,
     eventType: envelope.type,
@@ -82,7 +103,7 @@ export function toLogContext(subject: string, envelope: EventEnvelope<unknown>):
 /** Converts a subject, envelope, and error into an {@link EventErrorLogContext} for structured logging. */
 export function toErrorLogContext(
   subject: string,
-  envelope: EventEnvelope<unknown>,
+  envelope: AnyEventEnvelope<unknown>,
   error: unknown,
 ): EventErrorLogContext {
   const err = error instanceof Error ? error : new Error(String(error));
@@ -94,7 +115,7 @@ export function toErrorLogContext(
 }
 
 /** Wraps an unknown error into a {@link RequestReplyException}, preserving the original if already typed. */
-export function wrapRequestError(envelope: EventEnvelope<unknown>, error: unknown): RequestReplyException {
+export function wrapRequestError(envelope: AnyEventEnvelope<unknown>, error: unknown): RequestReplyException {
   if (error instanceof RequestReplyException) {
     return error;
   }

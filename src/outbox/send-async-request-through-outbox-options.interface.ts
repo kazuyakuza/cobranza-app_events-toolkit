@@ -1,4 +1,5 @@
 import type { AsyncRequestEventContext } from './async-request-event-context.interface';
+import type { AsyncGlobalRequestEventContext } from './async-global-request-event-context.interface';
 
 /**
  * Options for {@link OutboxService.sendAsyncRequestThroughOutbox}.
@@ -12,5 +13,5 @@ export interface SendAsyncRequestThroughOutboxOptions<T> {
   /** Domain-specific business payload for the request event. */
   payload: T;
   /** Metadata for the event envelope. Must include replyTo for async responses. */
-  context: AsyncRequestEventContext;
+  context: AsyncRequestEventContext | AsyncGlobalRequestEventContext;
 }

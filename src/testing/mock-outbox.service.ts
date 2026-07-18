@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { EventEnvelope } from '../common/envelope/event-envelope.class';
-import { createEvent } from '../common/utils/event.factory';
+import { AnyEventEnvelope } from '../common/envelope/envelope-types';
+import { isGlobalContext } from '../common/envelope/envelope-types';
+import { createEvent, createGlobalEvent } from '../common/utils/event.factory';
 import { SaveInTransactionParams } from '../outbox/save-in-transaction-params.interface';
 import { SendAsyncRequestThroughOutboxOptions } from '../outbox/send-async-request-through-outbox-options.interface';
 import { SendAsyncRequestThroughOutboxResult } from '../outbox/send-async-request-through-outbox-result.interface';
@@ -17,7 +18,7 @@ export class MockOutboxService {
   private readonly saved: SavedOutboxEvent[] = [];
 
   /** Records an event as saved to the outbox. */
-  async saveToOutbox(event: EventEnvelope<unknown>, subject: string): Promise<void> {
+  async saveToOutbox(event: AnyEventEnvelope<unknown>, subject: string): Promise<void> {
     this.saved.push({ event, subject });
   }
 
@@ -27,7 +28,7 @@ export class MockOutboxService {
   }
 
   /** Records a request-reply event through the outbox (same storage as `saveToOutbox`). */
-  async sendRequestThroughOutbox(event: EventEnvelope<unknown>, subject: string): Promise<void> {
+  async sendRequestThroughOutbox(event: AnyEventEnvelope<unknown>, subject: string): Promise<void> {
     this.saved.push({ event, subject });
   }
 
@@ -35,7 +36,9 @@ export class MockOutboxService {
   async sendAsyncRequestThroughOutbox<T>(
     options: SendAsyncRequestThroughOutboxOptions<T>,
   ): Promise<SendAsyncRequestThroughOutboxResult> {
-    const envelope = createEvent(options.payload, options.context);
+    const envelope = isGlobalContext(options.context)
+      ? createGlobalEvent(options.payload, options.context)
+      : createEvent(options.payload, options.context);
     this.saved.push({ event: envelope, subject: options.subject });
     return { correlationId: envelope.correlation_id };
   }

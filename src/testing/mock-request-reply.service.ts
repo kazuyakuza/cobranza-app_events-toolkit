@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { EventEnvelope } from '../common/envelope/event-envelope.class';
+import { AnyEventEnvelope, AnyEventContext, isGlobalContext } from '../common/envelope/envelope-types';
 import { EventContext } from '../common/envelope/event-context.interface';
-import { generateEventId } from '../common/utils/uuid.utils';
-import { nowIso } from '../common/utils/date.utils';
+import { GlobalEventContext } from '../common/envelope/global-event-context.interface';
 import {
   RequestReplyRequestOptions,
   RequestReplyResponse,
@@ -10,6 +9,7 @@ import {
   SendRequestResult,
   BuildResponseEnvelopeOptions,
 } from '../request-reply/request-reply.types';
+import { buildEnvelope, buildGlobalEnvelope } from '../request-reply/request-reply.helpers';
 
 /** A recorded synchronous `request()` call captured by `MockRequestReplyService`. */
 export interface RequestCall {
@@ -20,7 +20,7 @@ export interface RequestCall {
   /** Request options (timeout, etc.) excluding context. */
   options: RequestReplyRequestOptions;
   /** The event context used for the request. */
-  context: EventContext;
+  context: EventContext | GlobalEventContext;
 }
 
 /** A recorded `sendResponse()` call captured by `MockRequestReplyService`. */
@@ -28,7 +28,7 @@ export interface SendResponseCall {
   /** The correlation ID linking request and response. */
   correlationId: string;
   /** The response event envelope. */
-  event: EventEnvelope<unknown>;
+  event: AnyEventEnvelope<unknown>;
 }
 
 /**
@@ -55,7 +55,7 @@ export class MockRequestReplyService {
   async request<T, R>(
     subject: string,
     payload: T,
-    options: RequestReplyRequestOptions & { context: EventContext },
+    options: RequestReplyRequestOptions & { context: EventContext | GlobalEventContext },
   ): Promise<RequestReplyResponse<R>> {
     const { context, ...requestOptions } = options;
     this.requests.push({ subject, payload, options: requestOptions, context });
@@ -63,16 +63,16 @@ export class MockRequestReplyService {
   }
 
   /** Records a response sent for an incoming request. */
-  async sendResponse(correlationId: string, responseEvent: EventEnvelope<unknown>): Promise<void> {
+  async sendResponse(correlationId: string, responseEvent: AnyEventEnvelope<unknown>): Promise<void> {
     this.sendResponseCalls.push({ correlationId, event: responseEvent });
   }
 
   /** Returns `true` if the event has a non-empty `reply_to` field. */
-  isRequestReplyMessage(event: EventEnvelope<unknown>): boolean {
+  isRequestReplyMessage(event: AnyEventEnvelope<unknown>): boolean {
     return this.hasNonEmptyReplyTo(event);
   }
 
-  private hasNonEmptyReplyTo(event: EventEnvelope<unknown>): boolean {
+  private hasNonEmptyReplyTo(event: AnyEventEnvelope<unknown>): boolean {
     return typeof event.reply_to === 'string' && event.reply_to.length > 0;
   }
 
@@ -83,26 +83,17 @@ export class MockRequestReplyService {
   }
 
   /** Builds a response envelope, preserving correlation and causation from the request. */
-  buildResponseEnvelope<R>(options: BuildResponseEnvelopeOptions<R>): EventEnvelope<R> {
-    const preservedContext: EventContext = {
+  buildResponseEnvelope<R>(options: BuildResponseEnvelopeOptions<R>): AnyEventEnvelope<R> {
+    const preservedContext: AnyEventContext = {
       ...options.responseContext,
       correlationId: options.requestEvent.correlation_id,
       causationId: options.requestEvent.id,
     };
-    return new EventEnvelope<R>({
-      id: generateEventId(),
-      produced_at: nowIso(),
-      type: preservedContext.type,
-      version: preservedContext.version,
-      producer: preservedContext.producer,
-      company_id: preservedContext.companyId,
-      actor_type: preservedContext.actorType,
-      actor_id: preservedContext.actorId,
-      correlation_id: preservedContext.correlationId,
-      causation_id: preservedContext.causationId,
-      trace_id: preservedContext.traceId,
-      data: options.responseData,
-    });
+    if (isGlobalContext(preservedContext)) {
+      return buildGlobalEnvelope(preservedContext, options.responseData);
+    }
+    const tenantContext = preservedContext as EventContext;
+    return buildEnvelope(tenantContext, options.responseData);
   }
 
   /** Returns all recorded synchronous request calls. */

@@ -1,5 +1,6 @@
 import type { EventContext } from '../common/envelope/event-context.interface';
-import type { EventEnvelope } from '../common/envelope/event-envelope.class';
+import type { GlobalEventContext } from '../common/envelope/global-event-context.interface';
+import type { AnyEventEnvelope, AnyEventContext } from '../common/envelope/envelope-types';
 
 /** Injection token for the NATS connection used by RequestReplyService. */
 export const NATS_CONNECTION_TOKEN = 'NatsConnection';
@@ -58,8 +59,8 @@ export interface SendRequestOptions<T> {
   subject: string;
   /** Domain-specific business payload for the request event. */
   payload: T;
-  /** Metadata context for the event envelope. Must include replyTo for async responses. */
-  context: EventContext;
+  /** Metadata context for the event envelope (tenant or global). Must include replyTo for async responses. */
+  context: EventContext | GlobalEventContext;
 }
 
 /** Result of a fire-and-forget request, carrying the correlation tracking identifier. */
@@ -71,9 +72,9 @@ export interface SendRequestResult {
 /** Options for {@link RequestReplyService.buildResponseEnvelope}. */
 export interface BuildResponseEnvelopeOptions<R> {
   /** Original request event whose correlation_id and id are preserved in the response. */
-  requestEvent: EventEnvelope<unknown>;
+  requestEvent: AnyEventEnvelope<unknown>;
   /** Context for the response event. correlationId and causationId are overridden from requestEvent. */
-  responseContext: EventContext;
+  responseContext: AnyEventContext;
   /** Domain-specific business payload for the response event. */
   responseData: R;
 }

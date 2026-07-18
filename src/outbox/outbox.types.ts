@@ -1,4 +1,4 @@
-import { EventEnvelope } from '../common/envelope/event-envelope.class';
+import { AnyEventEnvelope } from '../common/envelope/envelope-types';
 import { Type, DynamicModule, ForwardReference } from '@nestjs/common';
 import { OutboxServiceOptions } from './outbox-service-options.interface';
 import { TransactionContext } from './transaction-context.interface';
@@ -8,7 +8,7 @@ export const OUTBOX_REPOSITORY_TOKEN = 'OUTBOX_REPOSITORY';
 
 /** Represents a single row in the outbox persistence table. */
 export interface OutboxEntry {
-  /** Unique event identifier (matches {@link EventEnvelope.id}). */
+  /** Unique event identifier (matches {@link import('../common/envelope/event-envelope.class').EventEnvelope.id}). */
   id: string;
   /** Serialized JSON of the full event envelope. */
   eventData: string;
@@ -30,7 +30,7 @@ export interface OutboxEntry {
 
 /** Parameters for persisting an event to the outbox. */
 export interface SaveOutboxEntryParams {
-  event: EventEnvelope<unknown>;
+  event: AnyEventEnvelope<unknown>;
   subject: string;
   metadata?: unknown;
   /** Optional transaction context for inserting the event within an active database transaction. */

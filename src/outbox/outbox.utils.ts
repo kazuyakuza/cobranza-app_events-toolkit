@@ -1,4 +1,7 @@
+import { AnyEventEnvelope } from '../common/envelope/envelope-types';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
+import { GlobalEventEnvelope } from '../common/envelope/global-event-envelope.class';
+import { isGlobalEnvelope } from '../common/envelope/envelope-types';
 import { OutboxEntry } from './outbox.types';
 
 /** Builds a Dead Letter Queue subject by prefixing the original subject with 'dlq.'. */
@@ -6,9 +9,9 @@ export function buildDlqSubject(subject: string): string {
   return `dlq.${subject}`;
 }
 
-/** Parses the serialized event data from an outbox entry back into an EventEnvelope. */
-export function parseEnvelope(entry: OutboxEntry): EventEnvelope<unknown> {
-  return JSON.parse(entry.eventData) as EventEnvelope<unknown>;
+/** Parses the serialized event data from an outbox entry back into an AnyEventEnvelope. */
+export function parseEnvelope(entry: OutboxEntry): AnyEventEnvelope<unknown> {
+  return JSON.parse(entry.eventData) as AnyEventEnvelope<unknown>;
 }
 
 /** Returns a human-readable error message from an unknown error value. */
@@ -40,16 +43,15 @@ export function buildDlqPayload(entry: OutboxEntry, lastError: unknown): Record<
 
 /** Creates a DLQ envelope from a parsed event envelope and a DLQ payload. */
 export function createDlqEnvelope(
-  envelope: EventEnvelope<unknown>,
+  envelope: AnyEventEnvelope<unknown>,
   dlqPayload: Record<string, unknown>,
-): EventEnvelope<unknown> {
-  return new EventEnvelope<unknown>({
+): AnyEventEnvelope<unknown> {
+  const base = {
     id: envelope.id,
     produced_at: new Date().toISOString(),
     type: envelope.type,
     version: envelope.version,
     producer: envelope.producer,
-    company_id: envelope.company_id,
     actor_type: envelope.actor_type,
     actor_id: envelope.actor_id,
     correlation_id: envelope.correlation_id,
@@ -57,5 +59,9 @@ export function createDlqEnvelope(
     trace_id: envelope.trace_id,
     reply_to: envelope.reply_to,
     data: dlqPayload,
-  });
+  };
+  if (isGlobalEnvelope(envelope)) {
+    return new GlobalEventEnvelope<unknown>(base);
+  }
+  return new EventEnvelope<unknown>({ ...base, company_id: (envelope as EventEnvelope<unknown>).company_id });
 }

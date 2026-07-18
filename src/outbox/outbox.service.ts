@@ -1,5 +1,6 @@
 import { Injectable, Inject, OnModuleDestroy } from '@nestjs/common';
-import { EventEnvelope } from '../common/envelope/event-envelope.class';
+import { AnyEventEnvelope } from '../common/envelope/envelope-types';
+import { isGlobalContext } from '../common/envelope/envelope-types';
 import { OutboxEntry } from './outbox.types';
 import { OutboxServiceDeps, OUTBOX_SERVICE_DEPS_TOKEN } from './outbox-service-deps.interface';
 import { SaveInTransactionParams } from './save-in-transaction-params.interface';
@@ -14,7 +15,7 @@ import {
   createDlqEnvelope,
 } from './outbox.utils';
 import { ensureReplyToPresent } from './outbox-request-reply.helpers';
-import { createEvent } from '../common/utils/event.factory';
+import { createEvent, createGlobalEvent } from '../common/utils/event.factory';
 import { SendAsyncRequestThroughOutboxOptions } from './send-async-request-through-outbox-options.interface';
 import { SendAsyncRequestThroughOutboxResult } from './send-async-request-through-outbox-result.interface';
 import {
@@ -59,7 +60,7 @@ export class OutboxService implements OnModuleDestroy {
   }
 
   /** Persists an event envelope to the outbox for asynchronous delivery. */
-  async saveToOutbox(event: EventEnvelope<unknown>, subject: string): Promise<void> {
+  async saveToOutbox(event: AnyEventEnvelope<unknown>, subject: string): Promise<void> {
     await this.repository.save({ event, subject });
     logOutboxSaved({ event, subject, logger: this.logger });
   }
@@ -75,7 +76,7 @@ export class OutboxService implements OnModuleDestroy {
   }
 
   /** Persists a request-reply event to the outbox after validating `reply_to` is present. */
-  async sendRequestThroughOutbox(event: EventEnvelope<unknown>, subject: string): Promise<void> {
+  async sendRequestThroughOutbox(event: AnyEventEnvelope<unknown>, subject: string): Promise<void> {
     ensureReplyToPresent(event);
     await this.saveToOutbox(event, subject);
   }
@@ -83,20 +84,13 @@ export class OutboxService implements OnModuleDestroy {
   /**
    * Builds an event envelope from payload and context,
    * and persists it to the outbox for asynchronous request-reply delivery.
-   *
-   * Unlike sendRequestThroughOutbox which takes a pre-built envelope
-   * and validates replyTo at runtime, this method constructs the envelope
-   * internally and relies on TypeScript to enforce replyTo presence
-   * via the AsyncRequestEventContext type.
-   *
-   * @typeParam T - Request payload type.
-   * @param options - Subject, payload, and context (with required replyTo).
-   * @returns The correlationId of the persisted request event.
    */
   async sendAsyncRequestThroughOutbox<T>(
     options: SendAsyncRequestThroughOutboxOptions<T>,
   ): Promise<SendAsyncRequestThroughOutboxResult> {
-    const envelope = createEvent(options.payload, options.context);
+    const envelope = isGlobalContext(options.context)
+      ? createGlobalEvent(options.payload, options.context)
+      : createEvent(options.payload, options.context);
     await this.saveToOutbox(envelope, options.subject);
     return { correlationId: envelope.correlation_id };
   }

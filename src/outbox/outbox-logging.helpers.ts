@@ -1,4 +1,4 @@
-import { EventEnvelope } from '../common/envelope/event-envelope.class';
+import { AnyEventEnvelope } from '../common/envelope/envelope-types';
 import { OutboxLogContext, OutboxErrorLogContext, EventLoggerService } from '../logging/event-logger.service';
 import { OutboxEntry } from './outbox.types';
 import { OutboxErrorContextParams } from './outbox-error-context-params.interface';
@@ -6,7 +6,7 @@ import { parseEnvelope } from './outbox.utils';
 
 /** Logs a structured "outbox saved" message for the given event. */
 export function logOutboxSaved(params: {
-  event: EventEnvelope<unknown>;
+  event: AnyEventEnvelope<unknown>;
   subject: string;
   logger: EventLoggerService;
 }): void {

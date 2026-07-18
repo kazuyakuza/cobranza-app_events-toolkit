@@ -1,9 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { EventEnvelope } from '../common/envelope/event-envelope.class';
-import { EventContext } from '../common/envelope/event-context.interface';
+import { AnyEventEnvelope, AnyEventContext } from '../common/envelope/envelope-types';
+import { GlobalEventContext } from '../common/envelope/global-event-context.interface';
 import { encodeEvent, decodeEvent } from '../common/utils/serialization.utils';
 import { EventLoggerService } from '../logging/event-logger.service';
 import { ProducerService } from '../producer/producer.service';
+import { isGlobalContext } from '../common/envelope/envelope-types';
 import {
   RequestReplyConfig,
   RequestReplyDeps,
@@ -16,6 +17,7 @@ import {
 } from './request-reply.types';
 import {
   buildEnvelope,
+  buildGlobalEnvelope,
   ensureReplyTo,
   ensureReplyToSet,
   logRequestSent,
@@ -48,23 +50,24 @@ export class RequestReplyService {
   /**
    * Sends a request event and waits for a typed reply within a timeout.
    *
-   * Builds an {@link EventEnvelope} from the provided context and payload,
-   * publishes it via NATS request-reply, and decodes the response envelope.
+   * Builds an EventEnvelope or GlobalEventEnvelope from the provided
+   * context and payload, publishes it via NATS request-reply,
+   * and decodes the response envelope.
    */
   async request<T, R>(
     subject: string,
     payload: T,
-    options: RequestReplyRequestOptions & { context: EventContext },
+    options: RequestReplyRequestOptions & { context: GlobalEventContext | import('../common/envelope/event-context.interface').EventContext },
   ): Promise<RequestReplyResponse<R>> {
     const { context, ...requestOptions } = options;
-    const envelope = buildEnvelope(context, payload);
+    const envelope = isGlobalContext(context) ? buildGlobalEnvelope(context, payload) : buildEnvelope(context, payload);
     const encoded = encodeEvent(envelope);
     const timeout = requestOptions.timeoutMs ?? this.config.defaultTimeoutMs;
     logRequestSent(this.logger, subject, envelope);
 
     try {
       const msg = await this.natsConnection.request(subject, encoded, { timeout });
-      const responseEnvelope = decodeEvent<EventEnvelope<R>>(msg.data);
+      const responseEnvelope = decodeEvent<AnyEventEnvelope<R>>(msg.data);
       logReplyReceived(this.logger, subject, responseEnvelope);
       return { data: responseEnvelope.data, raw: msg.data };
     } catch (error: unknown) {
@@ -75,51 +78,41 @@ export class RequestReplyService {
 
   /**
    * Publishes a reply event to the subject stored in `reply_to`.
-   *
-   * The caller must set `reply_to` on `responseEvent` to the original
-   * request's `reply_to` value before calling this method.
    */
-  async sendResponse(correlationId: string, responseEvent: EventEnvelope<unknown>): Promise<void> {
+  async sendResponse(correlationId: string, responseEvent: AnyEventEnvelope<unknown>): Promise<void> {
     const replyTo = responseEvent.reply_to;
     ensureReplyTo(replyTo, correlationId);
     await this.producerService.publish(replyTo, responseEvent);
   }
 
   /** Returns true when the event carries a `reply_to` subject. */
-  isRequestReplyMessage(event: EventEnvelope<unknown>): boolean {
+  isRequestReplyMessage(event: AnyEventEnvelope<unknown>): boolean {
     return typeof event.reply_to === 'string' && event.reply_to.length > 0;
   }
 
   /**
    * Publishes a fire-and-forget request event with a reply_to subject.
-   *
-   * Builds an envelope from the provided context and payload, publishes
-   * it via {@link ProducerService}, and returns the correlationId
-   * for the caller to track async responses.
-   *
-   * @typeParam T - Request payload type.
    */
   async sendRequest<T>(options: SendRequestOptions<T>): Promise<SendRequestResult> {
     ensureReplyToSet(options.context.replyTo);
-    const envelope = buildEnvelope(options.context, options.payload);
+    const envelope = isGlobalContext(options.context)
+      ? buildGlobalEnvelope(options.context, options.payload)
+      : buildEnvelope(options.context, options.payload);
     await this.producerService.publish(options.subject, envelope);
     return { correlationId: envelope.correlation_id };
   }
 
   /**
    * Builds a response envelope preserving correlation and causation from a request event.
-   *
-   * Overrides responseContext.correlationId with requestEvent.correlation_id
-   * and sets causationId to requestEvent.id, then delegates to {@link buildEnvelope}.
-   *
-   * @typeParam R - Response payload type.
    */
-  buildResponseEnvelope<R>(options: BuildResponseEnvelopeOptions<R>): EventEnvelope<R> {
-    const preservedContext: EventContext = {
+  buildResponseEnvelope<R>(options: BuildResponseEnvelopeOptions<R>): AnyEventEnvelope<R> {
+    const preservedContext: AnyEventContext = {
       ...options.responseContext,
       correlationId: options.requestEvent.correlation_id,
       causationId: options.requestEvent.id,
     };
-    return buildEnvelope(preservedContext, options.responseData);
+    return isGlobalContext(preservedContext)
+      ? buildGlobalEnvelope(preservedContext, options.responseData)
+      : buildEnvelope(preservedContext, options.responseData);
   }
 }
