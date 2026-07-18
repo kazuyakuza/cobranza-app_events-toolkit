@@ -1,4 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
+import { EventScope } from '../../common/envelope/event-scope.enum';
 
 /** Metadata key for @EmitEvent() decorator. */
 export const EMIT_EVENT_METADATA = 'emit_event_metadata';
@@ -17,6 +18,8 @@ export interface EmitEventMetadata {
   payloadSchemaRef?: string;
   /** Example payload object for documentation in discovery manifests. */
   payloadExample: Record<string, unknown>;
+  /** Event scope (tenant or global). Defaults to tenant for backward compatibility. */
+  scope?: EventScope;
 }
 
 /** Options for the @EmitEvent() method decorator (second argument, required). */
@@ -31,6 +34,8 @@ export interface EmitEventOptions {
   payloadSchemaRef?: string;
   /** Example payload object for documentation in discovery manifests. Required. */
   payloadExample: Record<string, unknown>;
+  /** Event scope (tenant or global). Defaults to tenant for backward compatibility. */
+  scope?: EventScope;
 }
 
 /**
@@ -42,18 +47,6 @@ export interface EmitEventOptions {
  * @param eventType - NATS event type identifier (e.g., 'payment.proof.uploaded').
  * @param options - Required metadata options including version, description, and payloadExample.
  * @returns A MethodDecorator that stores emit-event metadata via NestJS SetMetadata.
- *
- * @example
- * ```ts
- * @EmitEvent('payment.proof.uploaded', {
- *   version: '1',
- *   description: 'Proof was uploaded',
- *   payloadExample: { proofId: 'uuid', amount: 100 },
- * })
- * async handleProofUpload(data: ProofData, context: EventContext) {
- *   return new PaymentProofUploadedEvent(data, context);
- * }
- * ```
  */
 export function EmitEvent(eventType: string, options: EmitEventOptions): MethodDecorator {
   const metadata: EmitEventMetadata = { eventType, ...options };
