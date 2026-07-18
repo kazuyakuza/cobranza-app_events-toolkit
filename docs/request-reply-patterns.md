@@ -6,6 +6,8 @@ The events-toolkit provides two patterns for request-reply communication over NA
 
 For the convention specification, see [Event & Messaging Convention](event-messaging-convention.md).
 
+> **Global request-reply:** Global (tenant-less) request-reply flows use `GlobalEventContext`, `buildGlobalSubject()`, and `buildGlobalResponseSubject()`. See [Global Events — When to Use Tenant vs Global Envelopes](global-events.md#global-events-and-request-reply).
+
 ---
 
 ## Table of Contents

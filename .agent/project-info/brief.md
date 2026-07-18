@@ -50,12 +50,22 @@ cobranza-apps/events-toolkit/
 │   ├── common/
 │   │   ├── constants.ts
 │   │   ├── envelope/
-│   │   │   ├── event-envelope.class.ts
+│   │   │   ├── base-event-envelope.class.ts   # Shared envelope fields
+│   │   │   ├── event-envelope.class.ts         # Tenant envelope (company_id required)
+│   │   │   ├── global-event-envelope.class.ts # Global envelope (no company_id)
+│   │   │   ├── event-base.class.ts            # Abstract EventBase (tenant)
+│   │   │   ├── global-event-base.class.ts     # Abstract GlobalEventBase (global)
 │   │   │   ├── actor-type.enum.ts
-│   │   │   ├── event-base.class.ts
-│   │   │   └── validators/
+│   │   │   ├── event-scope.enum.ts            # EventScope (TENANT/GLOBAL)
+│   │   │   ├── base-event-context.interface.ts
+│   │   │   ├── event-context.interface.ts
+│   │   │   ├── global-event-context.interface.ts
+│   │   │   ├── envelope-types.ts              # Union types + type guards
+│   │   │   ├── index.ts
+│   │   │   └── validators/                    # @IsOptionalForSystemActors, etc.
 │   │   ├── dto/
-│   │   │   └── build-subject.dto.ts
+│   │   │   ├── build-subject.dto.ts         # Tenant subject builder DTO
+│   │   │   └── build-global-subject.dto.ts  # Global subject builder DTO
 │   │   ├── utils/
 │   │   │   ├── subject.builder.ts
 │   │   │   ├── event.factory.ts
@@ -157,10 +167,15 @@ cobranza-apps/events-toolkit/
 ## 6. Core Components
 
 - `EventEnvelope<T>`: Base class with validation
+- `GlobalEventEnvelope<T>`: Tenant-less envelope variant (no `company_id`); paired with `GlobalEventContext` and `global.*` subjects
+- `EventScope`: `TENANT` / `GLOBAL` discriminator for decorator routing
 - `ActorType`: enum
 - `BuildSubjectDto`: Parameter class for subject building
 - `SubjectBuilder.build(subjectDto: BuildSubjectDto)`
+- `SubjectBuilder.buildGlobal(subjectDto: BuildGlobalSubjectDto)` + `buildGlobalSubject()` helper
+- `createGlobalEvent<T>(options)`: factory for tenant-less events
 - `createEvent<T>(options)`: factory
+- `@IsOptionalForSystemActors()`: custom validator making `actor_id` optional for `system`/`scheduler`/`external_api`
 - `EventConsumerException`: specific error for consumers to throw (triggers DLQ routing)
 - `generateUuidV7`: UUIDv7 generation utility
 - Event Logger with Winston
@@ -213,6 +228,33 @@ const subject = buildSubject({
   action: 'generated',
   version: '1'
 });
+```
+
+### Global Subject Builder
+
+```ts
+// src/common/dto/build-global-subject.dto.ts
+export class BuildGlobalSubjectDto {
+  @IsString() @IsNotEmpty() domain: string;
+  @IsString() @IsNotEmpty() entity: string;
+  @IsString() @IsNotEmpty() action: string;
+  @IsString() @IsNotEmpty() version: string = '1';
+}
+```
+
+**Usage:**
+
+```ts
+const subject = subjectBuilder.buildGlobal({
+  domain: 'iam', entity: 'company', action: 'created', version: '1'
+});
+// => 'global.iam.company.created.v1'
+```
+
+Or using the helper function:
+
+```ts
+const subject = buildGlobalSubject({ domain: 'iam', entity: 'user', action: 'created', version: '1' });
 ```
 
 ## 8. Example Usage (in a Microservice)
@@ -279,6 +321,7 @@ await this.producerService.publish(subject, event);
 - [architecture.md](architecture.md) — System architecture and module design.
 - [tech.md](tech.md) — Technology stack and development setup.
 - [event-messaging-convention.md](../../docs/event-messaging-convention.md) — Event & messaging convention standard.
+- [global-events.md](../../docs/global-events.md) — When to use tenant vs global envelopes.
 
 ---
 

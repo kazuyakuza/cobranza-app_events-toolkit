@@ -5,6 +5,36 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.12.0] — 2026-07-17
+
+### Added
+
+- **`GlobalEventEnvelope<T>`** — a tenant-less event envelope variant that omits `company_id` entirely. Intended for operations not scoped to a single tenant (`company`/`user`/`role` lifecycle, system-wide configuration, cross-tenant aggregate queries). Constructed via `createGlobalEvent()` factory or `GlobalEventBase<T>` abstract class. See `docs/global-events.md`.
+- **`GlobalEventContext`** — the context variant paired with `GlobalEventEnvelope` (no `companyId`). Pair with `isGlobalContext()` type guard.
+- **Shared envelope/context bases** — `BaseEventEnvelope<T>` and `BaseEventContext` now hold all common fields; `EventEnvelope<T>`/`EventContext` extend them with `company_id`/`companyId`, `GlobalEventEnvelope<T>`/`GlobalEventContext` extend them without it. Full backward compatibility for existing `EventEnvelope` consumers.
+- **Union types and type guards** — `AnyEventEnvelope<T>`, `AnyEventContext`, `isGlobalEnvelope(envelope)`, `isGlobalContext(context)` exported for code that must accept either variant.
+- **`EventScope` enum** — `TENANT` / `GLOBAL` discriminator used by `@EmitEvent` / `@OnEvent` metadata to drive tenant vs global subject routing.
+- **`@IsOptionalForSystemActors()` custom validator** — exported decorator. Makes `actor_id` optional for `system`, `scheduler`, and `external_api` actor types, while keeping it required (non-empty string) for `client` and `company_user`. Reusable on consumer-side DTOs.
+- **Global subject support** — `BuildGlobalSubjectDto`, `SubjectBuilder.buildGlobal()`, `buildGlobalSubject()`, `isGlobalSubject()`, and `buildGlobalResponseSubject()` produce/inspect subjects in the format `global.{domain}.{entity}.{action}.v{version}`.
+- **`ProducerService.emitGlobal(options)`** — convenience method that builds a `GlobalEventEnvelope` from an `EmitGlobalOptions<T>` (`{ subject, data, context: GlobalEventContext }`) and publishes it. `ProducerService.publish()` now accepts `AnyEventEnvelope<unknown>`.
+- **`createGlobalEvent()` factory** — returns a populated `GlobalEventEnvelope<T>` from a payload + `GlobalEventContext` (mirrors `createEvent()`).
+
+### Changed
+
+- **`EventEnvelope.actor_id` is now optional for `system`, `scheduler`, and `external_api` actor types.** Previously required (non-empty string) for every actor type. `actor_id` remains required for `client` and `company_user`. Enforced via `@IsOptionalForSystemActors()`. This is a relaxation, not a breaking change — existing envelopes that provide `actor_id` for automated actors continue to validate.
+- **`EventContext.actorId` is now optional** (`actorId?: string`) to mirror the envelope. `EventContext.actorId` only required when `actorType` is `client` or `company_user`.
+- **Consumer-side validation now dispatches by subject prefix.** `JetStreamConsumerService` and `ConsumerService` validate against `GlobalEventEnvelope` for `global.*` subjects and `EventEnvelope` for `company.*` subjects. Validation logic extracted into a dedicated utility to stay within the 200-line file limit.
+- **`OutboxService` accepts `AnyEventEnvelope`** — both tenant and global envelopes can be saved and republished.
+- **`RequestReplyService` supports global contexts** — `sendRequest()`/`sendResponse()` detect `isGlobalContext(context)` and build the matching envelope variant via `buildGlobalEnvelope()`.
+
+### Documentation
+
+- New guide: `docs/global-events.md` — canonical decision guide (decision tree, comparison tables, code examples) for choosing tenant (`EventEnvelope`) vs global (`GlobalEventEnvelope`) events. Cross-linked from convention, AI-agent guidelines, request-reply, and outbox docs.
+- Updated `docs/event-messaging-convention.md` §2 (Global Subject Format), §3.2 (Global Event Envelope), §5 (`actor_id` conditional requirements via `@IsOptionalForSystemActors()`), and field table.
+- Updated `docs/ai-agent-guidelines.md`: Quick Reference rules, global event class/example, validation checklist, common mistakes, and Public API Quick Reference rows for the new exports.
+- Updated `README.md` Core Concepts and "Guidelines for AI Agents" rule #5 (tenant isolation no longer universal for all envelopes).
+- Refreshed `.agent/project-info/architecture.md` cross-cutting concerns and entry points; `.agent/project-info/brief.md` folder structure; `.agent/project-info/CONTEXT.md` focus.
+
 ## [0.11.6] — 2026-07-16
 
 ### Removed

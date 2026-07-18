@@ -69,6 +69,8 @@ describe('PaymentService', () => {
 
 ## Mock Services
 
+> Mock services accept both tenant (`EventEnvelope`) and global (`GlobalEventEnvelope`) envelopes — they type-accept `AnyEventEnvelope` exactly like the real services.
+
 ### MockProducerService
 
 Replaces `ProducerService`. Records all published events in memory.

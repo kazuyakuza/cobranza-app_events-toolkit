@@ -140,6 +140,8 @@ Key fields:
 - `correlation_id` — links events across a transaction chain
 - `data` — domain-specific payload (typed per microservice)
 
+> The toolkit also provides a tenant-less variant, `GlobalEventEnvelope<T>`, which omits `company_id` entirely for operations not scoped to a single tenant (company/user/role lifecycle, system-wide config). See [Global Events](docs/global-events.md).
+
 ### Subject Naming Convention
 
 All NATS subjects follow this pattern:
@@ -161,6 +163,15 @@ Examples:
 - `company.550e8400e29b41d4a716446655440000.debt.created.v1`
 - `company.550e8400e29b41d4a716446655440000.payment.proof.uploaded.v1`
 - `company.550e8400e29b41d4a716446655440000.bank.statement.processed.v1`
+
+Global (tenant-less) subjects omit the `company_id` segment:
+
+```text
+global.{domain}.{entity}.{action}.v{version}
+// e.g. global.iam.company.created.v1
+```
+
+Build with `SubjectBuilder.buildGlobal()` / `buildGlobalSubject()`. See [Global Events](docs/global-events.md) for when to use this format.
 
 For **Request then Async Response**: append `.response` to the base subject:
 
@@ -197,6 +208,8 @@ interface EventContext {
   replyTo?: string;        // Subject for request-reply responses
 }
 ```
+
+> `EventContext.companyId` is required for tenant events. For tenant-less events use `GlobalEventContext` (no `companyId`). `actorId` is optional for `system`, `scheduler`, and `external_api` actor types; required only for `client` and `company_user`. See [Global Events](docs/global-events.md).
 
 The toolkit propagates `companyId`, `actorType`, and `actorId` into the envelope fields `company_id`, `actor_type`, and `actor_id`.
 
@@ -806,7 +819,7 @@ When generating event-related code in microservices using this toolkit, follow t
 2. **Event IDs**: Use `generateEventId()` from the toolkit, which returns a UUIDv7 prefixed with `evt_`.
 3. **Validation**: Always decorate event data classes with `class-validator` decorators.
 4. **Actor context**: Always populate `actor_type` and `actor_id` in the event context.
-5. **Tenant isolation**: `company_id` is mandatory in every event envelope.
+5. **Tenant isolation**: `company_id` is mandatory in tenant event envelopes (`EventEnvelope`). For tenant-less operations use `GlobalEventEnvelope` (no `company_id`) and `global.*` subjects — see [Global Events](docs/global-events.md).
 6. **Idempotency**: Consumers must be idempotent — use `id` + `correlation_id` for deduplication.
 7. **Past-tense actions**: Action names must use past tense (`created`, `uploaded`, `processed`).
 8. **Consumer errors**: Throw `EventConsumerException` for business errors that should route to DLQ.
@@ -919,6 +932,7 @@ For the full guide — server requirements, stream auto-creation, manual setup, 
 - [Outbox Usage Guidelines](docs/outbox-usage-guidelines.md) — Decision trees for outbox backend, transactional vs normal, and request-reply patterns
 - [Transactional Outbox Usage](docs/outbox-transactional-usage.md) — TypeORM transaction examples and saveInTransaction guide
 - [AI Agent Guidelines](docs/ai-agent-guidelines.md) — Step-by-step event creation, naming, correlation/causation, and common mistakes
+- [Global Events](docs/global-events.md) — When to use tenant (`EventEnvelope`) vs global (`GlobalEventEnvelope`) events
 - [Event Discovery & Service Registry](docs/event-discovery-and-service-registry.md) — Service manifest, schema generation, platform events, and discovery module setup
 - [Request-Reply Patterns](docs/request-reply-patterns.md) — Sync vs async patterns, correlation, timeouts, and error handling
 - [Request-Reply Guidelines](docs/request-reply-guidelines.md) — Decision tree, timeout recommendations, performance trade-offs, and best practices

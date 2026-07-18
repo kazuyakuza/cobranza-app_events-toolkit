@@ -38,6 +38,8 @@ For the full convention specification, see [`event-messaging-convention.md`](eve
 | Actor context | `actor_type` always required; `actor_id` required for `client` and `company_user`, optional for `system`, `scheduler`, `external_api` |
 | Tenant isolation | `company_id` mandatory in tenant envelopes; omitted in global envelopes (`EventScope.GLOBAL`) |
 
+> **Decision guide:** see [`global-events.md`](global-events.md) for when to use `EventEnvelope` vs `GlobalEventEnvelope`.
+
 ## Step-by-Step: Creating a New Event Class
 
 ### 1. Define the data class
@@ -523,3 +525,4 @@ Before submitting event-related code, verify:
 - [Event Discovery & Service Registry](event-discovery-and-service-registry.md) — Service manifest, schema generation
 - [Request-Reply Patterns](request-reply-patterns.md) — Full async + sync pattern documentation
 - [NATS JetStream Configuration](nats-jetstream-configuration.md) — Server requirements, stream auto-creation, manual setup, and production best practices
+- [Global Events — When to Use Tenant vs Global Envelopes](global-events.md) — Decision guide, comparison tables, and code examples for tenant vs global envelopes

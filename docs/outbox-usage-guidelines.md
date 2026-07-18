@@ -6,6 +6,8 @@
 For detailed configuration, see [Outbox Configuration](outbox-configuration.md).
 For transactional outbox usage, see [Transactional Outbox Usage Guide](outbox-transactional-usage.md).
 
+> **Global events:** `OutboxService.saveToOutbox()` accepts both tenant (`EventEnvelope`) and global (`GlobalEventEnvelope`) envelopes. See [Global Events — When to Use Tenant vs Global Envelopes](global-events.md#global-events-and-the-outbox).
+
 ---
 
 ## Table of Contents

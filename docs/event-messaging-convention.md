@@ -78,6 +78,8 @@ global.{domain}.{entity}.{action}.v{version}
 
 Use `SubjectBuilder.buildGlobal()` or `buildGlobalSubject()` to construct global subjects — never concatenate strings manually.
 
+> **Decision guide:** For help choosing between tenant and global envelopes, see [Global Events — When to Use Tenant vs Global Envelopes](global-events.md).
+
 > **Platform subjects** follow a different pattern (`platform.service.{action}.v{version}`) and are not tenant-isolated. See [Section 2.2](#22-platform-event-subjects) for details.
 
 ### 2.1 Response Subject Naming Convention

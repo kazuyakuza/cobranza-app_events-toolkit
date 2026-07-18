@@ -2,9 +2,21 @@
 
 ## Current Work Focus
 
-**Fix push consumer missing deliver_subject (v0.11.4).** `createDefaultConsumerOpts()` now chains `.deliverTo(createInbox())` and `resolveConsumerSubscribeOpts` defaults `config.deliver_subject` for plain consumer options, restoring NATS 2.29.3 push-consumer subscription.
+**Relax envelope validation & introduce GlobalEventEnvelope (v0.12.0).** `actor_id` is now optional for `system`/`scheduler`/`external_api` actor types via the exported `@IsOptionalForSystemActors()` validator, and a tenant-less `GlobalEventEnvelope` variant (`global.*` subjects, `GlobalEventContext`, `createGlobalEvent()`, `ProducerService.emitGlobal()`) supports cross-tenant operations. Documentation consolidated in `docs/global-events.md`.
 
 ## Recent Changes
+
+### 2026-07-17 — Relax envelope validation & GlobalEventEnvelope (v0.12.0)
+- `EventEnvelope.actor_id` now optional for `system`, `scheduler`, `external_api` actor types; required for `client`, `company_user`. Enforced via new exported `@IsOptionalForSystemActors()` decorator (`src/common/envelope/validators/`).
+- `EventContext.actorId` made optional to mirror the envelope.
+- Introduced tenant-less envelope variant: `GlobalEventEnvelope<T>` (no `company_id`), `GlobalEventContext`, `GlobalEventBase<T>`, `createGlobalEvent()` factory, sharing `BaseEventEnvelope<T>` / `BaseEventContext` with the tenant variant.
+- Global subject support: `BuildGlobalSubjectDto`, `SubjectBuilder.buildGlobal()`, `buildGlobalSubject()`, `isGlobalSubject()`, `buildGlobalResponseSubject()`. Subject format `global.{domain}.{entity}.{action}.v{version}`.
+- `ProducerService.publish()` accepts `AnyEventEnvelope`; new `ProducerService.emitGlobal(options)` builds and publishes global envelopes.
+- Consumer-side validation dispatches by subject prefix (`company.*` vs `global.*`); validation utility extracted to keep `JetStreamConsumerService` under 200 lines.
+- `OutboxService` accepts `AnyEventEnvelope`; `RequestReplyService` detects `isGlobalContext(context)` and builds the matching envelope via `buildGlobalEnvelope()`.
+- New exported union types / guards: `AnyEventEnvelope<T>`, `AnyEventContext`, `isGlobalEnvelope()`, `isGlobalContext()`; new `EventScope` enum drives `@EmitEvent`/`@OnEvent` routing.
+- Documentation: new `docs/global-events.md` decision guide; CHANGELOG v0.12.0; README + architecture/brief/CONTEXT updates; cross-links added across related docs.
+- Branch: `feat/relax-envelope-validation-and-global-events`.
 
 ### 2026-07-16 — Fix push consumer missing deliver_subject (v0.11.4)
 - `createDefaultConsumerOpts()` in `src/consumer/subscribe-options.interface.ts` now chains `.deliverTo(createInbox())`, giving each push consumer a unique `deliver_subject` required by NATS 2.29.3 `jetStream.subscribe()` (`push consumer requires deliver_subject`).
@@ -85,8 +97,8 @@
 
 ## Immediate Next Steps
 
-1. **Final verification**: Run full test suite, lint, and typecheck across all modules.
-2. Continue with any remaining tasks or verify that all consumers (e.g., `ms-db-gateway`) build correctly against the fixed package.
+1. **Final verification**: Run full test suite, lint, and typecheck across all modules for v0.12.0.
+2. Verify downstream consumers (e.g., `ms-db-gateway`) build correctly against the updated package with optional `actor_id` and `GlobalEventEnvelope`.
 
 ## Current Blockers
 

@@ -31,13 +31,23 @@ src/
 ├── index.ts                          # Public API barrel exports
 ├── common/                           # Shared across all modules
 │   ├── constants.ts                  # Magic strings, defaults
-│   ├── envelope/                     # Event envelope classes
-│   │   ├── event-envelope.class.ts   # EventEnvelope<T> base class
-│   │   ├── actor-type.enum.ts        # ActorType enum
-│   │   ├── event-base.class.ts       # Abstract base for event types
-│   │   └── validators/               # Custom class-validator decorators
+│   ├── envelope/                     # Event envelope classes, contexts, types, scope
+│   │   ├── base-event-envelope.class.ts  # BaseEventEnvelope<T> shared fields
+│   │   ├── event-envelope.class.ts        # EventEnvelope<T> (adds company_id)
+│   │   ├── global-event-envelope.class.ts # GlobalEventEnvelope<T> (no company_id)
+│   │   ├── event-base.class.ts            # Abstract EventBase (tenant)
+│   │   ├── global-event-base.class.ts    # Abstract GlobalEventBase (global)
+│   │   ├── actor-type.enum.ts             # ActorType enum
+│   │   ├── event-scope.enum.ts            # EventScope enum (TENANT/GLOBAL)
+│   │   ├── base-event-context.interface.ts # BaseEventContext shared context
+│   │   ├── event-context.interface.ts       # EventContext (tenant; adds companyId)
+│   │   ├── global-event-context.interface.ts # GlobalEventContext (no companyId)
+│   │   ├── envelope-types.ts                # AnyEventEnvelope, AnyEventContext, guards
+│   │   ├── index.ts                          # Envelope barrel exports
+│   │   └── validators/                       # Custom class-validator decorators (incl. IsOptionalForSystemActors)
 │   ├── dto/
-│   │   └── build-subject.dto.ts      # BuildSubjectDto with validation
+│   │   ├── build-subject.dto.ts      # BuildSubjectDto (tenant)
+│   │   └── build-global-subject.dto.ts # BuildGlobalSubjectDto (global)
 │   ├── utils/
 │   │   ├── subject.builder.ts        # SubjectBuilder, buildSubject, buildResponseSubject, buildDlqSubject
 │   │   ├── event.factory.ts          # createEvent<T>() factory
@@ -228,14 +238,18 @@ EventsToolkitOutboxOptions, EventsToolkitLoggingOptions
 EventsToolkitConsumerOptions, EventsToolkitDiscoveryOptions
 
 // Common — envelope, DTOs, utils, errors
-EventEnvelope, EventBase, ActorType, EventContext
-BuildSubjectDto
-SubjectBuilder, buildSubject, buildResponseSubject, buildDlqSubject, RESPONSE_SUFFIX, SubjectParseResult
-createEvent, generateEventId, generateUuidV7
+EventEnvelope, GlobalEventEnvelope, BaseEventEnvelope
+EventBase, GlobalEventBase, ActorType, EventScope
+EventContext, GlobalEventContext, BaseEventContext, AnyEventContext
+AnyEventEnvelope, isGlobalEnvelope, isGlobalContext
+IsOptionalForSystemActors
+BuildSubjectDto, BuildGlobalSubjectDto
+SubjectBuilder, buildSubject, buildGlobalSubject, buildResponseSubject, buildGlobalResponseSubject, buildDlqSubject, isGlobalSubject, RESPONSE_SUFFIX, SubjectParseResult
+createEvent, createGlobalEvent, generateEventId, generateUuidV7
 EventConsumerException
 
 // Producer
-ProducerModule, ProducerService, EmitEvent
+ProducerModule, ProducerService, ProducerService.emit, ProducerService.emitGlobal, EmitEvent
 
 // Consumer
 ConsumerModule, ConsumerService, JetStreamConsumerService
@@ -272,7 +286,7 @@ PublishedEvent, SavedOutboxEvent
 - **Validation**: Every event, every subject DTO — validated via `class-validator`.
 - **Observability**: Winston logging with trace IDs; all publishes and consumes logged.
 - **Error Handling**: Consumer errors route to DLQ; producer errors logged and optionally retried.
-- **Tenant Isolation**: `company_id` mandatory in every event envelope.
+- **Tenant Isolation**: `company_id` mandatory in **tenant** event envelopes (`EventEnvelope`). Global events (`GlobalEventEnvelope`) intentionally bypass tenant isolation for tenant-less operations (e.g. company/user/role lifecycle, system-wide config); consumers of global events MUST enforce their own authorization.
 - **Idempotency**: `id` + `correlation_id` combination for deduplication at consumer level.
 
 ## 8. Related Documentation
@@ -280,3 +294,4 @@ PublishedEvent, SavedOutboxEvent
 - [brief.md](brief.md) — Project scope, objectives, and folder structure.
 - [tech.md](tech.md) — Technology stack, constraints, and testing strategy.
 - [event-messaging-convention.md](../../docs/event-messaging-convention.md) — Event & messaging convention standard.
+- [global-events.md](../../docs/global-events.md) — When to use tenant vs global envelopes.
