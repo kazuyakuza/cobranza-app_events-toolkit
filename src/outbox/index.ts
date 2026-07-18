@@ -21,5 +21,6 @@ export { OutboxRequestReplyException, OutboxRequestReplyExceptionOptions } from 
 export { TransactionContext, TypeormQueryRunnerContext } from './transaction-context.interface';
 export { SaveInTransactionParams } from './save-in-transaction-params.interface';
 export { AsyncRequestEventContext } from './async-request-event-context.interface';
+export { AsyncGlobalRequestEventContext } from './async-global-request-event-context.interface';
 export { SendAsyncRequestThroughOutboxOptions } from './send-async-request-through-outbox-options.interface';
 export { SendAsyncRequestThroughOutboxResult } from './send-async-request-through-outbox-result.interface';

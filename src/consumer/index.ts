@@ -21,6 +21,8 @@ export {
   ConsumerSubscribeOpts,
   defaultDlqSubjectBuilder,
   envelopeToContext,
+  envelopeToGlobalContext,
+  envelopeToTenantContext,
 } from './subscribe-options.interface';
 export { JetStreamConsumerDeps, JETSTREAM_CONSUMER_DEPS_TOKEN } from './jetstream-consumer-deps.interface';
 export {
