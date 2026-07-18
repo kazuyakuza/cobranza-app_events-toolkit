@@ -4,3 +4,4 @@
  */
 
 export { BuildSubjectDto } from './build-subject.dto';
+export { BuildGlobalSubjectDto } from './build-global-subject.dto';
