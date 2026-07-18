@@ -818,7 +818,7 @@ When generating event-related code in microservices using this toolkit, follow t
 1. **Subject naming**: Always use `SubjectBuilder.build()` — never concatenate subject strings manually.
 2. **Event IDs**: Use `generateEventId()` from the toolkit, which returns a UUIDv7 prefixed with `evt_`.
 3. **Validation**: Always decorate event data classes with `class-validator` decorators.
-4. **Actor context**: Always populate `actor_type` and `actor_id` in the event context.
+4. **Actor context**: Always populate `actor_type`. Provide `actor_id` for `client` and `company_user`; it is optional for `system`, `scheduler`, and `external_api` actor types.
 5. **Tenant isolation**: `company_id` is mandatory in tenant event envelopes (`EventEnvelope`). For tenant-less operations use `GlobalEventEnvelope` (no `company_id`) and `global.*` subjects — see [Global Events](docs/global-events.md).
 6. **Idempotency**: Consumers must be idempotent — use `id` + `correlation_id` for deduplication.
 7. **Past-tense actions**: Action names must use past tense (`created`, `uploaded`, `processed`).

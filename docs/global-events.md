@@ -23,7 +23,7 @@
 
 ## TL;DR
 
-Use `EventEnvelope` (tenant) for operations scoped to a single `company_id` — subject format `company.{id}.{domain}.{entity}.{action}.v{version}`. Use `GlobalEventEnvelope` (global) for tenant-less operations — subject format `global.{domain}.{entity}.{action}.v{version}` with `company_id` omitted.
+Use `EventEnvelope` (tenant) for operations scoped to a single `company_id` — subject format `company.{company_id}.{domain}.{entity}.{action}.v{version}`. Use `GlobalEventEnvelope` (global) for tenant-less operations — subject format `global.{domain}.{entity}.{action}.v{version}` with `company_id` omitted.
 
 | Scope | Envelope | `company_id` | Subject Format |
 |-------|----------|--------------|----------------|
@@ -107,11 +107,14 @@ A global event is tenant-less — `company_id` is omitted entirely. Its subject 
 
 ```typescript
 import {
-  createGlobalEvent, SubjectBuilder, ActorType, GlobalEventContext,
+  createGlobalEvent, SubjectBuilder, ActorType, GlobalEventContext, ProducerService,
 } from '@cobranza-apps/events-toolkit';
 
 class IamService {
-  constructor(private readonly subjectBuilder: SubjectBuilder) {}
+  constructor(
+    private readonly subjectBuilder: SubjectBuilder,
+    private readonly producerService: ProducerService,
+  ) {}
 
   async createCompany(name: string): Promise<void> {
     const subject = this.subjectBuilder.buildGlobal({
