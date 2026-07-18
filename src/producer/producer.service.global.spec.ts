@@ -53,10 +53,7 @@ describe('ProducerService — global events', () => {
 
       await service.emitGlobal(options);
 
-      expect(jetStream.publish).toHaveBeenCalledWith(
-        'global.iam.company.created.v1',
-        expect.any(Uint8Array),
-      );
+      expect(jetStream.publish).toHaveBeenCalledWith('global.iam.company.created.v1', expect.any(Uint8Array));
     });
 
     it('published payload omits company_id', async () => {
