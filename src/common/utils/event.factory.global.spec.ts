@@ -36,7 +36,10 @@ describe('event.factory global', () => {
     });
 
     it('maps version/type/producer from context', () => {
-      const event = createGlobalEvent({}, buildGlobalContext({ type: 'iam.role.created', version: '2', producer: 'rbac-service' }));
+      const event = createGlobalEvent(
+        {},
+        buildGlobalContext({ type: 'iam.role.created', version: '2', producer: 'rbac-service' }),
+      );
       expect(event.type).toBe('iam.role.created');
       expect(event.version).toBe('2');
       expect(event.producer).toBe('rbac-service');

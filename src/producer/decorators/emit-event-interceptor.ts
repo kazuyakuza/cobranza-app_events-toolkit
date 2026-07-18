@@ -37,7 +37,7 @@ export class EmitEventInterceptor implements NestInterceptor {
   constructor(
     private readonly reflector: Reflector,
     private readonly producerService: ProducerService,
-  ) { }
+  ) {}
 
   /**
    * Intercepts handler execution; if @EmitEvent() metadata is present,
@@ -81,13 +81,21 @@ export class EmitEventInterceptor implements NestInterceptor {
     const scope = input.metadata.scope ?? EventScope.TENANT;
     const subject = this.buildSubject(input.metadata, input.eventContext, scope);
     if (scope === EventScope.GLOBAL) {
-      await this.producerService.emitGlobal({ subject, data: input.data, context: input.eventContext as GlobalEventContext });
+      await this.producerService.emitGlobal({
+        subject,
+        data: input.data,
+        context: input.eventContext as GlobalEventContext,
+      });
     } else {
       await this.producerService.emit({ subject, data: input.data, context: input.eventContext as EventContext });
     }
   }
 
-  private buildSubject(metadata: EmitEventMetadata, eventContext: EventContext | GlobalEventContext, scope?: EventScope): string {
+  private buildSubject(
+    metadata: EmitEventMetadata,
+    eventContext: EventContext | GlobalEventContext,
+    scope?: EventScope,
+  ): string {
     if (scope === EventScope.GLOBAL) {
       return `global.${metadata.eventType}.v${metadata.version}`;
     }

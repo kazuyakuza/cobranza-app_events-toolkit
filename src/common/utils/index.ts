@@ -12,11 +12,7 @@ export {
   DLQ_SUBJECT_PREFIX,
 } from './subject.builder';
 export type { SubjectParseResult } from './subject.builder';
-export {
-  RESPONSE_SUFFIX,
-  buildResponseSubject,
-  buildGlobalResponseSubject,
-} from './subject-parser';
+export { RESPONSE_SUFFIX, buildResponseSubject, buildGlobalResponseSubject } from './subject-parser';
 export type { GlobalSubjectParseResult } from './subject-parser';
 export { generateUuidV7, generateEventId } from './uuid.utils';
 export { nowIso } from './date.utils';

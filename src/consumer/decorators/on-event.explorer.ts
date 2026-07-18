@@ -27,7 +27,7 @@ interface HandlerTarget {
  */
 @Injectable()
 export class OnEventExplorer implements OnModuleInit {
-  constructor(@Inject(ON_EVENT_EXPLORER_DEPS_TOKEN) private readonly deps: OnEventExplorerDeps) { }
+  constructor(@Inject(ON_EVENT_EXPLORER_DEPS_TOKEN) private readonly deps: OnEventExplorerDeps) {}
 
   /**
    * NestJS lifecycle hook — triggers handler discovery and registration at startup.
@@ -48,11 +48,11 @@ export class OnEventExplorer implements OnModuleInit {
     return allWrappers.filter((w) => this.isValidWrapper(w)).map((w) => w.instance as object);
   }
 
-  private isValidWrapper(wrapper: { instance?: unknown; }): boolean {
+  private isValidWrapper(wrapper: { instance?: unknown }): boolean {
     return this.hasObjectInstance(wrapper);
   }
 
-  private hasObjectInstance(wrapper: { instance?: unknown; }): boolean {
+  private hasObjectInstance(wrapper: { instance?: unknown }): boolean {
     return wrapper.instance != null && typeof wrapper.instance === 'object';
   }
 

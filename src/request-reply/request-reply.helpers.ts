@@ -75,7 +75,11 @@ export function logRequestSent(logger: EventLoggerService, subject: string, enve
 }
 
 /** Logs that a reply event was received from the given subject. */
-export function logReplyReceived(logger: EventLoggerService, subject: string, envelope: AnyEventEnvelope<unknown>): void {
+export function logReplyReceived(
+  logger: EventLoggerService,
+  subject: string,
+  envelope: AnyEventEnvelope<unknown>,
+): void {
   logger.logEventConsumed(toLogContext(subject, envelope));
 }
 

@@ -32,8 +32,7 @@ const SUBJECT_SEGMENTS_PATTERN =
   /^company\.([0-9a-f]{32})\.([a-z][a-z0-9-]*)\.([a-z][a-z0-9-]*)\.([a-z][a-z0-9-.]+)\.v(\d+)$/i;
 
 /** Regex that matches the global subject format and captures each segment. */
-const GLOBAL_SUBJECT_SEGMENTS_PATTERN =
-  /^global\.([a-z][a-z0-9-]*)\.([a-z][a-z0-9-]*)\.([a-z][a-z0-9-.]+)\.v(\d+)$/i;
+const GLOBAL_SUBJECT_SEGMENTS_PATTERN = /^global\.([a-z][a-z0-9-]*)\.([a-z][a-z0-9-]*)\.([a-z][a-z0-9-.]+)\.v(\d+)$/i;
 
 /**
  * Parses a NATS subject string into its convention segments.

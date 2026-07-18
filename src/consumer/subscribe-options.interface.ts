@@ -18,7 +18,7 @@ export type ConsumerSubscribeOpts = ConsumerOptsBuilder | Partial<ConsumerOpts>;
 
 /** Returns true when the value is a NATS ConsumerOptsBuilder (duck-typed via `getOpts`). */
 export function isConsumerOptsBuilder(value: unknown): value is ConsumerOptsBuilder {
-  return typeof (value as { getOpts?: unknown; })?.getOpts === 'function';
+  return typeof (value as { getOpts?: unknown })?.getOpts === 'function';
 }
 
 /** Builds the default JetStream consumer options used when none are provided.

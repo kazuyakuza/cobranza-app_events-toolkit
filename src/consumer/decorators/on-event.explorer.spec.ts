@@ -111,7 +111,11 @@ describe('OnEventExplorer', () => {
 
     it('should register handler for global scope subject', () => {
       // Use the private buildWildcardSubject method by reading from explorer prototype
-      const subject = (explorer as unknown as { buildWildcardSubject: (m: { scope?: string; eventType: string; version: string }) => string }).buildWildcardSubject({
+      const subject = (
+        explorer as unknown as {
+          buildWildcardSubject: (m: { scope?: string; eventType: string; version: string }) => string;
+        }
+      ).buildWildcardSubject({
         scope: 'global',
         eventType: 'iam.company.created',
         version: '1',
@@ -120,7 +124,11 @@ describe('OnEventExplorer', () => {
     });
 
     it('should register handler for tenant scope subject by default', () => {
-      const subject = (explorer as unknown as { buildWildcardSubject: (m: { scope?: string; eventType: string; version: string }) => string }).buildWildcardSubject({
+      const subject = (
+        explorer as unknown as {
+          buildWildcardSubject: (m: { scope?: string; eventType: string; version: string }) => string;
+        }
+      ).buildWildcardSubject({
         eventType: 'payment.proof.uploaded',
         version: '1',
       });

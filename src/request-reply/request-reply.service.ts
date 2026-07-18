@@ -57,7 +57,9 @@ export class RequestReplyService {
   async request<T, R>(
     subject: string,
     payload: T,
-    options: RequestReplyRequestOptions & { context: GlobalEventContext | import('../common/envelope/event-context.interface').EventContext },
+    options: RequestReplyRequestOptions & {
+      context: GlobalEventContext | import('../common/envelope/event-context.interface').EventContext;
+    },
   ): Promise<RequestReplyResponse<R>> {
     const { context, ...requestOptions } = options;
     const envelope = isGlobalContext(context) ? buildGlobalEnvelope(context, payload) : buildEnvelope(context, payload);

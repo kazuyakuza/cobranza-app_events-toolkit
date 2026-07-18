@@ -10,7 +10,7 @@ import { EnvelopeValidationUtil } from './envelope-validation.util';
 /** Dependencies required by {@link RequestReplyMessageProcessor}. */
 export interface MessageProcessorDeps {
   /** NATS JetStream client used to publish messages to the Dead Letter Queue. */
-  jetStream: { publish: (subject: string, data: Uint8Array) => Promise<unknown>; };
+  jetStream: { publish: (subject: string, data: Uint8Array) => Promise<unknown> };
   /** Logger for structured event logging (consumed, errors, DLQ). */
   logger: EventLoggerService;
   /** Builds the DLQ subject from the original message subject. */
@@ -20,7 +20,7 @@ export interface MessageProcessorDeps {
 }
 /** Handles the NATS message processing pipeline for request-reply responses. */
 export class RequestReplyMessageProcessor {
-  private readonly jetStream: { publish: (subject: string, data: Uint8Array) => Promise<unknown>; };
+  private readonly jetStream: { publish: (subject: string, data: Uint8Array) => Promise<unknown> };
   private readonly logger: EventLoggerService;
   private readonly dlqSubjectBuilder: (subject: string) => string;
   private readonly dispatch: (options: DispatchOptions) => Promise<void>;

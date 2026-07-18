@@ -31,7 +31,10 @@ describe('GlobalEventEnvelope', () => {
     });
 
     it('rejects missing produced_at', () => {
-      const envelope = plainToInstance(GlobalEventEnvelope, { ...createValidGlobalProperties(), produced_at: undefined });
+      const envelope = plainToInstance(GlobalEventEnvelope, {
+        ...createValidGlobalProperties(),
+        produced_at: undefined,
+      });
       expect(validateSync(envelope).some((e) => e.property === 'produced_at')).toBe(true);
     });
 
@@ -49,7 +52,10 @@ describe('GlobalEventEnvelope', () => {
     });
 
     it('rejects missing actor_type', () => {
-      const envelope = plainToInstance(GlobalEventEnvelope, { ...createValidGlobalProperties(), actor_type: undefined });
+      const envelope = plainToInstance(GlobalEventEnvelope, {
+        ...createValidGlobalProperties(),
+        actor_type: undefined,
+      });
       expect(validateSync(envelope).some((e) => e.property === 'actor_type')).toBe(true);
     });
 

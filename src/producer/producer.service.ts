@@ -44,7 +44,7 @@ export class ProducerService {
   constructor(
     @Inject(JETSTREAM_TOKEN) private readonly jetStream: JetStreamClient,
     private readonly logger: EventLoggerService,
-  ) { }
+  ) {}
 
   /**
    * Publishes a pre-built event envelope to the given NATS subject.
