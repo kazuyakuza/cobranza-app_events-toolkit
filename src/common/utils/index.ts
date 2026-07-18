@@ -16,6 +16,6 @@ export { RESPONSE_SUFFIX, buildResponseSubject, buildGlobalResponseSubject } fro
 export type { GlobalSubjectParseResult } from './subject-parser';
 export { generateUuidV7, generateEventId } from './uuid.utils';
 export { nowIso } from './date.utils';
-export { createEvent } from './event.factory';
+export { createEvent, createGlobalEvent } from './event.factory';
 export { encodeEvent, decodeEvent } from './serialization.utils';
 export { sanitizeCompanyId, assertValidCompanyId, validateSubject, sanitizeSubjectPart } from './security.utils';

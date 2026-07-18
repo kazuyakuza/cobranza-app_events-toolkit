@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { AnyEventEnvelope, AnyEventContext } from '../common/envelope/envelope-types';
+import { EventContext } from '../common/envelope/event-context.interface';
 import { GlobalEventContext } from '../common/envelope/global-event-context.interface';
 import { encodeEvent, decodeEvent } from '../common/utils/serialization.utils';
 import { EventLoggerService } from '../logging/event-logger.service';
@@ -58,7 +59,7 @@ export class RequestReplyService {
     subject: string,
     payload: T,
     options: RequestReplyRequestOptions & {
-      context: GlobalEventContext | import('../common/envelope/event-context.interface').EventContext;
+      context: GlobalEventContext | EventContext;
     },
   ): Promise<RequestReplyResponse<R>> {
     const { context, ...requestOptions } = options;

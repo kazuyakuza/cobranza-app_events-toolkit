@@ -23,24 +23,24 @@ export class EnvelopeValidationUtil {
    * @returns A plain object representation of the message data.
    * @throws EventConsumerException if the payload is not valid JSON.
    */
+  private static createParseException(message: string): EventConsumerException {
+    return new EventConsumerException({
+      message,
+      eventId: 'unknown',
+      eventType: 'unknown',
+    });
+  }
+
   static parseMessageData(msg: JsMsg): Record<string, unknown> {
     const text = new TextDecoder().decode(msg.data);
     let parsed: unknown;
     try {
       parsed = JSON.parse(text);
     } catch {
-      throw new EventConsumerException({
-        message: 'Message payload is not valid JSON',
-        eventId: 'unknown',
-        eventType: 'unknown',
-      });
+      throw this.createParseException('Message payload is not valid JSON');
     }
     if (this.isInvalidEventPayload(parsed)) {
-      throw new EventConsumerException({
-        message: 'Message payload is not a valid JSON object',
-        eventId: 'unknown',
-        eventType: 'unknown',
-      });
+      throw this.createParseException('Message payload is not a valid JSON object');
     }
     return parsed as Record<string, unknown>;
   }

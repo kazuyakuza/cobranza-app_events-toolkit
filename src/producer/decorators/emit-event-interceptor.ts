@@ -22,6 +22,13 @@ interface EmitEventInput {
   data: unknown;
 }
 
+/** Parameter object for buildSubject to comply with the max-2-params rule. */
+interface BuildSubjectInput {
+  metadata: EmitEventMetadata;
+  eventContext: EventContext | GlobalEventContext;
+  scope: EventScope;
+}
+
 /**
  * NestJS interceptor that auto-publishes events for @EmitEvent() decorated methods.
  *
@@ -53,33 +60,40 @@ export class EmitEventInterceptor implements NestInterceptor {
   }
 
   private async handleEmission(input: EmissionInput): Promise<unknown> {
-    const eventContext = this.findEventContext(input.context);
+    const scope = input.metadata.scope ?? EventScope.TENANT;
+    const eventContext = this.findEventContext(input.context, scope);
     if (eventContext) {
       await this.emitEvent({ metadata: input.metadata, eventContext, data: input.data });
     }
     return input.data;
   }
 
-  private findEventContext(context: ExecutionContext): EventContext | GlobalEventContext | undefined {
+  private findEventContext(
+    context: ExecutionContext,
+    scope?: EventScope,
+  ): EventContext | GlobalEventContext | undefined {
     const args = context.getArgs();
-    return args.find((arg): arg is EventContext | GlobalEventContext => this.isEventContext(arg));
+    return args.find((arg): arg is EventContext | GlobalEventContext => this.isEventContext(arg, scope));
   }
 
-  private isEventContext(arg: unknown): arg is Record<string, unknown> {
-    return this.isNonNullObject(arg) && this.hasRequiredContextFields(arg);
+  private isEventContext(arg: unknown, scope?: EventScope): arg is Record<string, unknown> {
+    return this.isNonNullObject(arg) && this.hasRequiredContextFields(arg, scope);
   }
 
   private isNonNullObject(arg: unknown): arg is Record<string, unknown> {
     return typeof arg === 'object' && arg !== null;
   }
 
-  private hasRequiredContextFields(arg: Record<string, unknown>): boolean {
-    return 'type' in arg;
+  private hasRequiredContextFields(arg: Record<string, unknown>, scope?: EventScope): boolean {
+    if (scope === EventScope.GLOBAL) {
+      return 'type' in arg;
+    }
+    return 'type' in arg && 'companyId' in arg;
   }
 
   private async emitEvent(input: EmitEventInput): Promise<void> {
     const scope = input.metadata.scope ?? EventScope.TENANT;
-    const subject = this.buildSubject(input.metadata, input.eventContext, scope);
+    const subject = this.buildSubject({ metadata: input.metadata, eventContext: input.eventContext, scope });
     if (scope === EventScope.GLOBAL) {
       await this.producerService.emitGlobal({
         subject,
@@ -91,14 +105,10 @@ export class EmitEventInterceptor implements NestInterceptor {
     }
   }
 
-  private buildSubject(
-    metadata: EmitEventMetadata,
-    eventContext: EventContext | GlobalEventContext,
-    scope?: EventScope,
-  ): string {
-    if (scope === EventScope.GLOBAL) {
-      return `global.${metadata.eventType}.v${metadata.version}`;
+  private buildSubject(input: BuildSubjectInput): string {
+    if (input.scope === EventScope.GLOBAL) {
+      return `global.${input.metadata.eventType}.v${input.metadata.version}`;
     }
-    return `company.${(eventContext as EventContext).companyId}.${metadata.eventType}.v${metadata.version}`;
+    return `company.${(input.eventContext as EventContext).companyId}.${input.metadata.eventType}.v${input.metadata.version}`;
   }
 }

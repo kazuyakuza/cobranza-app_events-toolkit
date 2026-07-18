@@ -4,6 +4,7 @@ import { GlobalEventContext } from '../common/envelope/global-event-context.inte
 import { ActorType } from '../common/envelope/actor-type.enum';
 import { createGlobalEvent, createEvent } from '../common/utils/event.factory';
 import { createDlqEnvelope } from './outbox.utils';
+import { MockOutboxService } from '../testing/mock-outbox.service';
 
 describe('OutboxService — global events', () => {
   describe('createGlobalEvent through outbox', () => {
@@ -34,6 +35,34 @@ describe('OutboxService — global events', () => {
       const envelope = createEvent({ amount: 100 }, context);
       expect(envelope).toBeInstanceOf(EventEnvelope);
       expect(envelope.company_id).toBe('550e8400-e29b-41d4-a716-446655440000');
+    });
+  });
+
+  describe('sendAsyncRequestThroughOutbox with global context', () => {
+    it('saves a GlobalEventEnvelope with reply_to and no company_id', async () => {
+      const mockOutbox = new MockOutboxService();
+      const globalContext: GlobalEventContext = {
+        type: 'iam.company.created',
+        version: '1.0.0',
+        producer: 'iam-service',
+        actorType: ActorType.SYSTEM,
+        correlationId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        replyTo: 'global.response.queue',
+      };
+
+      const result = await mockOutbox.sendAsyncRequestThroughOutbox({
+        payload: { name: 'Acme Corp' },
+        context: globalContext,
+        subject: 'global.iam.company.created.v1',
+      });
+
+      expect(result.correlationId).toBe('7c9e6679-7425-40de-944b-e07fc1f90ae7');
+      const savedEvents = mockOutbox.getSavedEvents();
+      expect(savedEvents).toHaveLength(1);
+      const saved = savedEvents[0];
+      expect(saved.subject).toBe('global.iam.company.created.v1');
+      expect(saved.event).toBeInstanceOf(GlobalEventEnvelope);
+      expect('company_id' in saved.event).toBe(false);
     });
   });
 

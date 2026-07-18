@@ -1,7 +1,8 @@
 import { GlobalEventEnvelope } from '../common/envelope/global-event-envelope.class';
+import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { GlobalEventContext } from '../common/envelope/global-event-context.interface';
 import { ActorType } from '../common/envelope/actor-type.enum';
-import { buildGlobalEnvelope } from './request-reply.helpers';
+import { buildGlobalEnvelope, buildEnvelope } from './request-reply.helpers';
 
 describe('RequestReplyService — global events', () => {
   describe('buildGlobalEnvelope helper', () => {
@@ -71,6 +72,40 @@ describe('RequestReplyService — global events', () => {
 
       expect(responseEnvelope.correlation_id).toBe('corr-request-001');
       expect(responseEnvelope.causation_id).toBe('evt_request-001');
+    });
+  });
+
+  describe('sendRequest with global context', () => {
+    it('buildGlobalEnvelope is callable with a GlobalEventContext and payload', () => {
+      const context: GlobalEventContext = {
+        type: 'iam.company.created',
+        version: '1.0.0',
+        producer: 'iam-service',
+        actorType: ActorType.SYSTEM,
+        correlationId: '770e8400-e29b-41d4-a716-446655440002',
+        replyTo: 'global.response.queue',
+      };
+      const envelope = buildGlobalEnvelope(context, { name: 'Acme' });
+      expect(envelope).toBeInstanceOf(GlobalEventEnvelope);
+      expect(envelope.reply_to).toBe('global.response.queue');
+      expect(envelope.type).toBe('iam.company.created');
+    });
+  });
+
+  describe('buildEnvelope with tenant context (backward compat)', () => {
+    it('still produces an EventEnvelope with company_id', () => {
+      const context = {
+        type: 'payment.proof.uploaded',
+        version: '1.0.0',
+        producer: 'payment-service',
+        companyId: '550e8400-e29b-41d4-a716-446655440000',
+        actorType: ActorType.CLIENT,
+        actorId: 'user-123',
+        correlationId: '660e8400-e29b-41d4-a716-446655440001',
+      };
+      const envelope = buildEnvelope(context, { amount: 100 });
+      expect(envelope).toBeInstanceOf(EventEnvelope);
+      expect(envelope.company_id).toBe('550e8400-e29b-41d4-a716-446655440000');
     });
   });
 });

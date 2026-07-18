@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { EventHandler } from '../consumer/consumer.service';
 import { DispatchOptions } from '../consumer/dispatch-options.interface';
 import { envelopeToContext } from '../consumer/subscribe-options.interface';
 import { EventConsumerException } from '../common/errors/event-consumer.exception';
+import { AnyEventEnvelope } from '../common/envelope/envelope-types';
 
 /**
  * In-memory mock for `ConsumerService`.
@@ -51,7 +51,7 @@ export class MockConsumerService {
    * Builds an `EventContext` from the envelope and dispatches it to the registered handler.
    * Convenience method for simulating incoming events in tests.
    */
-  async simulateEvent(subject: string, event: EventEnvelope<unknown>): Promise<void> {
+  async simulateEvent(subject: string, event: AnyEventEnvelope<unknown>): Promise<void> {
     const context = envelopeToContext(event, subject);
     await this.dispatch({ subject, event, context });
   }

@@ -1,6 +1,5 @@
 import { Injectable, Inject, OnModuleDestroy } from '@nestjs/common';
-import { AnyEventEnvelope } from '../common/envelope/envelope-types';
-import { isGlobalContext } from '../common/envelope/envelope-types';
+import { AnyEventEnvelope, isGlobalContext } from '../common/envelope/envelope-types';
 import { OutboxEntry } from './outbox.types';
 import { OutboxServiceDeps, OUTBOX_SERVICE_DEPS_TOKEN } from './outbox-service-deps.interface';
 import { SaveInTransactionParams } from './save-in-transaction-params.interface';

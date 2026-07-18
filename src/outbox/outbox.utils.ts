@@ -47,21 +47,9 @@ export function createDlqEnvelope(
   dlqPayload: Record<string, unknown>,
 ): AnyEventEnvelope<unknown> {
   const base = {
-    id: envelope.id,
+    ...envelope,
     produced_at: new Date().toISOString(),
-    type: envelope.type,
-    version: envelope.version,
-    producer: envelope.producer,
-    actor_type: envelope.actor_type,
-    actor_id: envelope.actor_id,
-    correlation_id: envelope.correlation_id,
-    causation_id: envelope.causation_id,
-    trace_id: envelope.trace_id,
-    reply_to: envelope.reply_to,
     data: dlqPayload,
   };
-  if (isGlobalEnvelope(envelope)) {
-    return new GlobalEventEnvelope<unknown>(base);
-  }
-  return new EventEnvelope<unknown>({ ...base, company_id: (envelope as EventEnvelope<unknown>).company_id });
+  return isGlobalEnvelope(envelope) ? new GlobalEventEnvelope<unknown>(base) : new EventEnvelope<unknown>(base);
 }

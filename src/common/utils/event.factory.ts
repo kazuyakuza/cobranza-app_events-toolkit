@@ -1,9 +1,28 @@
+import { BaseEventContext } from '../envelope/base-event-context.interface';
 import { EventContext } from '../envelope/event-context.interface';
 import { EventEnvelope } from '../envelope/event-envelope.class';
 import { GlobalEventContext } from '../envelope/global-event-context.interface';
 import { GlobalEventEnvelope } from '../envelope/global-event-envelope.class';
 import { generateEventId } from './uuid.utils';
 import { nowIso } from './date.utils';
+import { BaseEventEnvelope } from '../envelope/base-event-envelope.class';
+
+function buildBaseEnvelopeProperties<T>(context: BaseEventContext, data: T): Partial<BaseEventEnvelope<T>> {
+  return {
+    id: generateEventId(),
+    produced_at: nowIso(),
+    type: context.type,
+    version: context.version,
+    producer: context.producer,
+    actor_type: context.actorType,
+    actor_id: context.actorId,
+    correlation_id: context.correlationId,
+    causation_id: context.causationId,
+    trace_id: context.traceId,
+    reply_to: context.replyTo,
+    data,
+  };
+}
 
 /**
  * Creates a fully-populated {@link EventEnvelope} from business data and event context.
@@ -22,19 +41,8 @@ import { nowIso } from './date.utils';
  */
 export function createEvent<T>(data: T, context: EventContext): EventEnvelope<T> {
   return new EventEnvelope<T>({
-    id: generateEventId(),
-    produced_at: nowIso(),
-    type: context.type,
-    version: context.version,
-    producer: context.producer,
+    ...buildBaseEnvelopeProperties(context, data),
     company_id: context.companyId,
-    actor_type: context.actorType,
-    actor_id: context.actorId,
-    correlation_id: context.correlationId,
-    causation_id: context.causationId,
-    trace_id: context.traceId,
-    reply_to: context.replyTo,
-    data,
   });
 }
 
@@ -49,18 +57,5 @@ export function createEvent<T>(data: T, context: EventContext): EventEnvelope<T>
  * @returns A fully-initialized {@link GlobalEventEnvelope} instance.
  */
 export function createGlobalEvent<T>(data: T, context: GlobalEventContext): GlobalEventEnvelope<T> {
-  return new GlobalEventEnvelope<T>({
-    id: generateEventId(),
-    produced_at: nowIso(),
-    type: context.type,
-    version: context.version,
-    producer: context.producer,
-    actor_type: context.actorType,
-    actor_id: context.actorId,
-    correlation_id: context.correlationId,
-    causation_id: context.causationId,
-    trace_id: context.traceId,
-    reply_to: context.replyTo,
-    data,
-  });
+  return new GlobalEventEnvelope<T>(buildBaseEnvelopeProperties(context, data));
 }

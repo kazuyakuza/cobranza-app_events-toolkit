@@ -101,10 +101,5 @@ export function buildDlqSubject(originalSubject: string): string {
 // ── Re-exports for backward compatibility ──
 // These symbols were moved to subject-parser.ts but are re-exported here
 // so that existing consumers of subject.builder are not broken.
-export {
-  RESPONSE_SUFFIX,
-  buildResponseSubject,
-  buildGlobalResponseSubject,
-  SubjectParseResult,
-  GlobalSubjectParseResult,
-} from './subject-parser';
+export { RESPONSE_SUFFIX, buildResponseSubject, buildGlobalResponseSubject } from './subject-parser';
+export type { SubjectParseResult, GlobalSubjectParseResult } from './subject-parser';

@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AnyEventEnvelope } from '../common/envelope/envelope-types';
-import { isGlobalContext } from '../common/envelope/envelope-types';
+import { AnyEventEnvelope, isGlobalContext } from '../common/envelope/envelope-types';
 import { createEvent, createGlobalEvent } from '../common/utils/event.factory';
 import { SaveInTransactionParams } from '../outbox/save-in-transaction-params.interface';
 import { SendAsyncRequestThroughOutboxOptions } from '../outbox/send-async-request-through-outbox-options.interface';

@@ -1,6 +1,8 @@
 import { AckPolicy, consumerOpts, ConsumerOptsBuilder, ConsumerOpts, createInbox, JsMsg } from 'nats';
 import { ValidationError } from 'class-validator';
 import { EventConsumerException } from '../common/errors/event-consumer.exception';
+import { BaseEventEnvelope } from '../common/envelope/base-event-envelope.class';
+import { BaseEventContext } from '../common/envelope/base-event-context.interface';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { EventContext } from '../common/envelope/event-context.interface';
 import { GlobalEventEnvelope } from '../common/envelope/global-event-envelope.class';
@@ -66,13 +68,12 @@ export function defaultDlqSubjectBuilder(subject: string): string {
   return buildDlqSubject(subject);
 }
 
-/** Extracts {@link EventContext} fields from a validated tenant {@link EventEnvelope}. */
-export function envelopeToTenantContext(envelope: EventEnvelope<unknown>): EventContext {
+/** Extracts common base context fields from any event envelope. */
+function extractBaseContextFields(envelope: BaseEventEnvelope<unknown>): BaseEventContext {
   return {
     type: envelope.type,
     version: envelope.version,
     producer: envelope.producer,
-    companyId: envelope.company_id,
     actorType: envelope.actor_type,
     actorId: envelope.actor_id,
     correlationId: envelope.correlation_id,
@@ -82,19 +83,17 @@ export function envelopeToTenantContext(envelope: EventEnvelope<unknown>): Event
   };
 }
 
+/** Extracts {@link EventContext} fields from a validated tenant {@link EventEnvelope}. */
+export function envelopeToTenantContext(envelope: EventEnvelope<unknown>): EventContext {
+  return {
+    ...extractBaseContextFields(envelope),
+    companyId: envelope.company_id,
+  };
+}
+
 /** Extracts {@link GlobalEventContext} fields from a validated {@link GlobalEventEnvelope}. */
 export function envelopeToGlobalContext(envelope: GlobalEventEnvelope<unknown>): GlobalEventContext {
-  return {
-    type: envelope.type,
-    version: envelope.version,
-    producer: envelope.producer,
-    actorType: envelope.actor_type,
-    actorId: envelope.actor_id,
-    correlationId: envelope.correlation_id,
-    causationId: envelope.causation_id,
-    traceId: envelope.trace_id,
-    replyTo: envelope.reply_to,
-  };
+  return extractBaseContextFields(envelope);
 }
 
 /**
