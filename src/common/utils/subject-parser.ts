@@ -34,7 +34,6 @@ export interface GlobalSubjectParseResult {
   version: string;
 }
 
-
 /** Regex that matches the convention tenant subject format and captures each segment. */
 const SUBJECT_SEGMENTS_PATTERN =
   /^company\.([0-9a-f]{32})\.([a-z][a-z0-9-]*)\.([a-z][a-z0-9-]*)\.([a-z][a-z0-9-.]+)\.v(\d+)$/i;
