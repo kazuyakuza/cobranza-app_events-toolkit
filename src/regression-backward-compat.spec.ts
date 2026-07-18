@@ -4,14 +4,47 @@
  *
  * All existing public symbols must still be exported and usable.
  */
-import { EventEnvelope, EventBase, ActorType, EventContext, BaseEventEnvelope, GlobalEventEnvelope, GlobalEventBase, GlobalEventContext, EventScope, AnyEventEnvelope, AnyEventContext, isGlobalEnvelope, isGlobalContext } from './common/envelope';
+import {
+  EventEnvelope,
+  EventBase,
+  ActorType,
+  EventContext,
+  BaseEventEnvelope,
+  GlobalEventEnvelope,
+  GlobalEventBase,
+  GlobalEventContext,
+  EventScope,
+  AnyEventEnvelope,
+  AnyEventContext,
+  isGlobalEnvelope,
+  isGlobalContext,
+} from './common/envelope';
 import { BuildSubjectDto, BuildGlobalSubjectDto } from './common/dto';
-import { SubjectBuilder, buildSubject, buildGlobalSubject, isGlobalSubject, buildDlqSubject, buildResponseSubject, buildGlobalResponseSubject, DLQ_SUBJECT_PREFIX } from './common/utils';
+import {
+  SubjectBuilder,
+  buildSubject,
+  buildGlobalSubject,
+  isGlobalSubject,
+  buildDlqSubject,
+  buildResponseSubject,
+  buildGlobalResponseSubject,
+  DLQ_SUBJECT_PREFIX,
+} from './common/utils';
 import { createEvent, createGlobalEvent } from './common/utils/event.factory';
 
 describe('Backward compatibility regression', () => {
   it('EventEnvelope is still exported', () => {
-    const envelope = new EventEnvelope({ id: 'evt_test', type: 'test', version: '1', produced_at: '2026-01-01T00:00:00.000Z', producer: 'test', company_id: '550e8400-e29b-41d4-a716-446655440000', actor_type: ActorType.SYSTEM, correlation_id: '7c9e6679-7425-40de-944b-e07fc1f90ae7', data: {} });
+    const envelope = new EventEnvelope({
+      id: 'evt_test',
+      type: 'test',
+      version: '1',
+      produced_at: '2026-01-01T00:00:00.000Z',
+      producer: 'test',
+      company_id: '550e8400-e29b-41d4-a716-446655440000',
+      actor_type: ActorType.SYSTEM,
+      correlation_id: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+      data: {},
+    });
     expect(envelope).toBeInstanceOf(EventEnvelope);
     expect(envelope.company_id).toBe('550e8400-e29b-41d4-a716-446655440000');
   });
@@ -21,7 +54,14 @@ describe('Backward compatibility regression', () => {
   });
 
   it('EventContext is still exported', () => {
-    const ctx: EventContext = { type: 'test', version: '1', producer: 'test', companyId: '550e8400-e29b-41d4-a716-446655440000', actorType: ActorType.SYSTEM, correlationId: 'corr' };
+    const ctx: EventContext = {
+      type: 'test',
+      version: '1',
+      producer: 'test',
+      companyId: '550e8400-e29b-41d4-a716-446655440000',
+      actorType: ActorType.SYSTEM,
+      correlationId: 'corr',
+    };
     expect(ctx.companyId).toBe('550e8400-e29b-41d4-a716-446655440000');
   });
 
@@ -30,7 +70,14 @@ describe('Backward compatibility regression', () => {
   });
 
   it('createEvent is still exported', () => {
-    const ctx: EventContext = { type: 'test', version: '1', producer: 'test', companyId: '550e8400-e29b-41d4-a716-446655440000', actorType: ActorType.SYSTEM, correlationId: 'corr' };
+    const ctx: EventContext = {
+      type: 'test',
+      version: '1',
+      producer: 'test',
+      companyId: '550e8400-e29b-41d4-a716-446655440000',
+      actorType: ActorType.SYSTEM,
+      correlationId: 'corr',
+    };
     const event = createEvent({ data: 1 }, ctx);
     expect(event).toBeInstanceOf(EventEnvelope);
   });
@@ -54,7 +101,7 @@ describe('Backward compatibility regression', () => {
   });
 
   it('buildResponseSubject is still exported', () => {
-    const result = buildResponseSubject('company.abc12345def.domain.entity.action.v1');
+    const result = buildResponseSubject('company.aaaaaaaa00000000bbbbbbbbcccccccc.domain.entity.action.v1');
     expect(result).toContain('.response.');
   });
 
@@ -67,12 +114,27 @@ describe('Backward compatibility regression', () => {
   });
 
   it('new GlobalEventEnvelope is exported', () => {
-    const envelope = new GlobalEventEnvelope({ id: 'evt_test', type: 'test', version: '1', produced_at: '2026-01-01T00:00:00.000Z', producer: 'test', actor_type: ActorType.SYSTEM, correlation_id: 'corr', data: {} });
+    const envelope = new GlobalEventEnvelope({
+      id: 'evt_test',
+      type: 'test',
+      version: '1',
+      produced_at: '2026-01-01T00:00:00.000Z',
+      producer: 'test',
+      actor_type: ActorType.SYSTEM,
+      correlation_id: 'corr',
+      data: {},
+    });
     expect(envelope).toBeInstanceOf(GlobalEventEnvelope);
   });
 
   it('GlobalEventContext is exported', () => {
-    const ctx: GlobalEventContext = { type: 'test', version: '1', producer: 'test', actorType: ActorType.SYSTEM, correlationId: 'corr' };
+    const ctx: GlobalEventContext = {
+      type: 'test',
+      version: '1',
+      producer: 'test',
+      actorType: ActorType.SYSTEM,
+      correlationId: 'corr',
+    };
     expect(ctx.type).toBe('test');
   });
 
@@ -92,7 +154,14 @@ describe('Backward compatibility regression', () => {
   it('AnyEventEnvelope and AnyEventContext types are exported', () => {
     const envelope: AnyEventEnvelope = new EventEnvelope();
     expect(envelope).toBeDefined();
-    const context: AnyEventContext = { type: 'test', version: '1', producer: 'test', actorType: ActorType.SYSTEM, correlationId: 'corr', companyId: 'uuid' };
+    const context: AnyEventContext = {
+      type: 'test',
+      version: '1',
+      producer: 'test',
+      actorType: ActorType.SYSTEM,
+      correlationId: 'corr',
+      companyId: 'uuid',
+    };
     expect(context).toBeDefined();
   });
 
@@ -119,7 +188,13 @@ describe('Backward compatibility regression', () => {
   });
 
   it('createGlobalEvent is exported', () => {
-    const ctx: GlobalEventContext = { type: 'test', version: '1', producer: 'test', actorType: ActorType.SYSTEM, correlationId: 'corr' };
+    const ctx: GlobalEventContext = {
+      type: 'test',
+      version: '1',
+      producer: 'test',
+      actorType: ActorType.SYSTEM,
+      correlationId: 'corr',
+    };
     const event = createGlobalEvent({ data: 1 }, ctx);
     expect(event).toBeInstanceOf(GlobalEventEnvelope);
   });

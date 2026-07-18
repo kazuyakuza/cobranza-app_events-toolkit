@@ -62,7 +62,6 @@ describe('RequestReplyService — global events', () => {
         correlationId: 'ignored',
       };
 
-      const { buildEnvelope } = require('./request-reply.helpers');
       const preservedContext = {
         ...responseContext,
         correlationId: requestEnvelope.correlation_id,

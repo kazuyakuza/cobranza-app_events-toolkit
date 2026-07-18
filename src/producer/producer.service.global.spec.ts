@@ -2,7 +2,6 @@ import { Test } from '@nestjs/testing';
 import { JetStreamClient } from 'nats';
 import { ProducerService, EmitGlobalOptions } from './producer.service';
 import { GlobalEventContext } from '../common/envelope/global-event-context.interface';
-import { ProducerModule } from './producer.module';
 import { JETSTREAM_TOKEN } from './producer.constants';
 import { EventLoggerService } from '../logging/event-logger.service';
 import { GlobalEventEnvelope } from '../common/envelope/global-event-envelope.class';
@@ -34,17 +33,12 @@ describe('ProducerService — global events', () => {
     mockLoggerService = { logEventEmitted: jest.fn(), logEventError: jest.fn() };
 
     const module = await Test.createTestingModule({
-      imports: [ProducerModule],
-      overrideProviders: [
+      providers: [
         { provide: JETSTREAM_TOKEN, useValue: jetStream },
         { provide: EventLoggerService, useValue: mockLoggerService },
+        ProducerService,
       ],
-    })
-      .overrideProvider(ProducerService)
-      .useFactory({
-        factory: () => new ProducerService(jetStream as unknown as JetStreamClient, mockLoggerService as unknown as EventLoggerService),
-      })
-      .compile();
+    }).compile();
 
     service = module.get(ProducerService);
   });

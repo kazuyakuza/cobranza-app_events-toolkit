@@ -9,4 +9,5 @@ import { BaseEventContext } from './base-event-context.interface';
  * @see BaseEventContext
  * @see EventContext
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface GlobalEventContext extends BaseEventContext {}

@@ -3,6 +3,7 @@ import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { GlobalEventContext } from '../common/envelope/global-event-context.interface';
 import { ActorType } from '../common/envelope/actor-type.enum';
 import { createGlobalEvent, createEvent } from '../common/utils/event.factory';
+import { createDlqEnvelope } from './outbox.utils';
 
 describe('OutboxService — global events', () => {
   describe('createGlobalEvent through outbox', () => {
@@ -49,7 +50,6 @@ describe('OutboxService — global events', () => {
         data: { name: 'Acme Corp' },
       });
 
-      const { createDlqEnvelope } = require('./outbox.utils');
       const dlqEnvelope = createDlqEnvelope(original, { error: 'test' });
 
       expect(dlqEnvelope).toBeInstanceOf(GlobalEventEnvelope);
@@ -72,7 +72,6 @@ describe('OutboxService — global events', () => {
         data: { amount: 100 },
       });
 
-      const { createDlqEnvelope } = require('./outbox.utils');
       const dlqEnvelope = createDlqEnvelope(original, { error: 'test' });
 
       expect(dlqEnvelope).toBeInstanceOf(EventEnvelope);
