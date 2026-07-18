@@ -34,7 +34,7 @@ For the full convention specification, see [`event-messaging-convention.md`](eve
 | Version | Major only: `v1`, `v2` |
 | Payloads | IDs over full objects; keep under 256KB |
 | Consumers | MUST be idempotent |
-| Actor context | `actor_type` and `actor_id` always required |
+| Actor context | `actor_type` always required; `actor_id` required for `client` and `company_user`, optional for `system`, `scheduler`, `external_api` |
 | Tenant isolation | `company_id` mandatory in every envelope |
 
 ## Step-by-Step: Creating a New Event Class
@@ -403,7 +403,7 @@ Before submitting event-related code, verify:
 - [ ] `type` follows the `domain.entity.action` pattern
 - [ ] `version` is a string like `'1.0.0'`
 - [ ] `company_id` is always provided in context
-- [ ] `actor_type` and `actor_id` are always provided
+- [ ] `actor_type` is always provided; `actor_id` is provided for `client` and `company_user` (optional for `system`, `scheduler`, `external_api`)
 - [ ] Subject is built with `SubjectBuilder.build()` — never string concatenation
 
 ## Common Mistakes
@@ -412,7 +412,7 @@ Before submitting event-related code, verify:
 |---|---------|-----|
 | 1 | Manual subject concatenation | Use `SubjectBuilder.build()` |
 | 2 | Present-tense verbs for actions | Use past tense: `uploaded`, not `upload` |
-| 3 | Forgetting actor context | Always include `actorType` and `actorId` in `EventContext` |
+| 3 | Forgetting actor context | Always include `actorType` in `EventContext`; include `actorId` for `client` and `company_user` (omit for `system`, `scheduler`, `external_api`) |
 | 4 | Non-idempotent consumers | Design handlers to safely process duplicate messages |
 | 5 | Storing full objects instead of IDs | Keep payloads under 256KB; reference IDs |
 | 6 | Missing `@IsUUID` on ID fields | Decorate all UUID fields with `@IsUUID()` |
