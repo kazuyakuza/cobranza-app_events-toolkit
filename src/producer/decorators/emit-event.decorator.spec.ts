@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { EMIT_EVENT_METADATA, EmitEventOptions, EmitEventMetadata, EmitEvent } from './emit-event.decorator';
+import { EventScope } from '../../common/envelope/event-scope.enum';
 
 describe('EmitEvent', () => {
   it('should store metadata on the decorated method via @EmitEvent()', () => {
@@ -82,5 +83,42 @@ describe('EmitEvent', () => {
     expect(metadata.tags).toEqual(['debt', 'schedule']);
     expect(metadata.payloadSchemaRef).toBe('DebtScheduleProcessedEvent');
     expect(metadata.payloadExample).toEqual({ scheduleId: 'sch-123' });
+  });
+
+  describe('scope support', () => {
+    it('stores scope: EventScope.GLOBAL when provided', () => {
+      class TestProducer {
+        @EmitEvent('iam.company.created', {
+          version: '1',
+          description: 'Company created',
+          payloadExample: { name: 'Acme' },
+          scope: EventScope.GLOBAL,
+        })
+        handleGlobal(): void {}
+      }
+
+      const metadata = Reflect.getMetadata(
+        EMIT_EVENT_METADATA,
+        TestProducer.prototype.handleGlobal,
+      ) as EmitEventMetadata;
+      expect(metadata.scope).toBe(EventScope.GLOBAL);
+    });
+
+    it('scope is undefined when not provided (backward compat)', () => {
+      class TestProducer {
+        @EmitEvent('payment.proof.uploaded', {
+          version: '1',
+          description: 'Payment proof uploaded',
+          payloadExample: { proofId: 'proof-123' },
+        })
+        handleLegacy(): void {}
+      }
+
+      const metadata = Reflect.getMetadata(
+        EMIT_EVENT_METADATA,
+        TestProducer.prototype.handleLegacy,
+      ) as EmitEventMetadata;
+      expect(metadata.scope).toBeUndefined();
+    });
   });
 });

@@ -109,6 +109,24 @@ describe('OnEventExplorer', () => {
       expect(sampleHandler.handlerInvoked).toBe(true);
     });
 
+    it('should register handler for global scope subject', () => {
+      // Use the private buildWildcardSubject method by reading from explorer prototype
+      const subject = (explorer as unknown as { buildWildcardSubject: (m: { scope?: string; eventType: string; version: string }) => string }).buildWildcardSubject({
+        scope: 'global',
+        eventType: 'iam.company.created',
+        version: '1',
+      });
+      expect(subject).toBe('global.iam.company.created.v1');
+    });
+
+    it('should register handler for tenant scope subject by default', () => {
+      const subject = (explorer as unknown as { buildWildcardSubject: (m: { scope?: string; eventType: string; version: string }) => string }).buildWildcardSubject({
+        eventType: 'payment.proof.uploaded',
+        version: '1',
+      });
+      expect(subject).toBe('company.*.payment.proof.uploaded.v1');
+    });
+
     it('should handle custom version in @OnEvent options', () => {
       const instance = new CustomVersionConsumer();
       (discovery.getProviders as jest.Mock).mockReturnValue([{ instance }]);

@@ -1,8 +1,10 @@
 import { Test } from '@nestjs/testing';
 import { ConsumerService } from './consumer.service';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
+import { GlobalEventEnvelope } from '../common/envelope/global-event-envelope.class';
 import { ActorType } from '../common/envelope/actor-type.enum';
 import { EventContext } from '../common/envelope/event-context.interface';
+import { GlobalEventContext } from '../common/envelope/global-event-context.interface';
 import { EventConsumerException } from '../common/errors/event-consumer.exception';
 
 describe('ConsumerService', () => {
@@ -16,6 +18,14 @@ describe('ConsumerService', () => {
     actorType: ActorType.CLIENT,
     actorId: 'user-123',
     correlationId: '660e8400-e29b-41d4-a716-446655440001',
+  };
+
+  const globalContext: GlobalEventContext = {
+    type: 'iam.company.created',
+    version: '1.0.0',
+    producer: 'iam-service',
+    actorType: ActorType.SYSTEM,
+    correlationId: '770e8400-e29b-41d4-a716-446655440002',
   };
 
   beforeEach(async () => {
@@ -77,6 +87,33 @@ describe('ConsumerService', () => {
     });
   });
 
+  describe('dual-type dispatch', () => {
+    it('dispatches a global event to a handler registered for a global subject', async () => {
+      const handler = jest.fn().mockResolvedValue(undefined);
+      service.registerHandler('global.iam.company.created.v1', handler);
+
+      const globalEvent = createGlobalTestEvent();
+      await service.dispatch({ subject: 'global.iam.company.created.v1', event: globalEvent, context: globalContext });
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler).toHaveBeenCalledWith(globalEvent, globalContext);
+    });
+
+    it('dispatches a tenant event to a handler registered for a tenant subject', async () => {
+      const handler = jest.fn().mockResolvedValue(undefined);
+      service.registerHandler('company.*.payment.proof.uploaded.v1', handler);
+
+      const tenantEvent = createTestEvent();
+      await service.dispatch({
+        subject: 'company.*.payment.proof.uploaded.v1',
+        event: tenantEvent,
+        context: sampleContext,
+      });
+
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('getHandler', () => {
     it('should return undefined for unregistered subject', () => {
       expect(service.getHandler('unknown.subject')).toBeUndefined();
@@ -114,6 +151,20 @@ function createTestEvent(overrides: Partial<EventEnvelope<unknown>> = {}): Event
     actor_id: 'user-123',
     correlation_id: '660e8400-e29b-41d4-a716-446655440001',
     data: { amount: 100 },
+    ...overrides,
+  });
+}
+
+function createGlobalTestEvent(overrides: Partial<GlobalEventEnvelope<unknown>> = {}): GlobalEventEnvelope<unknown> {
+  return new GlobalEventEnvelope({
+    id: 'evt_global-test-456',
+    type: 'iam.company.created',
+    version: '1.0.0',
+    produced_at: '2026-06-13T15:00:00.000Z',
+    producer: 'iam-service',
+    actor_type: ActorType.SYSTEM,
+    correlation_id: '770e8400-e29b-41d4-a716-446655440002',
+    data: { name: 'Acme Corp' },
     ...overrides,
   });
 }

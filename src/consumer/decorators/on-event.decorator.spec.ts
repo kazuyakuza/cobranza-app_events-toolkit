@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { ON_EVENT_METADATA, OnEventOptions, OnEventMetadata, OnEvent } from './on-event.decorator';
+import { EventScope } from '../../common/envelope/event-scope.enum';
 
 describe('OnEvent', () => {
   it('should store metadata on the decorated method via @OnEvent()', () => {
@@ -112,5 +113,60 @@ describe('OnEvent', () => {
     expect(metadata.tags).toEqual(['payment', 'proof']);
     expect(metadata.payloadSchemaRef).toBe('PaymentProofUploadedEvent');
     expect(metadata.payloadExample).toEqual({ proofId: 'proof-123' });
+  });
+
+  describe('scope support', () => {
+    it('stores scope: EventScope.GLOBAL when provided', () => {
+      class TestConsumer {
+        @OnEvent('iam.company.created', {
+          version: '1',
+          description: 'Company created',
+          payloadExample: { name: 'Acme' },
+          scope: EventScope.GLOBAL,
+        })
+        handleGlobalEvent(): void {}
+      }
+
+      const metadata = Reflect.getMetadata(
+        ON_EVENT_METADATA,
+        TestConsumer.prototype.handleGlobalEvent,
+      ) as OnEventMetadata;
+      expect(metadata.scope).toBe(EventScope.GLOBAL);
+    });
+
+    it('stores scope: EventScope.TENANT when provided', () => {
+      class TestConsumer {
+        @OnEvent('payment.proof.uploaded', {
+          version: '1',
+          description: 'Payment proof uploaded',
+          payloadExample: { proofId: 'proof-123' },
+          scope: EventScope.TENANT,
+        })
+        handleTenantEvent(): void {}
+      }
+
+      const metadata = Reflect.getMetadata(
+        ON_EVENT_METADATA,
+        TestConsumer.prototype.handleTenantEvent,
+      ) as OnEventMetadata;
+      expect(metadata.scope).toBe(EventScope.TENANT);
+    });
+
+    it('scope is undefined when not provided (backward compat)', () => {
+      class TestConsumer {
+        @OnEvent('debt.schedule.processed', {
+          version: '1',
+          description: 'Debt schedule processed',
+          payloadExample: { scheduleId: 'sch-123' },
+        })
+        handleLegacyEvent(): void {}
+      }
+
+      const metadata = Reflect.getMetadata(
+        ON_EVENT_METADATA,
+        TestConsumer.prototype.handleLegacyEvent,
+      ) as OnEventMetadata;
+      expect(metadata.scope).toBeUndefined();
+    });
   });
 });
