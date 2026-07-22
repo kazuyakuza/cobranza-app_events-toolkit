@@ -100,6 +100,7 @@ export class RequestReplyService {
     await this.producerService.publish(replyTo, responseEvent);
   }
 
+  /** Returns true when the reply_to subject matches the configured INBOX pattern and fallback is enabled. */
   private shouldUseCoreNats(replyTo: string): boolean {
     if (!this.config.fallbackToCoreNatsOnInbox) {
       return false;
@@ -107,6 +108,7 @@ export class RequestReplyService {
     return this.inboxRegex.test(replyTo);
   }
 
+  /** Publishes the response event via core NATS (no PubAck) to an INBOX subject. */
   private publishToInbox(replyTo: string, responseEvent: AnyEventEnvelope<unknown>): void {
     const payload = encodeEvent(responseEvent);
     this.natsConnection.publish(replyTo, payload);

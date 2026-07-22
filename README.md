@@ -272,6 +272,8 @@ export class AppModule {}
 | `consumer` | `EventsToolkitConsumerOptions` | No | Consumer subsystem toggle and DLQ subject builder. Set `enable: false` to skip consumer registration. |
 | `discovery` | `EventsToolkitDiscoveryOptions` | No | Service discovery config (manifest, heartbeat, schema publishing). Set `enabled: false` to skip. |
 | `requestReply` | `Partial<RequestReplyConfig>` | No | Request-reply defaults. Set `defaultTimeoutMs` to override the 5000ms sync timeout. |
+| `requestReply.fallbackToCoreNatsOnInbox` | `boolean` | No | When `true`, responses to INBOX subjects use core NATS instead of JetStream. Default: `false`. |
+| `requestReply.coreNatsFallbackPattern` | `string` | No | Regex pattern for matching subjects that should use core NATS fallback. Default: `'^_?INBOX\\.'`. |
 
 ### Defining an Event
 

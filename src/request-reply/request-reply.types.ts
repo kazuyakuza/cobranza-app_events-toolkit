@@ -21,9 +21,9 @@ export const DEFAULT_INBOX_PATTERN = '^_?INBOX\\.';
 export interface RequestReplyConfig {
   /** Default timeout in milliseconds for request operations. */
   defaultTimeoutMs: number;
-  /** When true, publish INBOX reply_to subjects via core NATS instead of JetStream. */
+  /** When true, publish INBOX reply_to subjects via core NATS instead of JetStream. Default: false. */
   fallbackToCoreNatsOnInbox?: boolean;
-  /** Regex (as string) matching INBOX reply_to subjects; used when fallbackToCoreNatsOnInbox is true. */
+  /** Regex (as string) matching INBOX reply_to subjects for core-NATS fallback. Default: '^_?INBOX\\.'. */
   coreNatsFallbackPattern?: string;
 }
 

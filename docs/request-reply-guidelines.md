@@ -170,6 +170,17 @@ For high-throughput scenarios (>100 req/s per service), prefer async patterns.
 
 **Recommendation**: For async request-reply requiring guaranteed delivery, always use `sendAsyncRequestThroughOutbox`. For sync request-reply, the outbox is not needed for the request itself, but use it for any side effects triggered by the response.
 
+### INBOX Subject Fallback
+
+When a requester uses an INBOX `reply_to` (e.g., `nats req` CLI, transient reply patterns), the subject does not match any JetStream stream. Publishing via `ProducerService` (JetStream) then times out waiting for a PubAck, and the inbound message is never acked — causing repeated redelivery.
+
+Enable `fallbackToCoreNatsOnInbox: true` in `RequestReplyConfig` to route INBOX `reply_to` subjects through core NATS `publish()` instead. Only subjects matching `coreNatsFallbackPattern` (default `'^_?INBOX\\.'`) are affected; all other responses continue through JetStream unchanged. This is backward compatible (default `false`).
+
+**When to enable:**
+- Manual testing with `nats req` or other core-NATS requesters.
+- Transient request-reply patterns where the reply subject is an ephemeral INBOX.
+- Hybrid environments where some callers use core NATS and others use JetStream.
+
 ---
 
 ## AI Agent Rules for Naming New Request-Reply Events

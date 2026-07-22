@@ -540,6 +540,21 @@ async onCreditCheckRequested(event: EventEnvelope<CreditCheckRequestedData>): Pr
 }
 ```
 
+### Manual testing with `nats req` (INBOX fallback)
+
+When testing responders manually with the `nats req` CLI (core NATS), the requester sets a `reply_to` INBOX subject (e.g., `_INBOX.abc123`). INBOX subjects do not match any JetStream stream, so `sendResponse()` would normally time out waiting for a PubAck, causing the message to be redelivered repeatedly.
+
+Enable `fallbackToCoreNatsOnInbox: true` in your `RequestReplyConfig` to have `sendResponse()` publish directly via core NATS when the `reply_to` matches the INBOX pattern:
+
+```typescript
+EventsToolkitModule.forRoot({
+  nats: { servers: ['nats://localhost:4222'] },
+  requestReply: { fallbackToCoreNatsOnInbox: true },
+})
+```
+
+This is safe for production use — only subjects matching `coreNatsFallbackPattern` (default `'^_?INBOX\\.'`) are routed through core NATS; all other responses continue through JetStream as before.
+
 ---
 
 ## 9. Combining Request-Reply with the Outbox
@@ -633,6 +648,8 @@ For the `@EmitEvent` / `@OnEvent` options reference (with required `version`, `d
 | Field | Type | Default | Description |
 | ----- | ---- | ------- | ----------- |
 | `defaultTimeoutMs` | `number` | `5000` | Default timeout for `request()` operations |
+| `fallbackToCoreNatsOnInbox` | `boolean` | `false` | When `true`, `sendResponse()` publishes INBOX `reply_to` subjects via core NATS instead of JetStream, avoiding PubAck timeouts on subjects not covered by any stream. |
+| `coreNatsFallbackPattern` | `string` | `'^_?INBOX\\.'` | Regex pattern matching `reply_to` subjects that should use core NATS fallback when `fallbackToCoreNatsOnInbox` is enabled. |
 
 ### Subject Utility Functions
 

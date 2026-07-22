@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.13.0] — 2026-07-22
+
+### Added
+
+- **`RequestReplyConfig.fallbackToCoreNatsOnInbox`** — boolean option (default `false`). When `true`, `RequestReplyService.sendResponse()` detects INBOX subjects in the `reply_to` field and publishes via core NATS `publish()` instead of JetStream, preventing PubAck timeouts and duplicate redelivery caused by INBOX subjects not matching any JetStream stream.
+- **`RequestReplyConfig.coreNatsFallbackPattern`** — string option (default `'^_?INBOX\\.'`). Regex pattern controlling which `reply_to` subjects are routed through core NATS when `fallbackToCoreNatsOnInbox` is enabled. Override to match custom INBOX-like prefixes.
+
+### Notes
+
+- **Backward compatible**: Both options default to off (`false` / built-in pattern). Existing consumers see no behavior change unless they opt in.
+- **Use case**: Manual testing with `nats req` (core NATS CLI) or transient request-reply patterns where the requester sets an INBOX `reply_to` that no JetStream stream covers.
+
 ## [0.12.0] — 2026-07-17
 
 ### Added
