@@ -22,9 +22,13 @@ export function createDeps(
   mockLogConsumed: jest.Mock,
   mockLogError: jest.Mock,
   config: RequestReplyConfig,
+  mockNatsPublish: jest.Mock = jest.fn(),
 ): RequestReplyDeps {
   return {
-    natsConnection: { request: mockNatsRequest } as unknown as RequestReplyDeps['natsConnection'],
+    natsConnection: {
+      request: mockNatsRequest,
+      publish: mockNatsPublish,
+    } as unknown as RequestReplyDeps['natsConnection'],
     producerService: { publish: mockPublish } as unknown as RequestReplyDeps['producerService'],
     logger: {
       logEventEmitted: mockLogEmitted,

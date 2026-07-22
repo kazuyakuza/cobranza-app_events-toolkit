@@ -3,6 +3,7 @@ import { RequestReplyService } from './request-reply.service';
 import { REQUEST_REPLY_DEPS_TOKEN } from './request-reply.types';
 import { RequestReplyException } from '../common/errors/request-reply.exception';
 import { sampleContext, defaultConfig, createDeps, createTestEnvelope } from './__tests__/request-reply-test.utils';
+import type { RequestReplyConfig } from './request-reply.types';
 
 jest.mock('../common/utils/uuid.utils', () => ({
   generateEventId: jest.fn(() => 'evt_mock-request-uuid'),
@@ -20,9 +21,32 @@ describe('sendResponse', () => {
   let mockLogConsumed: jest.Mock;
   let mockLogError: jest.Mock;
   let config: { defaultTimeoutMs: number };
+  let mockNatsPublish: jest.Mock;
+
+  const buildService = async (configOverrides: Partial<RequestReplyConfig>): Promise<RequestReplyService> => {
+    const module = await Test.createTestingModule({
+      providers: [
+        {
+          provide: REQUEST_REPLY_DEPS_TOKEN,
+          useValue: createDeps(
+            mockNatsRequest,
+            mockPublish,
+            mockLogEmitted,
+            mockLogConsumed,
+            mockLogError,
+            { ...defaultConfig, ...configOverrides },
+            mockNatsPublish,
+          ),
+        },
+        RequestReplyService,
+      ],
+    }).compile();
+    return module.get(RequestReplyService);
+  };
 
   beforeEach(async () => {
     mockNatsRequest = jest.fn();
+    mockNatsPublish = jest.fn();
     mockPublish = jest.fn().mockResolvedValue(undefined);
     mockLogEmitted = jest.fn();
     mockLogConsumed = jest.fn();
@@ -78,5 +102,67 @@ describe('sendResponse', () => {
     await expect(service.sendResponse(sampleContext.correlationId, eventWithoutReply)).rejects.toThrow(
       'Cannot send response: event missing reply_to field',
     );
+  });
+
+  it('publishes INBOX reply_to via core NATS when fallback enabled', async () => {
+    const serviceWithFallback = await buildService({ fallbackToCoreNatsOnInbox: true });
+    const responseEvent = createTestEnvelope({
+      id: 'evt_response-101',
+      reply_to: '_INBOX.manual.company.create.abc',
+    });
+
+    await serviceWithFallback.sendResponse(sampleContext.correlationId, responseEvent);
+
+    expect(mockNatsPublish).toHaveBeenCalledTimes(1);
+    const [subject, payload] = mockNatsPublish.mock.calls[0];
+    expect(subject).toBe('_INBOX.manual.company.create.abc');
+    expect(payload).toBeInstanceOf(Uint8Array);
+    expect(mockPublish).not.toHaveBeenCalled();
+  });
+
+  it('logs the core-NATS fallback emission once', async () => {
+    const serviceWithFallback = await buildService({ fallbackToCoreNatsOnInbox: true });
+    const responseEvent = createTestEnvelope({
+      id: 'evt_response-102',
+      reply_to: 'INBOX.reply.subject',
+    });
+
+    await serviceWithFallback.sendResponse(sampleContext.correlationId, responseEvent);
+
+    expect(mockLogEmitted).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses JetStream publish for non-INBOX reply_to even when fallback enabled', async () => {
+    const serviceWithFallback = await buildService({ fallbackToCoreNatsOnInbox: true });
+    const responseEvent = createTestEnvelope({
+      id: 'evt_response-103',
+      reply_to: 'company.abc.response.v1',
+    });
+
+    await serviceWithFallback.sendResponse(sampleContext.correlationId, responseEvent);
+
+    expect(mockPublish).toHaveBeenCalledTimes(1);
+    expect(mockNatsPublish).not.toHaveBeenCalled();
+  });
+
+  it('respects a custom coreNatsFallbackPattern', async () => {
+    const serviceCustom = await buildService({
+      fallbackToCoreNatsOnInbox: true,
+      coreNatsFallbackPattern: '^custom\\.',
+    });
+    const matched = createTestEnvelope({ id: 'evt_response-104', reply_to: 'custom.foo' });
+    const unmatched = createTestEnvelope({ id: 'evt_response-105', reply_to: '_INBOX.foo' });
+
+    await serviceCustom.sendResponse(sampleContext.correlationId, matched);
+    expect(mockNatsPublish).toHaveBeenCalledTimes(1);
+    expect(mockPublish).not.toHaveBeenCalled();
+
+    await serviceCustom.sendResponse(sampleContext.correlationId, unmatched);
+    expect(mockPublish).toHaveBeenCalledTimes(1);
+    expect(mockNatsPublish).toHaveBeenCalledTimes(1);
+  });
+
+  it('fails fast when the configured pattern is an invalid regex', async () => {
+    await expect(buildService({ fallbackToCoreNatsOnInbox: true, coreNatsFallbackPattern: '(' })).rejects.toThrow();
   });
 });

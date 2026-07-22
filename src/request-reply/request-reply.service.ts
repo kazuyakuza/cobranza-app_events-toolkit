@@ -15,6 +15,7 @@ import {
   SendRequestOptions,
   SendRequestResult,
   BuildResponseEnvelopeOptions,
+  DEFAULT_INBOX_PATTERN,
 } from './request-reply.types';
 import {
   buildEnvelope,
@@ -40,12 +41,14 @@ export class RequestReplyService {
   private readonly producerService: ProducerService;
   private readonly logger: EventLoggerService;
   private readonly config: RequestReplyConfig;
+  private readonly inboxRegex: RegExp;
 
   constructor(@Inject(REQUEST_REPLY_DEPS_TOKEN) deps: RequestReplyDeps) {
     this.natsConnection = deps.natsConnection;
     this.producerService = deps.producerService;
     this.logger = deps.logger;
     this.config = deps.config;
+    this.inboxRegex = new RegExp(this.config.coreNatsFallbackPattern ?? DEFAULT_INBOX_PATTERN);
   }
 
   /**
@@ -81,11 +84,33 @@ export class RequestReplyService {
 
   /**
    * Publishes a reply event to the subject stored in `reply_to`.
+   *
+   * When `fallbackToCoreNatsOnInbox` is enabled and `reply_to` matches the INBOX
+   * pattern, publishes via core NATS (no PubAck) instead of JetStream.
    */
   async sendResponse(correlationId: string, responseEvent: AnyEventEnvelope<unknown>): Promise<void> {
     const replyTo = responseEvent.reply_to;
     ensureReplyTo(replyTo, correlationId);
+
+    if (this.shouldUseCoreNats(replyTo)) {
+      this.publishToInbox(replyTo, responseEvent);
+      return;
+    }
+
     await this.producerService.publish(replyTo, responseEvent);
+  }
+
+  private shouldUseCoreNats(replyTo: string): boolean {
+    if (!this.config.fallbackToCoreNatsOnInbox) {
+      return false;
+    }
+    return this.inboxRegex.test(replyTo);
+  }
+
+  private publishToInbox(replyTo: string, responseEvent: AnyEventEnvelope<unknown>): void {
+    const payload = encodeEvent(responseEvent);
+    this.natsConnection.publish(replyTo, payload);
+    logRequestSent(this.logger, replyTo, responseEvent);
   }
 
   /** Returns true when the event carries a `reply_to` subject. */

@@ -14,16 +14,26 @@ export const REQUEST_REPLY_DEPS_TOKEN = 'RequestReplyDeps';
 /** Default timeout in milliseconds for request-reply operations. */
 const DEFAULT_TIMEOUT_MS = 5000;
 
+/** Default INBOX subject prefix pattern for core-NATS fallback. */
+const DEFAULT_INBOX_PATTERN = '^_?INBOX\\.';
+export { DEFAULT_INBOX_PATTERN };
+
 /** Configuration for RequestReplyService defaults. */
 export interface RequestReplyConfig {
   /** Default timeout in milliseconds for request operations. */
   defaultTimeoutMs: number;
+  /** When true, publish INBOX reply_to subjects via core NATS instead of JetStream. */
+  fallbackToCoreNatsOnInbox?: boolean;
+  /** Regex (as string) matching INBOX reply_to subjects; used when fallbackToCoreNatsOnInbox is true. */
+  coreNatsFallbackPattern?: string;
 }
 
 /** Resolved configuration with defaults applied. */
 export function resolveRequestReplyConfig(partial?: Partial<RequestReplyConfig>): RequestReplyConfig {
   return {
     defaultTimeoutMs: partial?.defaultTimeoutMs ?? DEFAULT_TIMEOUT_MS,
+    fallbackToCoreNatsOnInbox: partial?.fallbackToCoreNatsOnInbox ?? false,
+    coreNatsFallbackPattern: partial?.coreNatsFallbackPattern ?? DEFAULT_INBOX_PATTERN,
   };
 }
 
