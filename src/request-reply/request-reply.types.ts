@@ -15,8 +15,7 @@ export const REQUEST_REPLY_DEPS_TOKEN = 'RequestReplyDeps';
 const DEFAULT_TIMEOUT_MS = 5000;
 
 /** Default INBOX subject prefix pattern for core-NATS fallback. */
-const DEFAULT_INBOX_PATTERN = '^_?INBOX\\.';
-export { DEFAULT_INBOX_PATTERN };
+export const DEFAULT_INBOX_PATTERN = '^_?INBOX\\.';
 
 /** Configuration for RequestReplyService defaults. */
 export interface RequestReplyConfig {

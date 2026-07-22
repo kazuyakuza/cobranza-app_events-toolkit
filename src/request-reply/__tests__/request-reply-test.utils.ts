@@ -15,15 +15,27 @@ export const sampleContext: EventContext = {
 
 export const defaultConfig: RequestReplyConfig = { defaultTimeoutMs: 5000 };
 
-export function createDeps(
-  mockNatsRequest: jest.Mock,
-  mockPublish: jest.Mock,
-  mockLogEmitted: jest.Mock,
-  mockLogConsumed: jest.Mock,
-  mockLogError: jest.Mock,
-  config: RequestReplyConfig,
-  mockNatsPublish: jest.Mock = jest.fn(),
-): RequestReplyDeps {
+export interface CreateDepsOptions {
+  mockNatsRequest?: jest.Mock;
+  mockNatsPublish?: jest.Mock;
+  mockPublish: jest.Mock;
+  mockLogEmitted: jest.Mock;
+  mockLogConsumed: jest.Mock;
+  mockLogError: jest.Mock;
+  config: RequestReplyConfig;
+}
+
+export function createDeps(options: CreateDepsOptions): RequestReplyDeps {
+  const {
+    mockNatsRequest = jest.fn(),
+    mockNatsPublish = jest.fn(),
+    mockPublish,
+    mockLogEmitted,
+    mockLogConsumed,
+    mockLogError,
+    config,
+  } = options;
+
   return {
     natsConnection: {
       request: mockNatsRequest,

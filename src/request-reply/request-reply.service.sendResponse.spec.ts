@@ -15,12 +15,11 @@ jest.mock('../common/utils/date.utils', () => ({
 
 describe('sendResponse', () => {
   let service: RequestReplyService;
-  let mockNatsRequest: jest.Mock;
   let mockPublish: jest.Mock;
   let mockLogEmitted: jest.Mock;
   let mockLogConsumed: jest.Mock;
   let mockLogError: jest.Mock;
-  let config: { defaultTimeoutMs: number };
+  let config: RequestReplyConfig;
   let mockNatsPublish: jest.Mock;
 
   const buildService = async (configOverrides: Partial<RequestReplyConfig>): Promise<RequestReplyService> => {
@@ -28,15 +27,14 @@ describe('sendResponse', () => {
       providers: [
         {
           provide: REQUEST_REPLY_DEPS_TOKEN,
-          useValue: createDeps(
-            mockNatsRequest,
+          useValue: createDeps({
             mockPublish,
             mockLogEmitted,
             mockLogConsumed,
             mockLogError,
-            { ...defaultConfig, ...configOverrides },
+            config: { ...defaultConfig, ...configOverrides },
             mockNatsPublish,
-          ),
+          }),
         },
         RequestReplyService,
       ],
@@ -45,7 +43,6 @@ describe('sendResponse', () => {
   };
 
   beforeEach(async () => {
-    mockNatsRequest = jest.fn();
     mockNatsPublish = jest.fn();
     mockPublish = jest.fn().mockResolvedValue(undefined);
     mockLogEmitted = jest.fn();
@@ -57,7 +54,14 @@ describe('sendResponse', () => {
       providers: [
         {
           provide: REQUEST_REPLY_DEPS_TOKEN,
-          useValue: createDeps(mockNatsRequest, mockPublish, mockLogEmitted, mockLogConsumed, mockLogError, config),
+          useValue: createDeps({
+            mockPublish,
+            mockLogEmitted,
+            mockLogConsumed,
+            mockLogError,
+            config,
+            mockNatsPublish,
+          }),
         },
         RequestReplyService,
       ],
@@ -104,7 +108,7 @@ describe('sendResponse', () => {
     );
   });
 
-  it('publishes INBOX reply_to via core NATS when fallback enabled', async () => {
+  it('publishes INBOX reply_to via core NATS and logs emission when fallback enabled', async () => {
     const serviceWithFallback = await buildService({ fallbackToCoreNatsOnInbox: true });
     const responseEvent = createTestEnvelope({
       id: 'evt_response-101',
@@ -118,17 +122,6 @@ describe('sendResponse', () => {
     expect(subject).toBe('_INBOX.manual.company.create.abc');
     expect(payload).toBeInstanceOf(Uint8Array);
     expect(mockPublish).not.toHaveBeenCalled();
-  });
-
-  it('logs the core-NATS fallback emission once', async () => {
-    const serviceWithFallback = await buildService({ fallbackToCoreNatsOnInbox: true });
-    const responseEvent = createTestEnvelope({
-      id: 'evt_response-102',
-      reply_to: 'INBOX.reply.subject',
-    });
-
-    await serviceWithFallback.sendResponse(sampleContext.correlationId, responseEvent);
-
     expect(mockLogEmitted).toHaveBeenCalledTimes(1);
   });
 

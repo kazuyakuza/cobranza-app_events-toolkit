@@ -15,14 +15,13 @@ jest.mock('../common/utils/date.utils', () => ({
 
 describe('buildResponseEnvelope', () => {
   let service: RequestReplyService;
-  let mockNatsRequest: jest.Mock;
+
   let mockPublish: jest.Mock;
   let mockLogEmitted: jest.Mock;
   let mockLogConsumed: jest.Mock;
   let mockLogError: jest.Mock;
 
   beforeEach(async () => {
-    mockNatsRequest = jest.fn();
     mockPublish = jest.fn().mockResolvedValue(undefined);
     mockLogEmitted = jest.fn();
     mockLogConsumed = jest.fn();
@@ -32,14 +31,7 @@ describe('buildResponseEnvelope', () => {
       providers: [
         {
           provide: REQUEST_REPLY_DEPS_TOKEN,
-          useValue: createDeps(
-            mockNatsRequest,
-            mockPublish,
-            mockLogEmitted,
-            mockLogConsumed,
-            mockLogError,
-            defaultConfig,
-          ),
+          useValue: createDeps({ mockPublish, mockLogEmitted, mockLogConsumed, mockLogError, config: defaultConfig }),
         },
         RequestReplyService,
       ],

@@ -40,7 +40,7 @@ describe('sendRequest', () => {
       providers: [
         {
           provide: REQUEST_REPLY_DEPS_TOKEN,
-          useValue: createDeps(mockNatsRequest, mockPublish, mockLogEmitted, mockLogConsumed, mockLogError, config),
+          useValue: createDeps({ mockNatsRequest, mockPublish, mockLogEmitted, mockLogConsumed, mockLogError, config }),
         },
         RequestReplyService,
       ],
