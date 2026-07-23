@@ -29,9 +29,7 @@ export function createOnEventExplorerDepsProvider(): Provider {
   return {
     provide: ON_EVENT_EXPLORER_DEPS_TOKEN,
     useFactory: (consumerDiscoveryPair: ConsumerDiscoveryPair, idempotencyService?: IdempotencyService) => ({
-      discovery: consumerDiscoveryPair.discovery,
-      reflector: consumerDiscoveryPair.reflector,
-      consumerService: consumerDiscoveryPair.consumerService,
+      ...consumerDiscoveryPair,
       idempotencyService,
     }),
     inject: [CONSUMER_DISCOVERY_PAIR_TOKEN, { token: IdempotencyService, optional: true }],

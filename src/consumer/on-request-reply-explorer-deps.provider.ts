@@ -2,10 +2,7 @@ import { Provider } from '@nestjs/common';
 import { IdempotencyService } from '../idempotency/idempotency.service';
 import { RequestReplyConsumerService } from './request-reply-consumer.service';
 import { ON_REQUEST_REPLY_EXPLORER_DEPS_TOKEN } from './decorators/on-request-reply-explorer-deps.interface';
-import {
-  DISCOVERY_REFLECTOR_PAIR,
-  DiscoveryReflectorPair,
-} from './consumer.module';
+import { DISCOVERY_REFLECTOR_PAIR, DiscoveryReflectorPair } from './consumer.module';
 
 export const REQUEST_REPLY_DISCOVERY_PAIR_TOKEN = 'REQUEST_REPLY_DISCOVERY_PAIR';
 /** Pair that extends DiscoveryReflectorPair with RequestReplyConsumerService for request-reply explorer deps. */
@@ -15,8 +12,7 @@ export interface RequestReplyDiscoveryPair extends DiscoveryReflectorPair {
 
 /**
  * Intermediate provider that merges DiscoveryReflectorPair with
- * RequestReplyConsumerService into a single RequestReplyDiscoveryPair token,
- * keeping the explorer deps factory within the max-2-params constraint.
+ * RequestReplyConsumerService into a single RequestReplyDiscoveryPair token.
  */
 export function createRequestReplyDiscoveryPairProvider(): Provider {
   return {
@@ -38,9 +34,7 @@ export function createRequestReplyExplorerDepsProvider(): Provider {
   return {
     provide: ON_REQUEST_REPLY_EXPLORER_DEPS_TOKEN,
     useFactory: (requestReplyDiscoveryPair: RequestReplyDiscoveryPair, idempotencyService?: IdempotencyService) => ({
-      discovery: requestReplyDiscoveryPair.discovery,
-      reflector: requestReplyDiscoveryPair.reflector,
-      requestReplyConsumerService: requestReplyDiscoveryPair.requestReplyConsumerService,
+      ...requestReplyDiscoveryPair,
       idempotencyService,
     }),
     inject: [REQUEST_REPLY_DISCOVERY_PAIR_TOKEN, { token: IdempotencyService, optional: true }],

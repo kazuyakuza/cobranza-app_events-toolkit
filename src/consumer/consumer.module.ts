@@ -1,6 +1,5 @@
 import { DynamicModule, Module, Type, ForwardReference } from '@nestjs/common';
-import { DiscoveryModule } from '@nestjs/core';
-import { DiscoveryService, Reflector } from '@nestjs/core';
+import { DiscoveryModule, DiscoveryService, Reflector } from '@nestjs/core';
 import { JetStreamClient, NatsConnection, StreamConfig } from 'nats';
 import { ModuleConsumerOptions } from './module-consumer-options.interface';
 import { EventLoggerService } from '../logging/event-logger.service';
