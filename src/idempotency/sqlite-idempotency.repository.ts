@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import { IdempotencyRepository } from './idempotency.types';
 import { nowIso } from '../common/utils/date.utils';
+import { computeExpiry } from './compute-expiry.util';
 
 const CREATE_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS idempotency_keys (
@@ -49,16 +50,12 @@ export class SqliteIdempotencyRepository implements IdempotencyRepository {
 
   /** @inheritdoc */
   async markAsProcessed(key: string, ttlSeconds?: number): Promise<void> {
-    const expiresAt = ttlSeconds == null ? null : this.computeExpiry(ttlSeconds);
+    const expiresAt = ttlSeconds == null ? null : computeExpiry(ttlSeconds);
     this.database.prepare(INSERT_SQL).run(key, nowIso(), expiresAt);
   }
 
   /** @inheritdoc */
   async clearExpired(): Promise<void> {
     this.database.prepare(DELETE_EXPIRED_SQL).run(nowIso());
-  }
-
-  private computeExpiry(ttlSeconds: number): string {
-    return new Date(Date.now() + ttlSeconds * 1000).toISOString();
   }
 }

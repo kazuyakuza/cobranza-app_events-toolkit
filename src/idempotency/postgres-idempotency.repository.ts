@@ -1,6 +1,7 @@
 import { IdempotencyRepository } from './idempotency.types';
 import { EntityManagerLike } from '../outbox/outbox.types';
 import { nowIso } from '../common/utils/date.utils';
+import { computeExpiry } from './compute-expiry.util';
 
 const CREATE_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS idempotency_keys (
@@ -49,7 +50,7 @@ export class PostgresIdempotencyRepository implements IdempotencyRepository {
   /** @inheritdoc */
   async markAsProcessed(key: string, ttlSeconds?: number): Promise<void> {
     await this.ensureTable();
-    const expiresAt = ttlSeconds == null ? null : this.computeExpiry(ttlSeconds);
+    const expiresAt = ttlSeconds == null ? null : computeExpiry(ttlSeconds);
     await this.entityManager.query(INSERT_SQL, [key, nowIso(), expiresAt]);
   }
 
@@ -65,9 +66,5 @@ export class PostgresIdempotencyRepository implements IdempotencyRepository {
     }
     await this.entityManager.query(CREATE_TABLE_SQL);
     this.tableEnsured = true;
-  }
-
-  private computeExpiry(ttlSeconds: number): string {
-    return new Date(Date.now() + ttlSeconds * 1000).toISOString();
   }
 }

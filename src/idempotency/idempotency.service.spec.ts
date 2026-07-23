@@ -1,4 +1,6 @@
 import { IdempotencyService } from './idempotency.service';
+import { IdempotencyRepository } from './idempotency.types';
+import { EventLoggerService } from '../logging/event-logger.service';
 import { IDEMPOTENCY_SERVICE_DEPS_TOKEN } from './idempotency-service-deps.interface';
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { ActorType } from '../common/envelope/actor-type.enum';
@@ -33,8 +35,8 @@ describe('IdempotencyService', () => {
     mockRepository = new MockIdempotencyRepository();
     mockLogger = { logEventConsumed: jest.fn() };
     service = new IdempotencyService({
-      repository: mockRepository as never,
-      logger: mockLogger as never,
+      repository: mockRepository as unknown as IdempotencyRepository,
+      logger: mockLogger as unknown as EventLoggerService,
       options: deps,
     });
     return service;
@@ -80,14 +82,6 @@ describe('IdempotencyService', () => {
       await service.markAsProcessed(event);
       expect(mockRepository.markAsProcessed).toHaveBeenCalledWith('evt_005:corr_005', undefined);
     });
-
-    it('logs the event as consumed after marking', async () => {
-      const event = createTestEvent('evt_006', 'corr_006');
-      await service.markAsProcessed(event);
-      expect(mockLogger.logEventConsumed).toHaveBeenCalledWith(
-        expect.objectContaining({ eventId: 'evt_006' }),
-      );
-    });
   });
 
   describe('executeIfNotProcessed', () => {
@@ -95,7 +89,7 @@ describe('IdempotencyService', () => {
       mockRepository.isProcessed.mockResolvedValue(false);
       const handler = jest.fn().mockResolvedValue('result');
       const event = createTestEvent('evt_007', 'corr_007');
-      const result = await service.executeIfNotProcessed(event, handler);
+      const result = await service.executeIfNotProcessed({ event, handler });
 
       expect(result).toBe('result');
       expect(handler).toHaveBeenCalledTimes(1);
@@ -106,7 +100,7 @@ describe('IdempotencyService', () => {
       mockRepository.isProcessed.mockResolvedValue(true);
       const handler = jest.fn();
       const event = createTestEvent('evt_008', 'corr_008');
-      const result = await service.executeIfNotProcessed(event, handler);
+      const result = await service.executeIfNotProcessed({ event, handler });
 
       expect(result).toBeUndefined();
       expect(handler).not.toHaveBeenCalled();
@@ -118,8 +112,16 @@ describe('IdempotencyService', () => {
       const handler = jest.fn().mockRejectedValue(new Error('handler error'));
       const event = createTestEvent('evt_009', 'corr_009');
 
-      await expect(service.executeIfNotProcessed(event, handler)).rejects.toThrow('handler error');
+      await expect(service.executeIfNotProcessed({ event, handler })).rejects.toThrow('handler error');
       expect(mockRepository.markAsProcessed).not.toHaveBeenCalled();
+    });
+
+    it('forwards explicit ttlSeconds to markAsProcessed', async () => {
+      mockRepository.isProcessed.mockResolvedValue(false);
+      const handler = jest.fn().mockResolvedValue('result');
+      const event = createTestEvent('evt_010', 'corr_010');
+      await service.executeIfNotProcessed({ event, handler, ttlSeconds: 120 });
+      expect(mockRepository.markAsProcessed).toHaveBeenCalledWith('evt_010:corr_010', 120);
     });
   });
 });

@@ -14,24 +14,41 @@ import { PostgresIdempotencyRepository } from './postgres-idempotency.repository
 import { MemoryIdempotencyRepository } from './memory-idempotency.repository';
 
 const IDEMPOTENCY_MODULE_OPTIONS_TOKEN = 'IDEMPOTENCY_MODULE_OPTIONS';
-const IDEMPOTENCY_SERVICE_BASE_DEPS_PAIR_TOKEN = 'IDEMPOTENCY_SERVICE_BASE_DEPS_PAIR';
-const IDEMPOTENCY_SERVICE_CONFIG_PAIR_TOKEN = 'IDEMPOTENCY_SERVICE_CONFIG_PAIR';
-
-type IdempotencyServiceBaseDepsPair = Pick<IdempotencyServiceDeps, 'logger'>;
-type IdempotencyServiceConfigPair = Pick<IdempotencyServiceDeps, 'repository' | 'options'>;
 
 function resolveRepository(options: IdempotencyModuleOptions): IdempotencyRepository {
   if (options.type === 'postgres') {
-    if (!options.postgres?.entityManager) {
-      throw new Error('IdempotencyModule with type "postgres" requires options.postgres.entityManager');
-    }
-    return new PostgresIdempotencyRepository(options.postgres.entityManager);
+    return resolvePostgresRepository(options.postgres);
   }
   if (options.type === 'memory') {
     return new MemoryIdempotencyRepository();
   }
   const dbPath = options.sqlite?.dbPath ?? ':memory:';
   return new SqliteIdempotencyRepository(dbPath);
+}
+
+function resolvePostgresRepository(
+  postgres?: IdempotencyModuleOptions['postgres'],
+): IdempotencyRepository {
+  if (!postgres?.entityManager) {
+    throw new Error('IdempotencyModule with type "postgres" requires options.postgres.entityManager');
+  }
+  return new PostgresIdempotencyRepository(postgres.entityManager);
+}
+
+function buildDepsProvider(): Provider {
+  return {
+    provide: IDEMPOTENCY_SERVICE_DEPS_TOKEN,
+    useFactory: (
+      repository: IdempotencyRepository,
+      serviceOpts: IdempotencyServiceOptions,
+      logger: EventLoggerService,
+    ): IdempotencyServiceDeps => ({
+      repository,
+      options: serviceOpts,
+      logger,
+    }),
+    inject: [IDEMPOTENCY_REPOSITORY_TOKEN, IDEMPOTENCY_SERVICE_OPTIONS_TOKEN, EventLoggerService],
+  };
 }
 
 /**
@@ -61,47 +78,13 @@ export class IdempotencyModule {
       useValue: options.serviceOptions ?? {},
     };
 
-    const baseDepsPairProvider: Provider = {
-      provide: IDEMPOTENCY_SERVICE_BASE_DEPS_PAIR_TOKEN,
-      useFactory: (logger: EventLoggerService): IdempotencyServiceBaseDepsPair => ({
-        logger,
-      }),
-      inject: [EventLoggerService],
-    };
-
-    const configPairProvider: Provider = {
-      provide: IDEMPOTENCY_SERVICE_CONFIG_PAIR_TOKEN,
-      useFactory: (
-        repository: IdempotencyRepository,
-        serviceOpts: IdempotencyServiceOptions,
-      ): IdempotencyServiceConfigPair => ({
-        repository,
-        options: serviceOpts,
-      }),
-      inject: [IDEMPOTENCY_REPOSITORY_TOKEN, IDEMPOTENCY_SERVICE_OPTIONS_TOKEN],
-    };
-
-    const depsProvider: Provider = {
-      provide: IDEMPOTENCY_SERVICE_DEPS_TOKEN,
-      useFactory: (
-        base: IdempotencyServiceBaseDepsPair,
-        config: IdempotencyServiceConfigPair,
-      ): IdempotencyServiceDeps => ({
-        ...base,
-        ...config,
-      }),
-      inject: [IDEMPOTENCY_SERVICE_BASE_DEPS_PAIR_TOKEN, IDEMPOTENCY_SERVICE_CONFIG_PAIR_TOKEN],
-    };
-
     return {
       module: IdempotencyModule,
       global: true,
       providers: [
         { provide: IDEMPOTENCY_REPOSITORY_TOKEN, useValue: repository },
         serviceOptionsProvider,
-        baseDepsPairProvider,
-        configPairProvider,
-        depsProvider,
+        buildDepsProvider(),
         IdempotencyService,
       ],
       exports: [IDEMPOTENCY_REPOSITORY_TOKEN, IdempotencyService],
@@ -138,38 +121,6 @@ export class IdempotencyModule {
       inject: [IDEMPOTENCY_MODULE_OPTIONS_TOKEN],
     };
 
-    const baseDepsPairProvider: Provider = {
-      provide: IDEMPOTENCY_SERVICE_BASE_DEPS_PAIR_TOKEN,
-      useFactory: (logger: EventLoggerService): IdempotencyServiceBaseDepsPair => ({
-        logger,
-      }),
-      inject: [EventLoggerService],
-    };
-
-    const configPairProvider: Provider = {
-      provide: IDEMPOTENCY_SERVICE_CONFIG_PAIR_TOKEN,
-      useFactory: (
-        repository: IdempotencyRepository,
-        serviceOpts: IdempotencyServiceOptions,
-      ): IdempotencyServiceConfigPair => ({
-        repository,
-        options: serviceOpts,
-      }),
-      inject: [IDEMPOTENCY_REPOSITORY_TOKEN, IDEMPOTENCY_SERVICE_OPTIONS_TOKEN],
-    };
-
-    const depsProvider: Provider = {
-      provide: IDEMPOTENCY_SERVICE_DEPS_TOKEN,
-      useFactory: (
-        base: IdempotencyServiceBaseDepsPair,
-        config: IdempotencyServiceConfigPair,
-      ): IdempotencyServiceDeps => ({
-        ...base,
-        ...config,
-      }),
-      inject: [IDEMPOTENCY_SERVICE_BASE_DEPS_PAIR_TOKEN, IDEMPOTENCY_SERVICE_CONFIG_PAIR_TOKEN],
-    };
-
     return {
       module: IdempotencyModule,
       global: true,
@@ -178,9 +129,7 @@ export class IdempotencyModule {
         moduleOptionsProvider,
         repositoryProvider,
         serviceOptionsProvider,
-        baseDepsPairProvider,
-        configPairProvider,
-        depsProvider,
+        buildDepsProvider(),
         IdempotencyService,
       ],
       exports: [IDEMPOTENCY_REPOSITORY_TOKEN, IdempotencyService],

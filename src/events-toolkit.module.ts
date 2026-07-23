@@ -1,17 +1,15 @@
 import { DynamicModule, ForwardReference, Module, OnModuleDestroy, Provider, Type } from '@nestjs/common';
-import { JetStreamClient, NatsConnection } from 'nats';
 import { ProducerModule } from './producer/producer.module';
 import { JETSTREAM_TOKEN } from './producer/producer.constants';
 import { ConsumerModule, ConsumerModuleOptions } from './consumer/consumer.module';
 import { OutboxModule } from './outbox/outbox.module';
-import { OutboxModuleOptions } from './outbox/outbox.types';
 import { IdempotencyModule } from './idempotency/idempotency.module';
-import { IdempotencyModuleOptions } from './idempotency/idempotency.types';
 import { EventLoggerService } from './logging/event-logger.service';
 import { DiscoveryModule } from './discovery/discovery.module';
 import { RequestReplyService } from './request-reply/request-reply.service';
-import { NATS_CONNECTION_TOKEN, REQUEST_REPLY_DEPS_TOKEN } from './request-reply/request-reply.types';
+import { REQUEST_REPLY_DEPS_TOKEN } from './request-reply/request-reply.types';
 import { EVENTS_TOOLKIT_OPTIONS, ResolvedNats } from './events-toolkit-module.tokens';
+import { NATS_CONNECTION_TOKEN } from './request-reply/request-reply.types';
 import {
   resolveConnection,
   buildOutboxModuleOptions,
@@ -28,6 +26,13 @@ import {
   buildAsyncLoggingProvider,
   buildAsyncRequestReplyDepsProvider,
 } from './events-toolkit-module.providers';
+import {
+  buildConsumerAsyncImport,
+  buildOutboxAsyncImport,
+  buildIdempotencyAsyncImport,
+  buildDiscoveryAsyncImport,
+  isIdempotencyEnabled,
+} from './events-toolkit-module.imports';
 import { EventsToolkitModuleOptions, EventsToolkitModuleAsyncOptions } from './events-toolkit-options.interface';
 
 type ModuleImport = Type<unknown> | DynamicModule | Promise<DynamicModule> | ForwardReference<unknown>;
@@ -121,7 +126,7 @@ function buildSyncImports(options: EventsToolkitModuleOptions, resolved: Resolve
   if (options.outbox) {
     imports.push(OutboxModule.forRoot(buildOutboxModuleOptions(options.outbox)));
   }
-  if (options.idempotency && options.idempotency.enabled !== false) {
+  if (isIdempotencyEnabled(options.idempotency)) {
     imports.push(IdempotencyModule.forRoot(buildIdempotencyModuleOptions(options.idempotency)));
   }
   if (options.discovery?.enabled !== false) {
@@ -151,57 +156,4 @@ function buildAsyncImports(asyncOptions: EventsToolkitModuleAsyncOptions): Modul
     buildDiscoveryAsyncImport(),
     ...(asyncOptions.imports ?? []),
   ];
-}
-
-function buildConsumerAsyncImport(): DynamicModule {
-  return ConsumerModule.forRootAsync({
-    useFactory: async (...args: unknown[]): Promise<ConsumerModuleOptions> => {
-      const jetStream = args[0] as JetStreamClient;
-      const opts = args[1] as EventsToolkitModuleOptions;
-      const connection = args[2] as NatsConnection;
-      return {
-        jetStream,
-        connection,
-        dlqSubjectBuilder: opts.consumer?.dlqSubjectBuilder,
-        autoCreateStreams: opts.consumer?.autoCreateStreams,
-        streamConfig: opts.consumer?.streamConfig,
-        moduleConsumerOpts: opts.consumer,
-      };
-    },
-    inject: [JETSTREAM_TOKEN, EVENTS_TOOLKIT_OPTIONS, NATS_CONNECTION_TOKEN],
-  });
-}
-
-function buildOutboxAsyncImport(): DynamicModule {
-  return OutboxModule.forRootAsync({
-    useFactory: async (...args: unknown[]): Promise<OutboxModuleOptions> => {
-      const opts = args[0] as EventsToolkitModuleOptions;
-      const outbox = opts.outbox ?? { type: 'sqlite' as const, sqlitePath: ':memory:' };
-      return buildOutboxModuleOptions(outbox);
-    },
-    inject: [EVENTS_TOOLKIT_OPTIONS],
-  });
-}
-
-function buildIdempotencyAsyncImport(): DynamicModule {
-  return IdempotencyModule.forRootAsync({
-    useFactory: async (...args: unknown[]): Promise<IdempotencyModuleOptions> => {
-      const opts = args[0] as EventsToolkitModuleOptions;
-      if (!opts.idempotency || opts.idempotency.enabled === false) {
-        return { type: 'memory' };
-      }
-      return buildIdempotencyModuleOptions(opts.idempotency);
-    },
-    inject: [EVENTS_TOOLKIT_OPTIONS],
-  });
-}
-
-function buildDiscoveryAsyncImport(): DynamicModule {
-  return DiscoveryModule.forRootAsync({
-    useFactory: (...args: unknown[]) => {
-      const opts = args[0] as EventsToolkitModuleOptions;
-      return opts.discovery ?? {};
-    },
-    inject: [EVENTS_TOOLKIT_OPTIONS],
-  });
 }

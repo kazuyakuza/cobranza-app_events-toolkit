@@ -1,7 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { AnyEventEnvelope } from '../common/envelope/envelope-types';
+import type { AnyEventEnvelope } from '../common/envelope/envelope-types';
 import { buildIdempotencyKey } from './build-idempotency-key.util';
 import { IDEMPOTENCY_SERVICE_DEPS_TOKEN, IdempotencyServiceDeps } from './idempotency-service-deps.interface';
+import { ExecuteIfNotProcessedParams } from './execute-if-not-processed-params.interface';
 
 /**
  * Central service for idempotency checks and deduplication.
@@ -15,20 +16,14 @@ import { IDEMPOTENCY_SERVICE_DEPS_TOKEN, IdempotencyServiceDeps } from './idempo
  */
 @Injectable()
 export class IdempotencyService {
-  private readonly repository: IdempotencyServiceDeps['repository'];
-  private readonly logger: IdempotencyServiceDeps['logger'];
-  private readonly defaultTtlSeconds: number | undefined;
-
-  constructor(@Inject(IDEMPOTENCY_SERVICE_DEPS_TOKEN) deps: IdempotencyServiceDeps) {
-    this.repository = deps.repository;
-    this.logger = deps.logger;
-    this.defaultTtlSeconds = deps.options?.defaultTtlSeconds;
-  }
+  constructor(
+    @Inject(IDEMPOTENCY_SERVICE_DEPS_TOKEN) private readonly deps: IdempotencyServiceDeps,
+  ) {}
 
   /** Returns true when the event has already been processed (key exists and has not expired). */
   async isDuplicate(event: AnyEventEnvelope<unknown>): Promise<boolean> {
     const key = buildIdempotencyKey(event);
-    return this.repository.isProcessed(key);
+    return this.deps.repository.isProcessed(key);
   }
 
   /**
@@ -40,8 +35,7 @@ export class IdempotencyService {
   async markAsProcessed(event: AnyEventEnvelope<unknown>, ttlSeconds?: number): Promise<void> {
     const key = buildIdempotencyKey(event);
     const resolvedTtl = this.resolveTtl(ttlSeconds);
-    await this.repository.markAsProcessed(key, resolvedTtl);
-    this.logger.logEventConsumed({ eventId: event.id, eventType: event.type, subject: '' });
+    await this.deps.repository.markAsProcessed(key, resolvedTtl);
   }
 
   /**
@@ -50,20 +44,16 @@ export class IdempotencyService {
    *
    * @returns The handler result when executed, or `undefined` when the event is a duplicate.
    */
-  async executeIfNotProcessed<T>(
-    event: AnyEventEnvelope<unknown>,
-    handler: () => Promise<T>,
-    ttlSeconds?: number,
-  ): Promise<T | undefined> {
-    if (await this.isDuplicate(event)) {
+  async executeIfNotProcessed<T>(params: ExecuteIfNotProcessedParams<T>): Promise<T | undefined> {
+    if (await this.isDuplicate(params.event)) {
       return undefined;
     }
-    const result = await handler();
-    await this.markAsProcessed(event, ttlSeconds);
+    const result = await params.handler();
+    await this.markAsProcessed(params.event, params.ttlSeconds);
     return result;
   }
 
   private resolveTtl(explicit: number | undefined): number | undefined {
-    return explicit ?? this.defaultTtlSeconds;
+    return explicit ?? this.deps.options?.defaultTtlSeconds;
   }
 }

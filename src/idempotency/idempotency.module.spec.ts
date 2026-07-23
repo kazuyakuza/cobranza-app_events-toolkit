@@ -1,3 +1,4 @@
+import { DynamicModule } from '@nestjs/common';
 import { IdempotencyModule } from './idempotency.module';
 import { IDEMPOTENCY_REPOSITORY_TOKEN, IdempotencyRepository } from './idempotency.types';
 import { PostgresIdempotencyRepository } from './postgres-idempotency.repository';
@@ -27,13 +28,17 @@ jest.mock('./memory-idempotency.repository', () => {
 import { SqliteIdempotencyRepository } from './sqlite-idempotency.repository';
 import { MemoryIdempotencyRepository } from './memory-idempotency.repository';
 
+function findRepositoryProvider(dynamicModule: DynamicModule) {
+  return dynamicModule.providers?.find(
+    (p) => 'provide' in p && p.provide === IDEMPOTENCY_REPOSITORY_TOKEN,
+  ) as { provide: string; useValue: IdempotencyRepository } | undefined;
+}
+
 describe('IdempotencyModule', () => {
   describe('forRoot', () => {
     it('creates SqliteIdempotencyRepository with default :memory: path', () => {
       const dynamicModule = IdempotencyModule.forRoot({ type: 'sqlite' });
-      const provider = dynamicModule.providers?.find(
-        (p) => 'provide' in p && p.provide === IDEMPOTENCY_REPOSITORY_TOKEN,
-      ) as { provide: string; useValue: IdempotencyRepository };
+      const provider = findRepositoryProvider(dynamicModule);
 
       expect(provider).toBeDefined();
       expect(SqliteIdempotencyRepository).toHaveBeenCalledWith(':memory:');
@@ -41,9 +46,7 @@ describe('IdempotencyModule', () => {
 
     it('creates SqliteIdempotencyRepository with custom dbPath', () => {
       const dynamicModule = IdempotencyModule.forRoot({ type: 'sqlite', sqlite: { dbPath: '/tmp/keys.db' } });
-      const provider = dynamicModule.providers?.find(
-        (p) => 'provide' in p && p.provide === IDEMPOTENCY_REPOSITORY_TOKEN,
-      ) as { provide: string; useValue: IdempotencyRepository };
+      const provider = findRepositoryProvider(dynamicModule);
 
       expect(provider).toBeDefined();
       expect(SqliteIdempotencyRepository).toHaveBeenCalledWith('/tmp/keys.db');
@@ -55,16 +58,14 @@ describe('IdempotencyModule', () => {
         type: 'postgres',
         postgres: { entityManager: mockEntityManager },
       });
-      const provider = dynamicModule.providers?.find(
-        (p) => 'provide' in p && p.provide === IDEMPOTENCY_REPOSITORY_TOKEN,
-      ) as { provide: string; useValue: IdempotencyRepository };
+      const provider = findRepositoryProvider(dynamicModule);
 
       expect(provider).toBeDefined();
       expect(provider.useValue).toBeInstanceOf(PostgresIdempotencyRepository);
     });
 
     it('creates MemoryIdempotencyRepository when type is memory', () => {
-      const dynamicModule = IdempotencyModule.forRoot({ type: 'memory' });
+      IdempotencyModule.forRoot({ type: 'memory' });
       expect(MemoryIdempotencyRepository).toHaveBeenCalled();
     });
 

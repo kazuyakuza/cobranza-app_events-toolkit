@@ -17,13 +17,7 @@ export class MemoryIdempotencyRepository implements IdempotencyRepository {
   /** @inheritdoc */
   async isProcessed(key: string): Promise<boolean> {
     const entry = this.store.get(key);
-    if (entry === undefined) {
-      return false;
-    }
-    if (this.isExpired(entry)) {
-      return false;
-    }
-    return true;
+    return entry !== undefined && !this.isExpired(entry);
   }
 
   /** @inheritdoc */
@@ -43,9 +37,6 @@ export class MemoryIdempotencyRepository implements IdempotencyRepository {
   }
 
   private isExpired(entry: MemoryEntry): boolean {
-    if (entry.expiresAt === null) {
-      return false;
-    }
-    return entry.expiresAt < new Date().toISOString();
+    return entry.expiresAt !== null && entry.expiresAt < new Date().toISOString();
   }
 }
