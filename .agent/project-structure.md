@@ -14,6 +14,7 @@
 - consumer/decorators/ - @OnEvent() and @OnRequestReply() decorators, explorers
 - request-reply/ - RequestReplyService and type definitions (barrel: index.ts)
 - outbox/ - OutboxModule, OutboxService, SqliteOutboxRepository, PostgresOutboxRepository, transaction context types, async request contexts (barrel: index.ts)
+- idempotency/ - IdempotencyModule, IdempotencyService, SqliteIdempotencyRepository, PostgresIdempotencyRepository, MemoryIdempotencyRepository, key builder utility (barrel: index.ts)
 - logging/ - EventLoggerService (Winston-based) (barrel: index.ts)
 - testing/ - Mock services, test module, and assertion helpers for unit-testing (barrel: index.ts)
 - discovery/ - DiscoveryModule, DiscoveryService, manifest registration and heartbeat (barrel: index.ts)
