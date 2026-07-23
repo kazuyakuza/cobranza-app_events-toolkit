@@ -4,10 +4,14 @@ import { RequestReplyConsumerService } from './request-reply-consumer.service';
 import { ON_REQUEST_REPLY_EXPLORER_DEPS_TOKEN } from './decorators/on-request-reply-explorer-deps.interface';
 import {
   DISCOVERY_REFLECTOR_PAIR,
-  REQUEST_REPLY_DISCOVERY_PAIR_TOKEN,
   DiscoveryReflectorPair,
-  RequestReplyDiscoveryPair,
 } from './consumer.module';
+
+export const REQUEST_REPLY_DISCOVERY_PAIR_TOKEN = 'REQUEST_REPLY_DISCOVERY_PAIR';
+/** Pair that extends DiscoveryReflectorPair with RequestReplyConsumerService for request-reply explorer deps. */
+export interface RequestReplyDiscoveryPair extends DiscoveryReflectorPair {
+  requestReplyConsumerService: RequestReplyConsumerService;
+}
 
 /**
  * Intermediate provider that merges DiscoveryReflectorPair with

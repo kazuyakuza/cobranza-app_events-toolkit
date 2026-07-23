@@ -47,11 +47,6 @@ export interface DiscoveryReflectorPair {
 export interface ConsumerDiscoveryPair extends DiscoveryReflectorPair {
   consumerService: ConsumerService;
 }
-export const REQUEST_REPLY_DISCOVERY_PAIR_TOKEN = 'REQUEST_REPLY_DISCOVERY_PAIR';
-/** Pair that extends DiscoveryReflectorPair with RequestReplyConsumerService for request-reply explorer deps. */
-export interface RequestReplyDiscoveryPair extends DiscoveryReflectorPair {
-  requestReplyConsumerService: RequestReplyConsumerService;
-}
 /** Pair of ConsumerService and EventLoggerService for consumer subsystem injection. */
 export interface ConsumerServicesPair {
   consumerService: ConsumerService;
@@ -86,16 +81,8 @@ export interface ConsumerModuleOptions {
   /** When true, auto-create a JetStream stream for each subscribe subject. Default: false. */
   autoCreateStreams?: boolean;
   /**
-   * Optional overrides merged over the auto-creator's default JetStream stream config
-   * for every stream created via `autoCreateStreams`.
-   *
-   * Accepts `Partial<StreamConfig>` from the `nats` package. Any NATS-native stream
-   * configuration field can be set — e.g. `max_bytes`, `max_msgs`, `num_replicas`,
-   * `max_age`. User-supplied fields take precedence over built-in defaults.
-   *
-   * Required when the NATS server account mandates `max_bytes` on every stream.
-   *
-   * @see {@link docs/nats-jetstream-configuration.md} for examples and field reference.
+   * Override auto-creator default stream config.
+   * @see docs/nats-jetstream-configuration.md
    */
   streamConfig?: Partial<StreamConfig>;
   /** Module-level JetStream consumer options merged into every subscription. */
