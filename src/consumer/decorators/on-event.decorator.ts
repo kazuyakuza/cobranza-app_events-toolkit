@@ -20,9 +20,14 @@ export interface OnEventMetadata {
   payloadExample: Record<string, unknown>;
   /** Event scope (tenant or global). Defaults to tenant for backward compatibility. */
   scope?: EventScope;
-  /** When true and IdempotencyModule is registered, the explorer wraps this handler
-   *  with a duplicate check so repeated delivery of the same event is skipped silently.
-   *  No-op when the idempotency module is not configured. */
+  /**
+   * When `true` and `IdempotencyModule` is registered, the explorer wraps this handler
+   * with a duplicate check so repeated delivery of the same event is skipped silently.
+   * No-op when the idempotency module is not configured.
+   *
+   * @see {@link IdempotencyService} for the underlying deduplication service.
+   * @see {@link OnEventExplorer} for the wrapping logic.
+   */
   idempotent?: boolean;
 }
 
@@ -40,9 +45,25 @@ export interface OnEventOptions {
   payloadExample: Record<string, unknown>;
   /** Event scope (tenant or global). Defaults to tenant for backward compatibility. */
   scope?: EventScope;
-  /** When true and IdempotencyModule is registered, the explorer wraps this handler
-   *  with a duplicate check so repeated delivery of the same event is skipped silently.
-   *  No-op when the idempotency module is not configured. */
+  /**
+   * When `true` and `IdempotencyModule` is registered, the explorer wraps this handler
+   * with a duplicate check so repeated delivery of the same event is skipped silently.
+   * No-op when the idempotency module is not configured.
+   *
+   * @see {@link IdempotencyService} for the underlying deduplication service.
+   * @see {@link OnEventExplorer} for the wrapping logic.
+   *
+   * @example
+   * ```ts
+   * @OnEvent('payment.proof.uploaded', {
+   *   version: '1',
+   *   description: 'Handles payment proof uploads',
+   *   payloadExample: { url: 'https://...' },
+   *   idempotent: true,
+   * })
+   * async handlePaymentProof(event: AnyEventEnvelope<PaymentProofUploaded>) { ... }
+   * ```
+   */
   idempotent?: boolean;
 }
 
@@ -55,6 +76,9 @@ export interface OnEventOptions {
  * @param eventType - NATS event type identifier (e.g., 'payment.proof.uploaded').
  * @param options - Required metadata options including version, description, and payloadExample.
  * @returns A MethodDecorator that stores on-event metadata via NestJS SetMetadata.
+ *
+ * @see {@link OnEventExplorer} which reads this metadata at startup to register handlers.
+ * @see {@link IdempotencyService} for the deduplication service used when `idempotent: true`.
  */
 export function OnEvent(eventType: string, options: OnEventOptions): MethodDecorator {
   const metadata: OnEventMetadata = { eventType, ...options };

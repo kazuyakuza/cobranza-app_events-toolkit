@@ -104,7 +104,16 @@ export class DiscoveryService implements OnModuleInit, OnApplicationBootstrap, O
     return this.resolvedOptions.enabled && this.resolvedOptions.registerOnStartup;
   }
 
-  /** Returns the cached manifest or generates and caches a new one. */
+  /**
+   * Returns the cached manifest or generates and caches a new one.
+   *
+   * The final manifest is built by merging the base manifest (from {@link ManifestService})
+   * with contributions from registered {@link ManifestContributor}s, then overlaying
+   * the `capabilities` array from resolved module options. This ensures capabilities
+   * reflect the toolkit subsystems that are actually enabled.
+   *
+   * @see {@link resolveCapabilities} in `events-toolkit-module.imports.ts`.
+   */
   private getOrGenerateManifest(): ServiceManifestDto {
     if (this.cachedManifest) {
       return this.cachedManifest;

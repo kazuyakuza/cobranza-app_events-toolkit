@@ -37,7 +37,15 @@ export function createDiscoveryPairProvider(): Provider {
     inject: [DiscoveryService, Reflector],
   };
 }
-/** Intermediate provider that merges DiscoveryReflectorPair with ConsumerService. */
+/**
+ * Intermediate provider that merges {@link DiscoveryReflectorPair} with {@link ConsumerService}
+ * into a single {@link ConsumerDiscoveryPair} token.
+ *
+ * This provider is consumed by {@link createOnEventExplorerDepsProvider} and
+ * {@link createRequestReplyExplorerDepsProvider} to build explorer-specific dependency objects.
+ *
+ * @see {@link CONSUMER_DISCOVERY_PAIR_TOKEN} for the injection token.
+ */
 export function createConsumerDiscoveryPairProvider(): Provider {
   return {
     provide: CONSUMER_DISCOVERY_PAIR_TOKEN,
@@ -47,7 +55,17 @@ export function createConsumerDiscoveryPairProvider(): Provider {
   };
 }
 
-/** Provider for @OnEvent() explorer dependencies. */
+/**
+ * Provider for `@OnEvent()` explorer dependencies.
+ *
+ * Builds an {@link OnEventExplorerDeps} object from the {@link ConsumerDiscoveryPair}
+ * and an optional {@link IdempotencyService}. The idempotency service is injected as
+ * `optional: true`, so the explorer gracefully skips idempotent wrapping when
+ * `IdempotencyModule` is not registered.
+ *
+ * @see {@link OnEventExplorerDeps} for the dependency shape.
+ * @see {@link IdempotencyService} for the idempotency service used in handler wrapping.
+ */
 export function createOnEventExplorerDepsProvider(): Provider {
   return {
     provide: ON_EVENT_EXPLORER_DEPS_TOKEN,

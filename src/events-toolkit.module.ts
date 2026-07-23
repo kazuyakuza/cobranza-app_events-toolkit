@@ -112,6 +112,16 @@ function buildSyncProviders(options: EventsToolkitModuleOptions, resolved: Resol
   ];
 }
 
+/**
+ * Builds discovery options by merging user-supplied discovery config with
+ * the capabilities resolved from the toolkit's enabled subsystems.
+ *
+ * Delegates capability resolution to {@link resolveCapabilities}, which inspects
+ * `options.idempotency`, `options.outbox`, and `options.discovery.capabilities`
+ * to produce the final list advertised in the service manifest.
+ *
+ * @see {@link resolveCapabilities} in `events-toolkit-module.imports.ts`.
+ */
 function buildDiscoveryOptions(options: EventsToolkitModuleOptions): EventsToolkitDiscoveryOptions {
   return {
     ...options.discovery,

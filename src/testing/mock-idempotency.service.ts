@@ -10,7 +10,25 @@ import type { ExecuteIfNotProcessedParams } from '../idempotency/execute-if-not-
  * {@link executeIfNotProcessed} the same way the real service does. Use the
  * {@link clear} method to reset state between tests.
  *
+ * Automatically registered by {@link EventsToolkitTestModule} when idempotency
+ * mocks are enabled (the default). The mock is aliased as `IdempotencyService`
+ * so application code receives it transparently.
+ *
+ * @see {@link IdempotencyService} for the real implementation.
  * @see {@link MockOutboxService} for the analogous outbox mock.
+ * @see {@link EventsToolkitTestModule} for test module registration.
+ *
+ * @example
+ * ```ts
+ * const module = await Test.createTestingModule({
+ *   imports: [EventsToolkitTestModule.forRoot()],
+ * }).compile();
+ *
+ * const idempotency = module.get(MockIdempotencyService);
+ * await idempotency.markAsProcessed(event);
+ * expect(idempotency.processedKeys).toContain(expectedKey);
+ * idempotency.clear(); // reset between tests
+ * ```
  */
 @Injectable()
 export class MockIdempotencyService {

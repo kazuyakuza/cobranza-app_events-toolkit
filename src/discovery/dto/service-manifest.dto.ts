@@ -15,7 +15,13 @@ export interface ServiceManifestDto {
   consumes: ManifestConsumeEntry[];
   /** Events this service produces/emits. */
   produces: ManifestProduceEntry[];
-  /** Toolkit-level capabilities advertised by this service (e.g. 'idempotency', 'outbox').
-   *  Populated by EventsToolkitModule based on which subsystems are enabled. */
+  /**
+   * Toolkit-level capabilities advertised by this service (e.g. `'idempotency'`, `'outbox'`).
+   * Populated automatically by `EventsToolkitModule` via {@link resolveCapabilities}
+   * based on which subsystems are enabled. Can also be set manually when registering
+   * `DiscoveryModule` standalone.
+   *
+   * @see {@link resolveCapabilities} in `events-toolkit-module.imports.ts`.
+   */
   capabilities?: string[];
 }

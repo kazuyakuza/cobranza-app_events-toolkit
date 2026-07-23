@@ -16,9 +16,14 @@ export interface EventsToolkitDiscoveryOptions {
   schemaDir?: string;
   /** When true, regenerate all schemas on startup even if cached files exist. Default: false. */
   forceRegenerateSchemas?: boolean;
-  /** Capabilities advertised in the service manifest (e.g. 'idempotency', 'outbox').
-   *  Typically populated automatically by EventsToolkitModule; pass manually only when
-   *  registering DiscoveryModule standalone with custom capabilities. */
+  /**
+   * Capabilities advertised in the service manifest (e.g. `'idempotency'`, `'outbox'`).
+   * Typically populated automatically by `EventsToolkitModule` via
+   * {@link resolveCapabilities}; pass manually only when registering `DiscoveryModule`
+   * standalone with custom capabilities.
+   *
+   * @see {@link resolveCapabilities} in `events-toolkit-module.imports.ts`.
+   */
   capabilities?: string[];
 }
 

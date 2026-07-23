@@ -19,12 +19,20 @@ interface HandlerTarget {
  * then uses Reflector to read OnEvent metadata from their methods.
  * Builds a wildcard NATS subject (company.* or global.*) for each handler registration.
  *
+ * When a handler is decorated with `idempotent: true` and {@link IdempotencyService}
+ * is available (i.e. `IdempotencyModule` is registered), the explorer wraps the handler
+ * with a duplicate check: the event is skipped if already processed, otherwise the
+ * handler runs and the event is marked as processed afterwards.
+ *
  * Note: This explorer only registers handlers with ConsumerService.
  * The host application is responsible for calling
  * JetStreamConsumerService.subscribe() to create NATS subscriptions
  * that route incoming messages to the registered handlers.
  *
  * Must be provided by ConsumerModule for automatic handler discovery.
+ *
+ * @see {@link OnEvent} for the decorator that this explorer reads.
+ * @see {@link IdempotencyService} for the deduplication service used in idempotent wrapping.
  */
 @Injectable()
 export class OnEventExplorer implements OnModuleInit {
@@ -76,15 +84,35 @@ export class OnEventExplorer implements OnModuleInit {
     this.deps.consumerService.registerHandler(subject, finalHandler);
   }
 
-  /** Returns the handler to register, wrapping it with idempotency when the
-   *  decorator opted in and the idempotency service is available. */
+  /**
+   * Returns the handler to register, wrapping it with idempotency when the
+   * decorator opted in and the idempotency service is available.
+   *
+   * Resolution order:
+   * 1. If `metadata.idempotent` is falsy, returns the original handler unchanged.
+   * 2. If `idempotencyService` is undefined (module not registered), returns the original handler.
+   * 3. Otherwise, delegates to {@link wrapWithIdempotency}.
+   *
+   * @see {@link wrapWithIdempotency} for the wrapping implementation.
+   */
   private resolveHandler(handler: EventHandler, metadata: OnEventMetadata): EventHandler {
     if (!metadata.idempotent) return handler;
     if (!this.deps.idempotencyService) return handler;
     return this.wrapWithIdempotency(handler, this.deps.idempotencyService);
   }
 
-  /** Wraps a handler so duplicate events are skipped and processed events are marked. */
+  /**
+   * Wraps a handler so duplicate events are skipped and processed events are marked.
+   *
+   * The wrapped handler:
+   * 1. Calls {@link IdempotencyService.isDuplicate} — returns early if `true`.
+   * 2. Invokes the original handler.
+   * 3. Calls {@link IdempotencyService.markAsProcessed} after the handler succeeds.
+   *
+   * If the handler throws, the event is **not** marked as processed, allowing retries.
+   *
+   * @see {@link IdempotencyService.executeIfNotProcessed} for the equivalent high-level API.
+   */
   private wrapWithIdempotency(handler: EventHandler, service: IdempotencyService): EventHandler {
     return async (event, context) => {
       if (await service.isDuplicate(event)) return;

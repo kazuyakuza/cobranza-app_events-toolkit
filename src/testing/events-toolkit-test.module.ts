@@ -39,7 +39,16 @@ import { EventsToolkitTestModuleOptions } from './events-toolkit-test-options.in
  *   imports: [EventsToolkitTestModule.forRoot({ discovery: { enabled: false } })],
  *   providers: [MyService],
  * }).compile();
+ *
+ * // With idempotency mock disabled:
+ * const module = await Test.createTestingModule({
+ *   imports: [EventsToolkitTestModule.forRoot({ idempotency: { enabled: false } })],
+ *   providers: [MyService],
+ * }).compile();
  * ```
+ *
+ * @see {@link MockIdempotencyService} for the idempotency mock implementation.
+ * @see {@link EventsToolkitTestModuleOptions} for all configuration options.
  */
 export class EventsToolkitTestModule {
   /**
@@ -79,6 +88,12 @@ export class EventsToolkitTestModule {
     return providers;
   }
 
+  /**
+   * Registers {@link MockIdempotencyService} and aliases it as `IdempotencyService`
+   * so that any application code injecting `IdempotencyService` receives the mock.
+   *
+   * @see {@link MockIdempotencyService} for the mock implementation details.
+   */
   private static buildIdempotencyProviders(): Provider[] {
     return [MockIdempotencyService, { provide: IdempotencyService, useExisting: MockIdempotencyService }];
   }

@@ -11,7 +11,15 @@ import { resolveServiceInfo } from './service-info.resolver';
 import { DiscoveryEventPublisher } from './events/discovery-event-publisher.service';
 import { DiscoveryController } from './discovery.controller';
 
-/** Resolved options used internally by DiscoveryModule providers. */
+/**
+ * Resolved options used internally by DiscoveryModule providers.
+ *
+ * The `capabilities` field is populated by `EventsToolkitModule` via
+ * {@link resolveCapabilities} (which checks which subsystems are enabled)
+ * or passed manually when registering `DiscoveryModule` standalone.
+ *
+ * @see {@link resolveCapabilities} in `events-toolkit-module.imports.ts`.
+ */
 export interface DiscoveryModuleOptions {
   /** Whether the discovery subsystem is enabled. */
   enabled: boolean;
@@ -46,6 +54,15 @@ const MANIFEST_DEPS_FACTORY = {
   useClass: ManifestServiceDepsProvider,
 };
 
+/**
+ * Merges user-supplied discovery options with defaults.
+ *
+ * The `capabilities` array defaults to an empty list when not provided;
+ * `EventsToolkitModule` overrides this via {@link resolveCapabilities}
+ * before passing options to `DiscoveryModule.forRoot()`.
+ *
+ * @see {@link resolveCapabilities} in `events-toolkit-module.imports.ts`.
+ */
 function resolveDiscoveryOptions(userOptions: EventsToolkitDiscoveryOptions): DiscoveryModuleOptions {
   return {
     enabled: userOptions.enabled ?? DEFAULT_DISCOVERY_OPTIONS.enabled,
