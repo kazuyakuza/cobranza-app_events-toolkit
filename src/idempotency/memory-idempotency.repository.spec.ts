@@ -4,7 +4,12 @@ describe('MemoryIdempotencyRepository', () => {
   let repository: MemoryIdempotencyRepository;
 
   beforeEach(() => {
+    jest.useFakeTimers();
     repository = new MemoryIdempotencyRepository();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('isProcessed returns false for unknown key', async () => {
@@ -19,8 +24,7 @@ describe('MemoryIdempotencyRepository', () => {
 
   it('isProcessed returns false for expired key', async () => {
     await repository.markAsProcessed('key-2', 0);
-    // Wait a tick for time to pass
-    await new Promise((resolve) => setImmediate(resolve));
+    jest.advanceTimersByTime(2000);
     expect(await repository.isProcessed('key-2')).toBe(false);
   });
 
@@ -33,7 +37,7 @@ describe('MemoryIdempotencyRepository', () => {
   it('clearExpired removes only expired entries', async () => {
     await repository.markAsProcessed('permanent-key');
     await repository.markAsProcessed('expired-key', 0);
-    await new Promise((resolve) => setImmediate(resolve));
+    jest.advanceTimersByTime(2000);
     await repository.clearExpired();
     expect(await repository.isProcessed('permanent-key')).toBe(true);
     expect(await repository.isProcessed('expired-key')).toBe(false);

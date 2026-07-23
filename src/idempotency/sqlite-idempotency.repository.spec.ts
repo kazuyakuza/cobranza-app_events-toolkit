@@ -4,7 +4,12 @@ describe('SqliteIdempotencyRepository', () => {
   let repository: SqliteIdempotencyRepository;
 
   beforeEach(() => {
+    jest.useFakeTimers();
     repository = new SqliteIdempotencyRepository(':memory:');
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('isProcessed returns false for unknown key', async () => {
@@ -24,14 +29,14 @@ describe('SqliteIdempotencyRepository', () => {
 
   it('isProcessed returns false for expired key', async () => {
     await repository.markAsProcessed('key', 0);
-    await new Promise((resolve) => setImmediate(resolve));
+    jest.advanceTimersByTime(2000);
     expect(await repository.isProcessed('key')).toBe(false);
   });
 
   it('clearExpired purges only expired keys', async () => {
     await repository.markAsProcessed('permanent');
     await repository.markAsProcessed('expired', 0);
-    await new Promise((resolve) => setImmediate(resolve));
+    jest.advanceTimersByTime(2000);
     await repository.clearExpired();
     expect(await repository.isProcessed('permanent')).toBe(true);
     expect(await repository.isProcessed('expired')).toBe(false);

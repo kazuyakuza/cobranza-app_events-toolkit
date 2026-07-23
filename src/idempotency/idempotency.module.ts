@@ -14,6 +14,7 @@ import { PostgresIdempotencyRepository } from './postgres-idempotency.repository
 import { MemoryIdempotencyRepository } from './memory-idempotency.repository';
 
 const IDEMPOTENCY_MODULE_OPTIONS_TOKEN = 'IDEMPOTENCY_MODULE_OPTIONS';
+const IDEMPOTENCY_REPO_CONFIG_TOKEN = 'IDEMPOTENCY_REPO_CONFIG';
 
 function resolveRepository(options: IdempotencyModuleOptions): IdempotencyRepository {
   if (options.type === 'postgres') {
@@ -35,19 +36,29 @@ function resolvePostgresRepository(
   return new PostgresIdempotencyRepository(postgres.entityManager);
 }
 
+function buildRepoConfigProvider(): Provider {
+  return {
+    provide: IDEMPOTENCY_REPO_CONFIG_TOKEN,
+    useFactory: (
+      repository: IdempotencyRepository,
+      serviceOpts: IdempotencyServiceOptions,
+    ) => ({ repository, options: serviceOpts }),
+    inject: [IDEMPOTENCY_REPOSITORY_TOKEN, IDEMPOTENCY_SERVICE_OPTIONS_TOKEN],
+  };
+}
+
 function buildDepsProvider(): Provider {
   return {
     provide: IDEMPOTENCY_SERVICE_DEPS_TOKEN,
     useFactory: (
-      repository: IdempotencyRepository,
-      serviceOpts: IdempotencyServiceOptions,
+      repoConfig: { repository: IdempotencyRepository; options: IdempotencyServiceOptions },
       logger: EventLoggerService,
     ): IdempotencyServiceDeps => ({
-      repository,
-      options: serviceOpts,
+      repository: repoConfig.repository,
+      options: repoConfig.options,
       logger,
     }),
-    inject: [IDEMPOTENCY_REPOSITORY_TOKEN, IDEMPOTENCY_SERVICE_OPTIONS_TOKEN, EventLoggerService],
+    inject: [IDEMPOTENCY_REPO_CONFIG_TOKEN, EventLoggerService],
   };
 }
 
@@ -110,6 +121,7 @@ export class IdempotencyModule {
       providers: [
         { provide: IDEMPOTENCY_REPOSITORY_TOKEN, useValue: repository },
         serviceOptionsProvider,
+        buildRepoConfigProvider(),
         buildDepsProvider(),
         IdempotencyService,
       ],
@@ -157,6 +169,7 @@ export class IdempotencyModule {
         moduleOptionsProvider,
         repositoryProvider,
         serviceOptionsProvider,
+        buildRepoConfigProvider(),
         buildDepsProvider(),
         IdempotencyService,
       ],

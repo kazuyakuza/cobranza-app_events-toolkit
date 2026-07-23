@@ -68,6 +68,9 @@ export function buildOutboxAsyncImport(): DynamicModule {
 }
 
 export function buildIdempotencyAsyncImport(): DynamicModule {
+  // Async imports cannot be conditionally skipped at module-build time, so the
+  // fallback to a memory backend is a safe default — consistent with the outbox
+  // async pattern (see {@link buildOutboxAsyncImport}).
   return IdempotencyModule.forRootAsync({
     useFactory: async (...args: unknown[]): Promise<IdempotencyModuleOptions> => {
       const opts = args[0] as EventsToolkitModuleOptions;
