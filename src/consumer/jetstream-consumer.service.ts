@@ -12,9 +12,10 @@ import {
   SubscribeOptions,
   defaultDlqSubjectBuilder,
   envelopeToContext,
-  resolveConsumerSubscribeOpts,
   ErrorHandlingOptions,
 } from './subscribe-options.interface';
+import { resolveSubscriptionConsumerOpts } from './consumer-opts-merger';
+import { GatewayConsumerOptions } from './gateway-consumer-options.interface';
 import { MoveToDlqOptions } from './move-to-dlq-options.interface';
 import { EnvelopeValidationUtil } from './envelope-validation.util';
 
@@ -32,12 +33,14 @@ export class JetStreamConsumerService {
   private readonly dlqSubjectBuilder: (subject: string) => string;
   private readonly dlqHandler: ConsumerDlqHandler;
   private readonly streamAutoCreator?: StreamAutoCreator;
+  private readonly gatewayConsumerOpts?: GatewayConsumerOptions;
 
   constructor(@Inject(JETSTREAM_CONSUMER_DEPS_TOKEN) deps: JetStreamConsumerDeps) {
     this.jetStream = deps.jetStream;
     this.consumerService = deps.consumerService;
     this.logger = deps.logger;
     this.dlqSubjectBuilder = deps.dlqSubjectBuilder ?? defaultDlqSubjectBuilder;
+    this.gatewayConsumerOpts = deps.gatewayConsumerOpts;
     this.dlqHandler = new ConsumerDlqHandler({
       jetStream: this.jetStream,
       logger: this.logger,
@@ -52,7 +55,7 @@ export class JetStreamConsumerService {
   async subscribe(options: SubscribeOptions): Promise<void> {
     this.consumerService.registerHandler(options.subject, options.handler);
     await this.ensureStreamIfNeeded(options.subject);
-    const consumerOpts = resolveConsumerSubscribeOpts(options.consumerOpts);
+    const consumerOpts = resolveSubscriptionConsumerOpts(this.gatewayConsumerOpts, options.consumerOpts);
     const subscription = await this.jetStream.subscribe(options.subject, consumerOpts);
     this.processSubscription(subscription, options.subject).catch((error: unknown) =>
       this.logGeneralError(error, options.subject),

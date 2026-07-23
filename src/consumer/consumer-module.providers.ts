@@ -60,6 +60,7 @@ export function createSyncJetStreamConsumerDepsProvider(options: SyncJetStreamCo
       connection: options.connection,
       autoCreateStreams: options.autoCreateStreams,
       streamConfig: options.streamConfig,
+      gatewayConsumerOpts: options.gatewayConsumerOpts,
     }),
     inject: [ConsumerService, EventLoggerService],
   };
@@ -90,6 +91,7 @@ export function createSyncRequestReplyConsumerDepsProvider(options: SyncRequestR
       connection: options.connection,
       autoCreateStreams: options.autoCreateStreams,
       streamConfig: options.streamConfig,
+      gatewayConsumerOpts: options.gatewayConsumerOpts,
     }),
     inject: [EventLoggerService],
   };
@@ -160,6 +162,7 @@ export function createAsyncJetStreamConsumerDepsProvider(): Provider {
       connection: combined.connection.connection ?? combined.moduleOptions.connection,
       autoCreateStreams: combined.moduleOptions.autoCreateStreams,
       streamConfig: combined.moduleOptions.streamConfig,
+      gatewayConsumerOpts: combined.moduleOptions.gatewayConsumerOpts,
     }),
     inject: [JETSTREAM_CONSUMER_ASYNC_DEPS_TOKEN, CONSUMER_SERVICES_PAIR],
   };
@@ -182,6 +185,7 @@ export function createAsyncRequestReplyConsumerDepsProvider(): Provider {
       connection: combined.connection.connection ?? combined.moduleOptions.connection,
       autoCreateStreams: combined.moduleOptions.autoCreateStreams,
       streamConfig: combined.moduleOptions.streamConfig,
+      gatewayConsumerOpts: combined.moduleOptions.gatewayConsumerOpts,
     }),
     inject: [REQUEST_REPLY_CONSUMER_ASYNC_DEPS_TOKEN, EventLoggerService],
   };

@@ -2,6 +2,7 @@ import { DynamicModule, Module, Type, ForwardReference } from '@nestjs/common';
 import { DiscoveryModule } from '@nestjs/core';
 import { DiscoveryService, Reflector } from '@nestjs/core';
 import { JetStreamClient, NatsConnection, StreamConfig } from 'nats';
+import { GatewayConsumerOptions } from './gateway-consumer-options.interface';
 import { EventLoggerService } from '../logging/event-logger.service';
 import { ConsumerService } from './consumer.service';
 import { JetStreamConsumerService } from './jetstream-consumer.service';
@@ -84,6 +85,8 @@ export interface ConsumerModuleOptions {
    * @see {@link docs/nats-jetstream-configuration.md} for examples and field reference.
    */
   streamConfig?: Partial<StreamConfig>;
+  /** Gateway-level JetStream consumer options merged into every subscription. */
+  gatewayConsumerOpts?: GatewayConsumerOptions;
 }
 
 /** Asynchronous options for {@link ConsumerModule.forRootAsync}. */
@@ -123,6 +126,7 @@ export class ConsumerModule {
           connection: options.connection,
           autoCreateStreams: options.autoCreateStreams,
           streamConfig: options.streamConfig,
+          gatewayConsumerOpts: options.gatewayConsumerOpts,
         }),
         createRequestReplyExplorerDepsProvider(),
         createSyncRequestReplyConsumerDepsProvider({
@@ -132,6 +136,7 @@ export class ConsumerModule {
           connection: options.connection,
           autoCreateStreams: options.autoCreateStreams,
           streamConfig: options.streamConfig,
+          gatewayConsumerOpts: options.gatewayConsumerOpts,
         }),
         ConsumerService,
         JetStreamConsumerService,

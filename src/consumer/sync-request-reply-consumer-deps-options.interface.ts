@@ -1,4 +1,5 @@
 import { JetStreamClient, NatsConnection, StreamConfig } from 'nats';
+import { GatewayConsumerOptions } from './gateway-consumer-options.interface';
 
 /**
  * Options for creating a synchronous Request-Reply consumer dependencies provider.
@@ -27,4 +28,6 @@ export interface SyncRequestReplyConsumerDepsOptions {
    * @see {@link docs/nats-jetstream-configuration.md} for examples and field reference.
    */
   streamConfig?: Partial<StreamConfig>;
+  /** Gateway-level JetStream consumer options merged into every subscription. */
+  gatewayConsumerOpts?: GatewayConsumerOptions;
 }

@@ -1,5 +1,6 @@
 import { JetStreamClient, NatsConnection, StreamConfig } from 'nats';
 import { EventLoggerService } from '../logging/event-logger.service';
+import { GatewayConsumerOptions } from './gateway-consumer-options.interface';
 
 /** Injection token for {@link RequestReplyConsumerDeps}. */
 export const REQUEST_REPLY_CONSUMER_DEPS_TOKEN = 'REQUEST_REPLY_CONSUMER_DEPS';
@@ -38,4 +39,6 @@ export interface RequestReplyConsumerDeps {
    * @see {@link docs/nats-jetstream-configuration.md} for examples and field reference.
    */
   streamConfig?: Partial<StreamConfig>;
+  /** Gateway-level JetStream consumer options merged into every subscription. */
+  gatewayConsumerOpts?: GatewayConsumerOptions;
 }

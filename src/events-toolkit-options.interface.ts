@@ -1,4 +1,12 @@
-import { NatsConnection, StreamConfig } from 'nats';
+import {
+  AckPolicy,
+  ConsumerOpts,
+  ConsumerOptsBuilder,
+  DeliverPolicy,
+  NatsConnection,
+  ReplayPolicy,
+  StreamConfig,
+} from 'nats';
 import { OutboxServiceOptions } from './outbox/outbox-service-options.interface';
 import { EntityManagerLike } from './outbox/outbox.types';
 import { Type, DynamicModule, ForwardReference } from '@nestjs/common';
@@ -57,6 +65,22 @@ export interface EventsToolkitConsumerOptions {
    * @see {@link docs/nats-jetstream-configuration.md} for examples and field reference.
    */
   streamConfig?: Partial<StreamConfig>;
+  /**
+   * Full JetStream consumer options applied to every subscription. Accepts a NATS
+   * ConsumerOptsBuilder (e.g. consumerOpts().durable('x').deliverAll()) or a plain
+   * Partial<ConsumerOpts>. Convenience scalars below override matching fields here.
+   */
+  consumerOpts?: Partial<ConsumerOpts> | ConsumerOptsBuilder;
+  /** Durable consumer name. When set, NATS persists the ack position and resumes on reconnect. */
+  durableName?: string;
+  /** Delivery policy. Omit when durableName is set to resume from the durable's stored state. */
+  deliverPolicy?: DeliverPolicy;
+  /** Acknowledgment policy. Default AckPolicy.Explicit when omitted. */
+  ackPolicy?: AckPolicy;
+  /** Max delivery attempts before redelivery stops. */
+  maxDeliver?: number;
+  /** Replay policy (Instant | Original). */
+  replayPolicy?: ReplayPolicy;
 }
 
 /** Top-level options for EventsToolkitModule.forRoot. */

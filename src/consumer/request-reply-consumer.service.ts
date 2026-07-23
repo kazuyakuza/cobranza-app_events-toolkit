@@ -6,7 +6,9 @@ import { EventHandler } from './consumer.service';
 import { DispatchOptions } from './dispatch-options.interface';
 import { RegisterHandlerOptions } from './register-handler-options.interface';
 import { RequestReplyConsumerDeps, REQUEST_REPLY_CONSUMER_DEPS_TOKEN } from './request-reply-consumer-deps.interface';
-import { defaultDlqSubjectBuilder, resolveConsumerSubscribeOpts } from './subscribe-options.interface';
+import { ConsumerSubscribeOpts, defaultDlqSubjectBuilder } from './subscribe-options.interface';
+import { resolveSubscriptionConsumerOpts } from './consumer-opts-merger';
+import { GatewayConsumerOptions } from './gateway-consumer-options.interface';
 import { RequestReplyMessageProcessor } from './request-reply-message-processor';
 import { StreamAutoCreator } from './stream-auto-creator';
 
@@ -26,11 +28,13 @@ export class RequestReplyConsumerService implements OnModuleInit {
   private readonly responseSubjectPattern: string;
   private readonly processor: RequestReplyMessageProcessor;
   private readonly streamAutoCreator?: StreamAutoCreator;
+  private readonly gatewayConsumerOpts?: GatewayConsumerOptions;
 
   constructor(@Inject(REQUEST_REPLY_CONSUMER_DEPS_TOKEN) deps: RequestReplyConsumerDeps) {
     this.jetStream = deps.jetStream;
     this.logger = deps.logger;
     this.responseSubjectPattern = deps.responseSubjectPattern ?? 'company.*.response.v1';
+    this.gatewayConsumerOpts = deps.gatewayConsumerOpts;
     const dlqSubjectBuilder = deps.dlqSubjectBuilder ?? defaultDlqSubjectBuilder;
     this.processor = new RequestReplyMessageProcessor({
       jetStream: this.jetStream,
@@ -89,9 +93,10 @@ export class RequestReplyConsumerService implements OnModuleInit {
   }
 
   /** Subscribes to a NATS subject pattern for response messages. */
-  async subscribe(subject: string): Promise<void> {
+  async subscribe(subject: string, consumerOpts?: ConsumerSubscribeOpts): Promise<void> {
     await this.ensureStreamIfNeeded(subject);
-    const subscription = await this.jetStream.subscribe(subject, resolveConsumerSubscribeOpts());
+    const resolvedOpts = resolveSubscriptionConsumerOpts(this.gatewayConsumerOpts, consumerOpts);
+    const subscription = await this.jetStream.subscribe(subject, resolvedOpts);
     this.processSubscription(subscription, subject).catch((error: unknown) => this.logGeneralError(error, subject));
   }
 
