@@ -5,7 +5,11 @@ import type { IdempotencyService } from '../../idempotency/idempotency.service';
 /** Injection token for {@link OnRequestReplyExplorerDeps}. */
 export const ON_REQUEST_REPLY_EXPLORER_DEPS_TOKEN = 'ON_REQUEST_REPLY_EXPLORER_DEPS';
 
-/** Dependencies required by {@link OnRequestReplyExplorer}. */
+/**
+ * Dependencies required by {@link OnRequestReplyExplorer}.
+ *
+ * @see {@link OnRequestReplyExplorer} for the consumer that uses these dependencies.
+ */
 export interface OnRequestReplyExplorerDeps {
   /** NestJS discovery service for scanning providers and controllers. */
   discovery: DiscoveryService;

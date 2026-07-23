@@ -79,6 +79,9 @@ export interface OnRequestReplyOptions {
  * @param options - Required metadata options including description and payloadExample; optional companyId filter.
  * @returns A MethodDecorator that stores on-request-reply metadata via NestJS SetMetadata.
  *
+ * @see {@link OnRequestReplyExplorer} which reads this metadata at startup to register handlers.
+ * @see {@link IdempotencyService} for the deduplication service used when `idempotent: true`.
+ *
  * @example
  * ```ts
  * @OnRequestReply('payment.proof.uploaded', {

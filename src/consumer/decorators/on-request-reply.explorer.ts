@@ -33,7 +33,7 @@ interface HandlerTarget {
  */
 @Injectable()
 export class OnRequestReplyExplorer implements OnModuleInit {
-  constructor(@Inject(ON_REQUEST_REPLY_EXPLORER_DEPS_TOKEN) private readonly deps: OnRequestReplyExplorerDeps) {}
+  constructor(@Inject(ON_REQUEST_REPLY_EXPLORER_DEPS_TOKEN) private readonly deps: OnRequestReplyExplorerDeps) { }
 
   /** NestJS lifecycle hook — triggers handler discovery and registration at startup. */
   onModuleInit(): void {
@@ -49,14 +49,10 @@ export class OnRequestReplyExplorer implements OnModuleInit {
 
   private getValidInstances(): object[] {
     const allWrappers = [...this.deps.discovery.getProviders(), ...this.deps.discovery.getControllers()];
-    return allWrappers.filter((w) => this.isValidWrapper(w)).map((w) => w.instance as object);
+    return allWrappers.filter((w) => this.hasObjectInstance(w)).map((w) => w.instance as object);
   }
 
-  private isValidWrapper(wrapper: { instance?: unknown }): boolean {
-    return this.hasObjectInstance(wrapper);
-  }
-
-  private hasObjectInstance(wrapper: { instance?: unknown }): boolean {
+  private hasObjectInstance(wrapper: { instance?: unknown; }): boolean {
     return wrapper.instance != null && typeof wrapper.instance === 'object';
   }
 
