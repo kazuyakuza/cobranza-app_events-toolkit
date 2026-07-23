@@ -23,7 +23,10 @@ import {
   createRequestReplyAsyncDepsProvider,
   resolveJetStreamFromOptions,
 } from './consumer-module.providers';
-import { createConsumerDiscoveryPairProvider, createOnEventExplorerDepsProvider } from './on-event-explorer-deps.provider';
+import {
+  createConsumerDiscoveryPairProvider,
+  createOnEventExplorerDepsProvider,
+} from './on-event-explorer-deps.provider';
 
 export const CONSUMER_MODULE_OPTIONS = 'CONSUMER_MODULE_OPTIONS';
 export const DISCOVERY_REFLECTOR_PAIR = 'DISCOVERY_REFLECTOR_PAIR' as unknown as Type<unknown>;
