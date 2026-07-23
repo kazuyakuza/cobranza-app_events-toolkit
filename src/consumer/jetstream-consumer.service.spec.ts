@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { AckPolicy, consumerOpts, ConsumerOpts, ConsumerOptsBuilder } from 'nats';
+import { AckPolicy, consumerOpts, ConsumerOpts } from 'nats';
 import { JetStreamConsumerService } from './jetstream-consumer.service';
 import { defaultDlqSubjectBuilder } from './subscribe-options.interface';
 import { ConsumerService } from './consumer.service';

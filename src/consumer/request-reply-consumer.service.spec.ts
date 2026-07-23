@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { AckPolicy, ConsumerOptsBuilder, JsMsg } from 'nats';
+import { AckPolicy, JsMsg } from 'nats';
 import { RequestReplyConsumerService } from './request-reply-consumer.service';
 import { REQUEST_REPLY_CONSUMER_DEPS_TOKEN } from './request-reply-consumer-deps.interface';
 import { defaultDlqSubjectBuilder } from './subscribe-options.interface';
