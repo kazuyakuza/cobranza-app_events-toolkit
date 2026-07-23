@@ -2,9 +2,15 @@
 
 ## Current Work Focus
 
-**Idempotency module & documentation (v0.15.0).** Consumer-side deduplication feature following the Outbox module's repository pattern: `IdempotencyService`, `IdempotencyRepository` interface, three backends (SQLite, PostgreSQL, memory), automatic `@OnEvent({ idempotent: true })` handler wrapping, TTL support, and `MockIdempotencyService` for testing. Documentation consolidated in `docs/idempotency.md`.
+**Idempotency module & documentation (v0.15.1).** Consumer-side deduplication feature following the Outbox module's repository pattern: `IdempotencyService`, `IdempotencyRepository` interface, three backends (SQLite, PostgreSQL, memory), automatic `@OnEvent({ idempotent: true })` and `@OnRequestReply({ idempotent: true })` handler wrapping, TTL support, and `MockIdempotencyService` for testing. Documentation consolidated in `docs/idempotency.md`.
 
 ## Recent Changes
+
+### 2026-07-23 — Idempotency on request-reply (v0.15.1)
+- `@OnRequestReply` now supports `{ idempotent: true }` option, mirroring the existing `@OnEvent` idempotency behavior for handler-level deduplication on request-reply handlers.
+- New test file `on-request-reply.explorer.idempotent.spec.ts` covering the explorer path that wires idempotency into request-reply handlers.
+- Documentation updated across all relevant docs (`docs/idempotency.md`, `docs/request-reply-patterns.md`, `docs/ai-agent-guidelines.md`, `docs/event-messaging-convention.md`, README) to surface the new option and its usage.
+- Version bumped to 0.15.1.
 
 ### 2026-07-23 — Idempotency documentation (v0.15.0)
 - New `docs/idempotency.md` guide — backend selection, configuration, manual vs automatic usage, key generation, TTL, MockIdempotencyService testing.
@@ -108,8 +114,8 @@
 
 ## Immediate Next Steps
 
-1. **Final verification**: Run full test suite, lint, and typecheck across all modules for v0.15.0.
-2. Verify downstream consumers build correctly against the updated package with idempotency feature.
+1. **Final verification**: Run full test suite, lint, and typecheck across all modules for v0.15.1 (idempotency on request-reply).
+2. Verify downstream consumers build correctly against the updated package with idempotency feature (now covering both `@OnEvent` and `@OnRequestReply`).
 
 ## Current Blockers
 
