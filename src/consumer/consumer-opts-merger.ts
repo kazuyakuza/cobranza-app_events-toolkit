@@ -6,6 +6,15 @@ import {
 } from './subscribe-options.interface';
 import { GatewayConsumerOptions } from './gateway-consumer-options.interface';
 
+/**
+ * Duck-typed interface for extracting resolved `ConsumerOpts` from a NATS `ConsumerOptsBuilder`.
+ *
+ * The `nats` package's `ConsumerOptsBuilder` exposes a `getOpts()` method that returns the
+ * accumulated `ConsumerOpts`. This alias allows the merger to extract the underlying config
+ * from a builder without importing the concrete builder type, keeping the dependency surface minimal.
+ *
+ * @internal
+ */
 type ConsumerOptsBuilderWithGetOpts = { getOpts(): ConsumerOpts };
 
 /**

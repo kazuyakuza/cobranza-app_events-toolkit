@@ -269,7 +269,7 @@ export class AppModule {}
 | `nats` | `EventsToolkitNatsOptions` | Yes | NATS connection settings — provide either `servers` (creates new connection) or `connection` (reuses existing). |
 | `outbox` | `EventsToolkitOutboxOptions` | No | Outbox persistence config (`sqlite` or `postgres`). Omit to disable the outbox subsystem. |
 | `logging` | `EventsToolkitLoggingOptions` | No | Winston logger config (`level`, `transports`). Defaults to `info` + Console transport. |
-| `consumer` | `EventsToolkitConsumerOptions` | No | Consumer subsystem toggle and DLQ subject builder. Set `enable: false` to skip consumer registration. |
+| `consumer` | `EventsToolkitConsumerOptions` | No | Consumer subsystem config: `enable`, `dlqSubjectBuilder`, `autoCreateStreams`, `streamConfig`, `durableName`, `consumerOpts`, `deliverPolicy`, `ackPolicy`, `maxDeliver`, `replayPolicy`. Set `enable: false` to skip consumer registration. |
 | `discovery` | `EventsToolkitDiscoveryOptions` | No | Service discovery config (manifest, heartbeat, schema publishing). Set `enabled: false` to skip. |
 | `requestReply` | `Partial<RequestReplyConfig>` | No | Request-reply defaults. Set `defaultTimeoutMs` to override the 5000ms sync timeout. |
 | `requestReply.fallbackToCoreNatsOnInbox` | `boolean` | No | When `true`, responses to INBOX subjects use core NATS instead of JetStream. Default: `false`. |
@@ -374,6 +374,23 @@ class PaymentProofConsumer {
   }
 }
 ```
+
+### Durable Consumers (Recommended for Production)
+
+Set `durableName` in the consumer options to persist the consumer's ack position across reconnects. Without it, the toolkit creates ephemeral consumers that replay the entire stream history on every restart.
+
+```typescript
+EventsToolkitModule.forRoot({
+  nats: { servers: ['nats://localhost:4222'] },
+  consumer: {
+    enable: true,
+    autoCreateStreams: true,
+    durableName: 'my-service-processor',  // Resumes from last ack on reconnect
+  },
+})
+```
+
+For full control over consumer configuration (delivery policy, ack policy, max deliver, etc.), see [Durable Consumers](docs/nats-jetstream-configuration.md#durable-consumers).
 
 ### Error Handling & DLQ
 

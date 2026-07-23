@@ -42,7 +42,20 @@ export interface EventsToolkitLoggingOptions {
   transports?: winston.transport[];
 }
 
-/** Consumer subsystem toggle and options. */
+/**
+ * Consumer subsystem toggle and options.
+ *
+ * Controls JetStream consumer behavior including stream auto-creation, DLQ routing,
+ * and consumer-level configuration (durable consumers, delivery/ack/replay policies).
+ *
+ * **Consumer-level fields** (`consumerOpts`, `durableName`, `deliverPolicy`, `ackPolicy`,
+ * `maxDeliver`, `replayPolicy`) are threaded through the DI chain as
+ * {@link GatewayConsumerOptions} and merged with per-subscription options. Convenience
+ * scalars override matching fields from `consumerOpts` when both are set.
+ *
+ * @see {@link GatewayConsumerOptions} for detailed field documentation.
+ * @see {@link docs/nats-jetstream-configuration.md#durable-consumers} for durable consumer guide.
+ */
 export interface EventsToolkitConsumerOptions {
   /** Enable JetStream consumer. Default: true. */
   enable?: boolean;

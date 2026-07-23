@@ -238,6 +238,8 @@ class PaymentProofConsumer {
 }
 ```
 
+> **Durable consumers:** Always set `durableName` in `EventsToolkitConsumerOptions` for production consumers. Without it, ephemeral consumers replay the entire stream history on every reconnect. See [Durable Consumers](nats-jetstream-configuration.md#durable-consumers) for details.
+
 For business errors that should route to DLQ:
 
 ```typescript
@@ -503,7 +505,7 @@ Before submitting event-related code, verify:
 | Factory | `createEvent`, `createGlobalEvent` |
 | ID | `generateEventId`, `generateUuidV7` |
 | Producer | `ProducerModule`, `ProducerService`, `@EmitEvent()` |
-| Consumer | `ConsumerModule`, `@OnEvent()`, `EventConsumerException` |
+| Consumer | `ConsumerModule`, `@OnEvent()`, `EventConsumerException` — set `durableName` in `EventsToolkitConsumerOptions` for production consumers to prevent history replay on reconnect |
 | Request-Reply | `RequestReplyService`, `@OnRequestReply()` |
 | Outbox | `OutboxModule`, `OutboxService`, `OutboxModuleOptions`, `EntityManagerLike` |
 | Unified | `EventsToolkitModule`, `EventsToolkitModuleOptions` |

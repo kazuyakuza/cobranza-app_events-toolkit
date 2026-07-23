@@ -20,6 +20,14 @@ import { createStreamAutoCreator, ensureStreamExists } from './consumer-stream.u
  * incoming response messages, and dispatches to registered handlers.
  * Message processing (parsing, validation, DLQ routing) is delegated to
  * {@link RequestReplyMessageProcessor}.
+ *
+ * Supports gateway-level consumer configuration via {@link GatewayConsumerOptions},
+ * which is merged with per-subscription options by {@link resolveSubscriptionConsumerOpts}.
+ * This enables durable consumers, delivery policies, and acknowledgment behavior
+ * configured at the module level (via `EventsToolkitModule.forRoot()`).
+ *
+ * @see {@link GatewayConsumerOptions} for available gateway-level consumer settings.
+ * @see {@link resolveSubscriptionConsumerOpts} for merge precedence rules.
  */
 @Injectable()
 export class RequestReplyConsumerService implements OnModuleInit {
@@ -29,6 +37,11 @@ export class RequestReplyConsumerService implements OnModuleInit {
   private readonly responseSubjectPattern: string;
   private readonly processor: RequestReplyMessageProcessor;
   private readonly streamAutoCreator?: StreamAutoCreator;
+  /**
+   * Gateway-level JetStream consumer options threaded from `EventsToolkitConsumerOptions`.
+   * Merged with per-subscription options during `subscribe()` via {@link resolveSubscriptionConsumerOpts}.
+   * When `undefined`, only per-subscription options and built-in defaults apply.
+   */
   private readonly gatewayConsumerOpts?: GatewayConsumerOptions;
 
   constructor(@Inject(REQUEST_REPLY_CONSUMER_DEPS_TOKEN) deps: RequestReplyConsumerDeps) {

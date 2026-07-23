@@ -25,6 +25,14 @@ import { EnvelopeValidationUtil } from './envelope-validation.util';
  *
  * Handles the full consume pipeline: JSON parsing, envelope validation,
  * handler dispatch, ACK/NACK, and DLQ routing on failure.
+ *
+ * Supports gateway-level consumer configuration via {@link GatewayConsumerOptions},
+ * which is merged with per-subscription options by {@link resolveSubscriptionConsumerOpts}.
+ * This enables durable consumers, delivery policies, and acknowledgment behavior
+ * configured at the module level (via `EventsToolkitModule.forRoot()`).
+ *
+ * @see {@link GatewayConsumerOptions} for available gateway-level consumer settings.
+ * @see {@link resolveSubscriptionConsumerOpts} for merge precedence rules.
  */
 @Injectable()
 export class JetStreamConsumerService {
@@ -34,6 +42,11 @@ export class JetStreamConsumerService {
   private readonly dlqSubjectBuilder: (subject: string) => string;
   private readonly dlqHandler: ConsumerDlqHandler;
   private readonly streamAutoCreator?: StreamAutoCreator;
+  /**
+   * Gateway-level JetStream consumer options threaded from `EventsToolkitConsumerOptions`.
+   * Merged with per-subscription options during `subscribe()` via {@link resolveSubscriptionConsumerOpts}.
+   * When `undefined`, only per-subscription options and built-in defaults apply.
+   */
   private readonly gatewayConsumerOpts?: GatewayConsumerOptions;
 
   constructor(@Inject(JETSTREAM_CONSUMER_DEPS_TOKEN) deps: JetStreamConsumerDeps) {

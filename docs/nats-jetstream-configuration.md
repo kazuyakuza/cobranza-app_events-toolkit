@@ -9,6 +9,7 @@ Guide for configuring NATS JetStream to work with events-toolkit. Covers server 
 - [Authentication & Security](#authentication--security)
 - [JetStream Configuration for Events Toolkit](#jetstream-configuration-for-events-toolkit)
 - [Stream Auto-Creation](#stream-auto-creation)
+- [Durable Consumers](#durable-consumers)
 - [Manual Stream Setup](#manual-stream-setup)
 - [Production Recommendations](#production-recommendations)
 - [Clustering & Replication](#clustering--replication)
@@ -239,6 +240,131 @@ export class AppModule {}
 > **Note:** `streamConfig` uses NATS-native field names (`max_bytes`, `max_msgs`, `max_msgs_per_subject`, `num_replicas`, `max_age`, etc.) — not camelCase aliases. The type is `Partial<StreamConfig>` from the `nats` package. Any field not supplied falls back to the auto-creator's built-in defaults.
 
 > **Warning:** Auto-creation with overrides is acceptable for development and small-scale deployments. For production at scale, prefer manual stream setup (see below) with tuned retention policies, explicit size limits, and proper replication.
+
+## Durable Consumers
+
+By default, events-toolkit creates **ephemeral push consumers** for each subscription. Ephemeral consumers are destroyed when the client disconnects. On reconnect, a new ephemeral consumer is created with `DeliverPolicy.All`, which replays the entire stream history. This causes duplicate event processing after every restart or network interruption.
+
+**Durable consumers** solve this problem by persisting the consumer's last acknowledged position on the NATS server. When the client reconnects with the same `durable_name`, NATS resumes delivery from where it left off — no history replay, no duplicate processing.
+
+### The Problem with Ephemeral Consumers
+
+```text
+1. Consumer connects → ephemeral consumer created → DeliverPolicy.All → replays all messages
+2. Consumer processes messages, acks them
+3. Consumer disconnects (restart, network issue) → ephemeral consumer destroyed
+4. Consumer reconnects → new ephemeral consumer → DeliverPolicy.All → replays ALL messages again
+```
+
+### How `durableName` Solves It
+
+```text
+1. Consumer connects with durableName='payment-service-processor'
+2. NATS creates a durable consumer, persists ack position
+3. Consumer processes messages, acks them → position saved server-side
+4. Consumer disconnects → durable consumer persists on server
+5. Consumer reconnects with same durableName → NATS resumes from last ack position
+```
+
+### Configuration via `EventsToolkitModule.forRoot()`
+
+**Recommended for production** — set `durableName` to enable server-side position persistence:
+
+```typescript
+import { Module } from '@nestjs/common';
+import { EventsToolkitModule } from '@cobranza-apps/events-toolkit';
+
+@Module({
+  imports: [
+    EventsToolkitModule.forRoot({
+      nats: { servers: ['nats://localhost:4222'] },
+      consumer: {
+        enable: true,
+        autoCreateStreams: true,
+        durableName: 'payment-service-processor',
+      },
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+When `durableName` is set without an explicit `deliverPolicy`, NATS automatically uses the durable's stored state to resume from the last acknowledged position.
+
+### Full Control via `consumerOpts`
+
+For advanced scenarios, pass a NATS `ConsumerOptsBuilder` for complete consumer configuration:
+
+```typescript
+import { Module } from '@nestjs/common';
+import { EventsToolkitModule } from '@cobranza-apps/events-toolkit';
+import { consumerOpts, DeliverPolicy, AckPolicy } from 'nats';
+
+@Module({
+  imports: [
+    EventsToolkitModule.forRoot({
+      nats: { servers: ['nats://localhost:4222'] },
+      consumer: {
+        enable: true,
+        autoCreateStreams: true,
+        consumerOpts: consumerOpts()
+          .durable('payment-service-processor')
+          .deliverLast()
+          .ackExplicit()
+          .maxDeliver(5),
+      },
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+### Convenience Scalars
+
+For common settings, use the convenience scalar fields instead of a full builder:
+
+```typescript
+import { DeliverPolicy, AckPolicy } from 'nats';
+
+consumer: {
+  enable: true,
+  durableName: 'payment-service-processor',
+  deliverPolicy: DeliverPolicy.Last,   // Start from last message if no durable state
+  ackPolicy: AckPolicy.Explicit,        // Default when omitted
+  maxDeliver: 5,                        // Max delivery attempts before DLQ
+}
+```
+
+**Precedence:** Convenience scalars (`durableName`, `deliverPolicy`, etc.) override matching fields from `consumerOpts` when both are set.
+
+### Per-Subscription Override
+
+Per-subscription `consumerOpts` passed to individual `@OnEvent()` handlers override gateway-level settings for that specific subscription. This allows different consumers to have different durability and delivery configurations:
+
+```typescript
+// Gateway-level: durable consumer for all subscriptions
+consumer: {
+  durableName: 'default-processor',
+}
+
+// Per-subscription override in subscribe() — takes precedence
+await jetStreamConsumer.subscribe({
+  subject: 'company.>.payment.proof.uploaded.v1',
+  handler: myHandler,
+  consumerOpts: consumerOpts().durable('proof-specific-processor').deliverAll(),
+});
+```
+
+### Recommendation
+
+| Scenario | Recommendation |
+|----------|---------------|
+| Development / local testing | Ephemeral (omit `durableName`) — simpler, no server state |
+| Production consumers | **Always set `durableName`** — prevents history replay on reconnect |
+| One-shot / batch processing | Ephemeral with `DeliverPolicy.All` — process once, discard state |
+| Multiple instances of same service | Each instance needs a unique `durableName` to maintain independent positions |
+
+> **Note:** When using `durableName`, the same name must be used on every reconnect. Changing the `durableName` creates a new consumer that starts from scratch. For service scaling, use unique durable names per instance (e.g., `payment-service-processor-1`, `payment-service-processor-2`).
 
 ## Manual Stream Setup
 
