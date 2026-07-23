@@ -2,9 +2,20 @@
 
 ## Current Work Focus
 
-**Relax envelope validation & introduce GlobalEventEnvelope (v0.12.0).** `actor_id` is now optional for `system`/`scheduler`/`external_api` actor types via the exported `@IsOptionalForSystemActors()` validator, and a tenant-less `GlobalEventEnvelope` variant (`global.*` subjects, `GlobalEventContext`, `createGlobalEvent()`, `ProducerService.emitGlobal()`) supports cross-tenant operations. Documentation consolidated in `docs/global-events.md`.
+**Idempotency module & documentation (v0.15.0).** Consumer-side deduplication feature following the Outbox module's repository pattern: `IdempotencyService`, `IdempotencyRepository` interface, three backends (SQLite, PostgreSQL, memory), automatic `@OnEvent({ idempotent: true })` handler wrapping, TTL support, and `MockIdempotencyService` for testing. Documentation consolidated in `docs/idempotency.md`.
 
 ## Recent Changes
+
+### 2026-07-23 — Idempotency documentation (v0.15.0)
+- New `docs/idempotency.md` guide — backend selection, configuration, manual vs automatic usage, key generation, TTL, MockIdempotencyService testing.
+- README updated: onboarding flow now 12 steps (idempotency added), "What it provides" bullet, "Idempotency Pattern" usage section, config/env-var rows, AI agent rule #6 pointer.
+- CHANGELOG `## [0.15.0]` entry with Added/Documentation/Notes/Tests categories covering all idempotency features.
+- Cross-links added in `docs/outbox-configuration.md`, `docs/testing-utilities.md`, `docs/ai-agent-guidelines.md`, `docs/event-messaging-convention.md`.
+- `docs/testing-utilities.md` now includes `MockIdempotencyService` subsection and test-option documentation.
+- `docs/ai-agent-guidelines.md` updates: Quick Reference, Onboarding Steps, Common Mistakes, Request-Reply rule, Public API, See Also.
+- `docs/outbox-configuration.md` Overview `see also` and Transactional Outbox idempotency callout.
+- `docs/event-messaging-convention.md` §4.2 updated with Idempotency guide link.
+- Branch: `feat/idempotency`.
 
 ### 2026-07-17 — Relax envelope validation & GlobalEventEnvelope (v0.12.0)
 - `EventEnvelope.actor_id` now optional for `system`, `scheduler`, `external_api` actor types; required for `client`, `company_user`. Enforced via new exported `@IsOptionalForSystemActors()` decorator (`src/common/envelope/validators/`).
@@ -97,8 +108,8 @@
 
 ## Immediate Next Steps
 
-1. **Final verification**: Run full test suite, lint, and typecheck across all modules for v0.12.0.
-2. Verify downstream consumers (e.g., `ms-db-gateway`) build correctly against the updated package with optional `actor_id` and `GlobalEventEnvelope`.
+1. **Final verification**: Run full test suite, lint, and typecheck across all modules for v0.15.0.
+2. Verify downstream consumers build correctly against the updated package with idempotency feature.
 
 ## Current Blockers
 

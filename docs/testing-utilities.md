@@ -16,6 +16,7 @@ All mocks are registered via `EventsToolkitTestModule.forRoot()`, a NestJS `Dyna
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Mock Services](#mock-services)
+  - [MockIdempotencyService](#mockidempotencyservice)
 - [Assertion Helpers](#assertion-helpers)
 - [Examples](#examples)
 - [DI Regression Tests](#di-regression-tests)
@@ -135,6 +136,63 @@ Replaces `OutboxService`. Records events saved to outbox. `startProcessor()` and
 | `getSavedEvents()` | Returns all recorded `SavedOutboxEvent[]` |
 | `count` | Number of saved events |
 | `clear()` | Resets all recorded events |
+
+### MockIdempotencyService
+
+Replaces `IdempotencyService`. In-memory `Map` mirroring the real API, with additional test helpers for assertion. Registered by default by `EventsToolkitTestModule.forRoot()` and aliased as `IdempotencyService`.
+
+| Method / Property | Description |
+|-------------------|-------------|
+| `isDuplicate(event)` | Returns `true` if the event's key was already marked as processed |
+| `markAsProcessed(event, ttlSeconds?)` | Records the event key in an in-memory `Map` |
+| `executeIfNotProcessed({ event, handler, ttlSeconds? })` | Checks, executes handler if not duplicate, marks as processed |
+| `processedKeys` | Read-only set of recorded keys for assertions |
+| `count` | Number of recorded keys |
+| `clear()` | Resets all recorded keys |
+
+**Disable idempotency mocks:** pass `forRoot({ idempotency: { enabled: false } })` to `EventsToolkitTestModule.forRoot()`.
+
+```typescript
+import { Test } from '@nestjs/testing';
+import {
+  EventsToolkitTestModule,
+  MockIdempotencyService,
+} from '@cobranza-apps/events-toolkit/testing';
+
+describe('PaymentConsumer', () => {
+  let idempotency: MockIdempotencyService;
+
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      imports: [EventsToolkitTestModule.forRoot()],
+      providers: [PaymentConsumer],
+    }).compile();
+
+    idempotency = module.get(MockIdempotencyService);
+  });
+
+  afterEach(() => {
+    idempotency.clear();
+  });
+
+  it('should skip duplicate events', async () => {
+    const event = createTestEvent();
+
+    // Mark first delivery as processed
+    await idempotency.markAsProcessed(event);
+
+    // Second delivery — `executeIfNotProcessed` should skip the handler
+    const result = await idempotency.executeIfNotProcessed({
+      event,
+      handler: async () => { throw new Error('should not execute'); },
+    });
+
+    expect(result).toBeUndefined();
+  });
+});
+```
+
+See the full [Idempotency guide](../docs/idempotency.md) for production configuration and usage patterns.
 
 ### MockRequestReplyService
 

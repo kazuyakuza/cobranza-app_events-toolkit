@@ -4,7 +4,7 @@
 
 This guide provides step-by-step instructions for creating and consuming events using events-toolkit, targeting both human developers and AI agents generating code.
 
-> **Onboarding:** This document condenses **steps 3–7** (DTO → Produce → Consume → Request-Reply → Outbox) of the [Onboarding Flow](../README.md#onboarding-flow).
+> **Onboarding:** This document condenses **steps 3–8** (DTO → Produce → Consume → Request-Reply → Outbox → Idempotency) of the [Onboarding Flow](../README.md#onboarding-flow).
 
 For the full convention specification, see [`event-messaging-convention.md`](event-messaging-convention.md).
 
@@ -34,7 +34,7 @@ For the full convention specification, see [`event-messaging-convention.md`](eve
 | Actions | Past tense only: `created`, `uploaded`, `processed`, `sent` |
 | Version | Major only: `v1`, `v2` |
 | Payloads | IDs over full objects; keep under 256KB |
-| Consumers | MUST be idempotent |
+| Consumers | MUST be idempotent — see [Idempotency guide](idempotency.md) |
 | Actor context | `actor_type` always required; `actor_id` required for `client` and `company_user`, optional for `system`, `scheduler`, `external_api` |
 | Tenant isolation | `company_id` mandatory in tenant envelopes; omitted in global envelopes (`EventScope.GLOBAL`) |
 
@@ -347,7 +347,7 @@ For the full decision-making guide, see [`request-reply-guidelines.md`](request-
 2. Response subjects: prefer descriptive past-tense action (e.g., `calculated`). Use `buildResponseSubject()` only when no distinct outcome verb exists.
 3. Generate `correlation_id` using `generateUuidV7()` once per transaction chain. Preserve it in responses via `buildResponseEnvelope()`. Note: the `@IsUUID('4')` validator accepts both UUIDv4 and UUIDv7 strings.
 4. Set `reply_to` only for async request-reply. Never set it for fire-and-forget events.
-5. All request-reply handlers MUST be idempotent. Use `correlation_id` for deduplication.
+5. All request-reply handlers MUST be idempotent. Use `correlation_id` for deduplication — see the [Idempotency guide](idempotency.md) for implementation patterns.
 6. For async request-reply with durability requirements, use `sendRequestThroughOutbox()` — do not use `saveToOutbox()` for request-reply events.
 7. Sync pattern: catch `RequestReplyException` for timeout/error handling. Override timeout with `timeoutMs`.
 8. Async pattern: implement application-level timeout (SAGA, deadline event, or DB tracking). Never leave requests without a timeout.
@@ -461,10 +461,11 @@ These fields appear in the DLQ payload for monitoring and alerting systems.
 | 5 | **Consume an event** — `@OnEvent()` · DLQ routing | [Consumer](../README.md#consumer-subscribing-to-events) · This guide §Consuming |
 | 6 | **Request-reply** — `request()` / `sendRequest()` + `@OnRequestReply()` | [Request-Reply Patterns](request-reply-patterns.md) · [Guidelines](request-reply-guidelines.md) |
 | 7 | **Outbox pattern** — `OutboxService.saveToOutbox()` · `sendAsyncRequestThroughOutbox()` | [Outbox Configuration](outbox-configuration.md) · [Usage Guidelines](outbox-usage-guidelines.md) |
-| 8 | **Service discovery** — manifests · `GET /discovery/manifest` | [Discovery & Service Registry](event-discovery-and-service-registry.md) |
-| 9 | **Schema generation** — auto JSON Schema from DTOs | [Discovery & Service Registry](event-discovery-and-service-registry.md) |
-| 10 | **Testing** — `EventsToolkitTestModule` · mocks · assertions | [Testing Utilities](testing-utilities.md) |
-| 11 | **Deployment** — JetStream streams · env vars · health checks | [Deployment](../README.md#deployment) · [NATS JetStream Config](nats-jetstream-configuration.md) |
+| 8 | **Idempotency** — `IdempotencyService` · `@OnEvent({ idempotent: true })` · SQLite/PostgreSQL backends | [Idempotency guide](idempotency.md) |
+| 9 | **Service discovery** — manifests · `GET /discovery/manifest` | [Discovery & Service Registry](event-discovery-and-service-registry.md) |
+| 10 | **Schema generation** — auto JSON Schema from DTOs | [Discovery & Service Registry](event-discovery-and-service-registry.md) |
+| 11 | **Testing** — `EventsToolkitTestModule` · mocks · assertions | [Testing Utilities](testing-utilities.md) |
+| 12 | **Deployment** — JetStream streams · env vars · health checks | [Deployment](../README.md#deployment) · [NATS JetStream Config](nats-jetstream-configuration.md) |
 
 ## Validation Checklist
 
@@ -485,7 +486,7 @@ Before submitting event-related code, verify:
 | 1 | Manual subject concatenation | Use `SubjectBuilder.build()` or `SubjectBuilder.buildGlobal()` |
 | 2 | Present-tense verbs for actions | Use past tense: `uploaded`, not `upload` |
 | 3 | Forgetting actor context | Always include `actorType` in `EventContext`; include `actorId` for `client` and `company_user` (omit for `system`, `scheduler`, `external_api`) |
-| 4 | Non-idempotent consumers | Design handlers to safely process duplicate messages |
+| 4 | Non-idempotent consumers | Design handlers to safely process duplicate messages — use `IdempotencyService` or `@OnEvent({ idempotent: true })` as described in the [Idempotency guide](idempotency.md) |
 | 5 | Storing full objects instead of IDs | Keep payloads under 256KB; reference IDs |
 | 6 | Missing `@IsUUID` on ID fields | Decorate all UUID fields with `@IsUUID()` |
 | 7 | Events exceeding 256KB | Keep payloads lean — use IDs, not full entities |
@@ -508,6 +509,7 @@ Before submitting event-related code, verify:
 | Consumer | `ConsumerModule`, `@OnEvent()`, `EventConsumerException` — set `durableName` in `EventsToolkitConsumerOptions` for production consumers to prevent history replay on reconnect |
 | Request-Reply | `RequestReplyService`, `@OnRequestReply()` |
 | Outbox | `OutboxModule`, `OutboxService`, `OutboxModuleOptions`, `EntityManagerLike` |
+| Idempotency | `IdempotencyModule`, `IdempotencyService`, `IdempotencyRepository`, `buildIdempotencyKey` — configure via `EventsToolkitModule.forRoot({ idempotency: ... })` or `IdempotencyModule.forRoot()` |
 | Unified | `EventsToolkitModule`, `EventsToolkitModuleOptions` |
 | Logging | `EventLoggerService` |
 | Errors | `EventConsumerException`, `RequestReplyException` |
@@ -520,6 +522,7 @@ Before submitting event-related code, verify:
 
 ### See Also
 
+- [Idempotency guide](idempotency.md) — SQLite/PostgreSQL/memory backends, manual vs automatic usage, key generation, TTL, and MockIdempotencyService testing
 - [Outbox Configuration](outbox-configuration.md) — SQLite vs Postgres setup, service options
 - [Outbox Usage Guidelines](outbox-usage-guidelines.md) — Decision trees for outbox backend
 - [Transactional Outbox Usage](outbox-transactional-usage.md) — TypeORM transaction examples

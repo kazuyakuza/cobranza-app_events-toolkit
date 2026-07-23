@@ -1,6 +1,7 @@
 # Outbox Configuration
 
 > **Onboarding:** This document covers **step 7 (Outbox)** of the [Onboarding Flow](../README.md#onboarding-flow).
+> **See also:** [Idempotency (consumer-side dedup)](idempotency.md)
 
 ## Overview
 
@@ -206,6 +207,8 @@ For microservices that use PostgreSQL with TypeORM (e.g., `ms-db-gateway`), the 
 | Atomicity | Event persisted even if business logic fails | Rolled back with business logic on failure |
 | Use case | Fire-and-forget, SQLite services | PostgreSQL + TypeORM services |
 | `transactionContext` | Not applicable | Required |
+
+Idempotency (consumer-side dedup) is complementary — it prevents re-execution of events that were already processed even if the outbox successfully republishes them. See [Idempotency](idempotency.md).
 
 See [Transactional Outbox Usage Guide](outbox-transactional-usage.md) for full examples.
 

@@ -281,8 +281,9 @@ The old object-based signature (`@OnEvent({ domain, entity, action })`) has been
 ### 4.2 Idempotency & Deduplication
 
 - All consumers **must** be idempotent.
-- Use `id` + `correlation_id` combination to detect and ignore duplicates.
+- Use `id` + `correlation_id` combination to detect and ignore duplicates via `IdempotencyService` or `@OnEvent({ idempotent: true })`.
 - Leverage JetStream `dedupe_window` when appropriate.
+- For full documentation, configuration, and examples, see the [Idempotency guide](idempotency.md).
 
 ### 4.3 Request-Reply Patterns
 
