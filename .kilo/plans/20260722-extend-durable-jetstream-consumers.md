@@ -117,7 +117,7 @@ Files to modify (in dependency order):
     Store gateway opts in constructor. In `subscribe()`, pass merged opts to `resolveConsumerSubscribeOpts`.
 
 14. **`src/events-toolkit.module.ts`** (~+10 lines)  
-    Forward `consumerOpts`, `durableName`, etc. from `EventsToolkitModuleOptions` into `ConsumerModuleOptions` in both sync (`buildSyncImports`) and async (`buildConsumerAsyncImport`) paths.
+    Forward new consumer options to `ConsumerModule` in both sync (`buildSyncImports`) and async (`buildConsumerAsyncImport`) paths.
 
 15. **`src/consumer/index.ts`** (~+2 lines)  
     Export new helpers if they need to be public.
@@ -190,8 +190,8 @@ Files to modify:
 ## 5. TODO File Completion
 
 - Rename `.agent/todos/20260722/20260722-todo-1.md` → `.agent/todos/20260722/20260722-todo-1-DONE.md`
-- Ensure all changes committed in `feat/extend-durable-jetstream-consumers`.
-- Merge to `main`.
+- Ensure all files are committed in feature branch.
+- Merge feature branch to `main`.
 - Push `main` to `origin`.
 
 ---
