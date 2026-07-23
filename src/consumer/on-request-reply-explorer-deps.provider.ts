@@ -4,6 +4,7 @@ import { RequestReplyConsumerService } from './request-reply-consumer.service';
 import { ON_REQUEST_REPLY_EXPLORER_DEPS_TOKEN } from './decorators/on-request-reply-explorer-deps.interface';
 import { DISCOVERY_REFLECTOR_PAIR, DiscoveryReflectorPair } from './consumer.module';
 
+/** Injection token for the intermediate RequestReplyDiscoveryPair provider. */
 export const REQUEST_REPLY_DISCOVERY_PAIR_TOKEN = 'REQUEST_REPLY_DISCOVERY_PAIR';
 /** Pair that extends DiscoveryReflectorPair with RequestReplyConsumerService for request-reply explorer deps. */
 export interface RequestReplyDiscoveryPair extends DiscoveryReflectorPair {
@@ -13,6 +14,9 @@ export interface RequestReplyDiscoveryPair extends DiscoveryReflectorPair {
 /**
  * Intermediate provider that merges DiscoveryReflectorPair with
  * RequestReplyConsumerService into a single RequestReplyDiscoveryPair token.
+ *
+ * @returns NestJS Provider that produces a {@link RequestReplyDiscoveryPair}.
+ * @see createRequestReplyExplorerDepsProvider
  */
 export function createRequestReplyDiscoveryPairProvider(): Provider {
   return {
@@ -24,11 +28,15 @@ export function createRequestReplyDiscoveryPairProvider(): Provider {
 }
 
 /**
- * Provider for @OnRequestReply() explorer dependencies.
+ * Provider for `@OnRequestReply()` explorer dependencies.
  *
- * `idempotencyService` is optional: when IdempotencyModule is not
- * registered the dependency resolves to undefined and the
- * `idempotent` flag on @OnRequestReply() is a silent no-op.
+ * `idempotencyService` is optional: when `IdempotencyModule` is not
+ * registered the dependency resolves to `undefined` and the
+ * `idempotent` flag on `@OnRequestReply()` is a silent no-op.
+ *
+ * @returns NestJS Provider that produces the deps object consumed by {@link OnRequestReplyExplorer}.
+ * @see IdempotencyService
+ * @see OnRequestReplyExplorer
  */
 export function createRequestReplyExplorerDepsProvider(): Provider {
   return {

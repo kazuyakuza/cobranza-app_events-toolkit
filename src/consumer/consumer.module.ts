@@ -30,12 +30,19 @@ import {
   createRequestReplyExplorerDepsProvider,
 } from './on-request-reply-explorer-deps.provider';
 
+/** Injection token for the resolved {@link ConsumerModuleOptions}. */
 export const CONSUMER_MODULE_OPTIONS = 'CONSUMER_MODULE_OPTIONS';
+/** Injection token for the {@link DiscoveryReflectorPair} provider. */
 export const DISCOVERY_REFLECTOR_PAIR = 'DISCOVERY_REFLECTOR_PAIR' as unknown as Type<unknown>;
+/** Injection token for the resolved NATS connection ({@link ResolvedConnection}). */
 export const RESOLVED_CONNECTION_TOKEN = 'RESOLVED_CONNECTION' as unknown as Type<unknown>;
+/** Injection token for the {@link ConsumerServicesPair} provider. */
 export const CONSUMER_SERVICES_PAIR = 'CONSUMER_SERVICES_PAIR' as unknown as Type<unknown>;
+/** Injection token for the combined JetStream async dependencies ({@link JetStreamAsyncDeps}). */
 export const JETSTREAM_CONSUMER_ASYNC_DEPS_TOKEN = 'JETSTREAM_CONSUMER_ASYNC_DEPS' as unknown as Type<unknown>;
+/** Injection token for the combined Request-Reply async dependencies ({@link RequestReplyAsyncDeps}). */
 export const REQUEST_REPLY_CONSUMER_ASYNC_DEPS_TOKEN = 'REQUEST_REPLY_CONSUMER_ASYNC_DEPS' as unknown as Type<unknown>;
+/** Injection token for the intermediate {@link ConsumerDiscoveryPair} provider. */
 export const CONSUMER_DISCOVERY_PAIR_TOKEN = 'CONSUMER_DISCOVERY_PAIR';
 /** Pair of DiscoveryService and Reflector for explorer-based handler registration. */
 export interface DiscoveryReflectorPair {
@@ -57,19 +64,16 @@ export interface ResolvedConnection {
   connection?: NatsConnection;
   dlqSubjectBuilder?: (subject: string) => string;
 }
-
 /** Combined async deps for JetStream consumer (ResolvedConnection + ConsumerModuleOptions). */
 export interface JetStreamAsyncDeps {
   connection: ResolvedConnection;
   moduleOptions: ConsumerModuleOptions;
 }
-
 /** Combined async deps for Request-Reply consumer (ResolvedConnection + ConsumerModuleOptions). */
 export interface RequestReplyAsyncDeps {
   connection: ResolvedConnection;
   moduleOptions: ConsumerModuleOptions;
 }
-
 /** Synchronous options for {@link ConsumerModule.forRoot}. */
 export interface ConsumerModuleOptions {
   connection?: NatsConnection;
@@ -87,14 +91,12 @@ export interface ConsumerModuleOptions {
   /** Module-level JetStream consumer options merged into every subscription. */
   moduleConsumerOpts?: ModuleConsumerOptions;
 }
-
 /** Asynchronous options for {@link ConsumerModule.forRootAsync}. */
 export interface ConsumerModuleAsyncOptions {
   imports?: Array<Type<unknown> | DynamicModule | Promise<DynamicModule> | ForwardReference<unknown>>;
   useFactory: (...args: unknown[]) => Promise<ConsumerModuleOptions> | ConsumerModuleOptions;
   inject?: Array<string | symbol | Type<unknown>>;
 }
-
 /**
  * NestJS DynamicModule for event consumption via NATS JetStream.
  *

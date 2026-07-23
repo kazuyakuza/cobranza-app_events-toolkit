@@ -89,6 +89,16 @@ export function createAsyncResolvedConnectionProvider(): Provider {
   };
 }
 
+/**
+ * Resolves a JetStreamClient from the provided module options.
+ *
+ * Returns `options.jetStream` when supplied directly; otherwise falls back to
+ * `options.connection.jetstream()`. Throws when neither is configured.
+ *
+ * @param options - The resolved ConsumerModuleOptions.
+ * @returns A JetStreamClient ready for stream/consumer operations.
+ * @throws When neither `jetStream` nor `connection` is present in options.
+ */
 export function resolveJetStreamFromOptions(options: ConsumerModuleOptions): JetStreamClient {
   if (options.jetStream) return options.jetStream;
   if (options.connection) return options.connection.jetstream();

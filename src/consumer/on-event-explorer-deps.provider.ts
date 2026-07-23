@@ -12,6 +12,9 @@ import {
 /**
  * Intermediate provider that merges DiscoveryReflectorPair with ConsumerService
  * into a single ConsumerDiscoveryPair token.
+ *
+ * @returns NestJS Provider that produces a {@link ConsumerDiscoveryPair}.
+ * @see createOnEventExplorerDepsProvider
  */
 export function createConsumerDiscoveryPairProvider(): Provider {
   return {
@@ -23,7 +26,15 @@ export function createConsumerDiscoveryPairProvider(): Provider {
 }
 
 /**
- * Provider for @OnEvent() explorer dependencies.
+ * Provider for `@OnEvent()` explorer dependencies.
+ *
+ * `idempotencyService` is optional: when `IdempotencyModule` is not
+ * registered the dependency resolves to `undefined` and the
+ * `idempotent` flag on `@OnEvent()` is a silent no-op.
+ *
+ * @returns NestJS Provider that produces the deps object consumed by {@link OnEventExplorer}.
+ * @see IdempotencyService
+ * @see OnEventExplorer
  */
 export function createOnEventExplorerDepsProvider(): Provider {
   return {
