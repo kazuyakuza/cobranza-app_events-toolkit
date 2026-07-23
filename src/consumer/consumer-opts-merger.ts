@@ -1,6 +1,7 @@
 import type { ConsumerConfig, ConsumerOpts } from 'nats';
 import {
   ConsumerSubscribeOpts,
+  createDefaultConsumerOpts,
   isConsumerOptsBuilder,
   resolveConsumerSubscribeOpts,
 } from './subscribe-options.interface';
@@ -23,8 +24,29 @@ export function resolveSubscriptionConsumerOpts(
   if (isConsumerOptsBuilder(perSubscription)) {
     return perSubscription;
   }
+  if (!hasGatewayOrPerSubscription(gateway, perSubscription)) {
+    return createDefaultConsumerOpts();
+  }
   const merged = buildMergedConsumerConfig(gateway, perSubscription);
   return resolveConsumerSubscribeOpts(merged);
+}
+
+function hasGatewayOrPerSubscription(
+  gateway: GatewayConsumerOptions | undefined,
+  perSubscription: ConsumerSubscribeOpts | undefined,
+): boolean {
+  if (perSubscription !== undefined) {
+    return true;
+  }
+  if (!gateway) {
+    return false;
+  }
+  const hasScalar = gateway.durableName !== undefined
+    || gateway.deliverPolicy !== undefined
+    || gateway.ackPolicy !== undefined
+    || gateway.maxDeliver !== undefined
+    || gateway.replayPolicy !== undefined;
+  return hasScalar || gateway.consumerOpts !== undefined;
 }
 
 function buildMergedConsumerConfig(
@@ -36,7 +58,7 @@ function buildMergedConsumerConfig(
   const per = (perSubscription as Partial<ConsumerOpts>) ?? {};
   return {
     config: { ...base.config, ...scalars, ...per.config },
-    mack: per.mack ?? base.mack,
+    mack: per.mack ?? base.mack ?? true,
     stream: per.stream ?? base.stream,
   };
 }
