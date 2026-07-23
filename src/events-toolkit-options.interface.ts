@@ -8,6 +8,7 @@ import {
   StreamConfig,
 } from 'nats';
 import { OutboxServiceOptions } from './outbox/outbox-service-options.interface';
+import { IdempotencyServiceOptions } from './idempotency/idempotency-service-options.interface';
 import { EntityManagerLike } from './outbox/outbox.types';
 import { Type, DynamicModule, ForwardReference } from '@nestjs/common';
 import * as winston from 'winston';
@@ -29,9 +30,23 @@ export interface EventsToolkitOutboxOptions {
   /** Path to SQLite database file. Default: ':memory:'. */
   sqlitePath?: string;
   /** PostgreSQL entity manager. Required when type is 'postgres'. */
-  postgres?: { entityManager: EntityManagerLike };
+  postgres?: { entityManager: EntityManagerLike; };
   /** Background processor tuning. */
   serviceOptions?: OutboxServiceOptions;
+}
+
+/** Idempotency persistence configuration. */
+export interface EventsToolkitIdempotencyOptions {
+  /** Enable idempotency. Default: true. When false, skip wiring IdempotencyModule. */
+  enabled?: boolean;
+  /** Backend type. 'memory' is intended for testing only. */
+  type: 'sqlite' | 'postgres' | 'memory';
+  /** Path to SQLite database file. Default: ':memory:'. */
+  sqlitePath?: string;
+  /** PostgreSQL entity manager. Required when type is 'postgres'. */
+  postgres?: { entityManager: EntityManagerLike };
+  /** Optional service configuration (e.g. default TTL). */
+  serviceOptions?: IdempotencyServiceOptions;
 }
 
 /** Logging configuration passed to EventLoggerService. */
@@ -104,6 +119,8 @@ export interface EventsToolkitModuleOptions {
   nats: EventsToolkitNatsOptions;
   /** Outbox persistence configuration. Omit to disable the outbox subsystem. */
   outbox?: EventsToolkitOutboxOptions;
+  /** Idempotency configuration. Omit to skip wiring the idempotency module. */
+  idempotency?: EventsToolkitIdempotencyOptions;
   /** Logging configuration passed to EventLoggerService. */
   logging?: EventsToolkitLoggingOptions;
   /** Consumer subsystem toggle and options. */

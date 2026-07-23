@@ -21,6 +21,9 @@ export * from './request-reply';
 // ── Outbox ──
 export * from './outbox';
 
+// ── Idempotency ──
+export * from './idempotency';
+
 // ── Discovery ──
 export * from './discovery';
 
@@ -34,6 +37,7 @@ export {
   EventsToolkitLoggingOptions,
   EventsToolkitConsumerOptions,
   EventsToolkitDiscoveryOptions,
+  EventsToolkitIdempotencyOptions,
 } from './events-toolkit-options.interface';
 
 // ── Testing ──

@@ -4,6 +4,7 @@ import { EventLoggerService } from './logging/event-logger.service';
 import { ProducerService } from './producer/producer.service';
 import { JETSTREAM_TOKEN } from './producer/producer.constants';
 import { OutboxModuleOptions } from './outbox/outbox.types';
+import { IdempotencyModuleOptions } from './idempotency/idempotency.types';
 import {
   REQUEST_REPLY_DEPS_TOKEN,
   NATS_CONNECTION_TOKEN,
@@ -15,6 +16,7 @@ import {
   EventsToolkitModuleOptions,
   EventsToolkitModuleAsyncOptions,
   EventsToolkitOutboxOptions,
+  EventsToolkitIdempotencyOptions,
   EventsToolkitLoggingOptions,
 } from './events-toolkit-options.interface';
 import { EVENTS_TOOLKIT_OPTIONS, RESOLVED_NATS_TOKEN, ResolvedNats } from './events-toolkit-module.tokens';
@@ -52,6 +54,27 @@ export function buildOutboxModuleOptions(outbox: EventsToolkitOutboxOptions): Ou
     return { type: 'postgres', postgres: outbox.postgres, serviceOptions: outbox.serviceOptions };
   }
   return { type: 'sqlite', sqlite: { dbPath: outbox.sqlitePath ?? ':memory:' }, serviceOptions: outbox.serviceOptions };
+}
+
+/** Builds IdempotencyModule options from the toolkit-level idempotency config. */
+export function buildIdempotencyModuleOptions(
+  idempotency: EventsToolkitIdempotencyOptions,
+): IdempotencyModuleOptions {
+  if (idempotency.type === 'postgres') {
+    return {
+      type: 'postgres',
+      postgres: idempotency.postgres,
+      serviceOptions: idempotency.serviceOptions,
+    };
+  }
+  if (idempotency.type === 'memory') {
+    return { type: 'memory', serviceOptions: idempotency.serviceOptions };
+  }
+  return {
+    type: 'sqlite',
+    sqlite: { dbPath: idempotency.sqlitePath ?? ':memory:' },
+    serviceOptions: idempotency.serviceOptions,
+  };
 }
 
 function buildEventLogger(logging?: EventsToolkitLoggingOptions): EventLoggerService {

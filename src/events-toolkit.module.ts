@@ -5,6 +5,8 @@ import { JETSTREAM_TOKEN } from './producer/producer.constants';
 import { ConsumerModule, ConsumerModuleOptions } from './consumer/consumer.module';
 import { OutboxModule } from './outbox/outbox.module';
 import { OutboxModuleOptions } from './outbox/outbox.types';
+import { IdempotencyModule } from './idempotency/idempotency.module';
+import { IdempotencyModuleOptions } from './idempotency/idempotency.types';
 import { EventLoggerService } from './logging/event-logger.service';
 import { DiscoveryModule } from './discovery/discovery.module';
 import { RequestReplyService } from './request-reply/request-reply.service';
@@ -13,6 +15,7 @@ import { EVENTS_TOOLKIT_OPTIONS, ResolvedNats } from './events-toolkit-module.to
 import {
   resolveConnection,
   buildOutboxModuleOptions,
+  buildIdempotencyModuleOptions,
   setOwnedNatsConnection,
   closeOwnedNatsConnection,
   buildLoggingProvider,
@@ -118,6 +121,9 @@ function buildSyncImports(options: EventsToolkitModuleOptions, resolved: Resolve
   if (options.outbox) {
     imports.push(OutboxModule.forRoot(buildOutboxModuleOptions(options.outbox)));
   }
+  if (options.idempotency && options.idempotency.enabled !== false) {
+    imports.push(IdempotencyModule.forRoot(buildIdempotencyModuleOptions(options.idempotency)));
+  }
   if (options.discovery?.enabled !== false) {
     imports.push(DiscoveryModule.forRoot(options.discovery ?? {}));
   }
@@ -141,6 +147,7 @@ function buildAsyncImports(asyncOptions: EventsToolkitModuleAsyncOptions): Modul
     ProducerModule.forRootAsync({ useExisting: JETSTREAM_TOKEN, useFactory: async () => ({}), inject: [] }),
     buildConsumerAsyncImport(),
     buildOutboxAsyncImport(),
+    buildIdempotencyAsyncImport(),
     buildDiscoveryAsyncImport(),
     ...(asyncOptions.imports ?? []),
   ];
@@ -171,6 +178,19 @@ function buildOutboxAsyncImport(): DynamicModule {
       const opts = args[0] as EventsToolkitModuleOptions;
       const outbox = opts.outbox ?? { type: 'sqlite' as const, sqlitePath: ':memory:' };
       return buildOutboxModuleOptions(outbox);
+    },
+    inject: [EVENTS_TOOLKIT_OPTIONS],
+  });
+}
+
+function buildIdempotencyAsyncImport(): DynamicModule {
+  return IdempotencyModule.forRootAsync({
+    useFactory: async (...args: unknown[]): Promise<IdempotencyModuleOptions> => {
+      const opts = args[0] as EventsToolkitModuleOptions;
+      if (!opts.idempotency || opts.idempotency.enabled === false) {
+        return { type: 'memory' };
+      }
+      return buildIdempotencyModuleOptions(opts.idempotency);
     },
     inject: [EVENTS_TOOLKIT_OPTIONS],
   });
