@@ -68,9 +68,7 @@ export function buildOutboxModuleOptions(outbox: EventsToolkitOutboxOptions): Ou
  *
  * @see {@link buildOutboxModuleOptions} for the analogous outbox mapper.
  */
-export function buildIdempotencyModuleOptions(
-  idempotency: EventsToolkitIdempotencyOptions,
-): IdempotencyModuleOptions {
+export function buildIdempotencyModuleOptions(idempotency: EventsToolkitIdempotencyOptions): IdempotencyModuleOptions {
   if (idempotency.type === 'postgres') {
     return {
       type: 'postgres',

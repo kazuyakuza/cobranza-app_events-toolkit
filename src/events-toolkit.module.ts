@@ -32,6 +32,7 @@ import {
   buildIdempotencyAsyncImport,
   buildDiscoveryAsyncImport,
   isIdempotencyEnabled,
+  resolveCapabilities,
 } from './events-toolkit-module.imports';
 import { EventsToolkitModuleOptions, EventsToolkitModuleAsyncOptions } from './events-toolkit-options.interface';
 import type { EventsToolkitDiscoveryOptions } from './discovery/discovery-service-options.interface';
@@ -116,13 +117,6 @@ function buildDiscoveryOptions(options: EventsToolkitModuleOptions): EventsToolk
     ...options.discovery,
     capabilities: resolveCapabilities(options),
   };
-}
-
-function resolveCapabilities(options: EventsToolkitModuleOptions): string[] {
-  const capabilities: string[] = [];
-  if (isIdempotencyEnabled(options.idempotency)) capabilities.push('idempotency');
-  if (options.outbox) capabilities.push('outbox');
-  return [...capabilities, ...(options.discovery?.capabilities ?? [])];
 }
 
 function buildSyncImports(options: EventsToolkitModuleOptions, resolved: ResolvedNats): ModuleImport[] {

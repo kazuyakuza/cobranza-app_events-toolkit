@@ -23,7 +23,8 @@ export class MockIdempotencyService {
   }
 
   /** Marks the event key as processed. Re-marking overwrites (matches MemoryIdempotencyRepository). */
-  async markAsProcessed(event: AnyEventEnvelope<unknown>): Promise<void> {
+  async markAsProcessed(event: AnyEventEnvelope<unknown>, ttlSeconds?: number): Promise<void> {
+    void ttlSeconds;
     const key = buildIdempotencyKey(event);
     this.processed.set(key, true);
   }

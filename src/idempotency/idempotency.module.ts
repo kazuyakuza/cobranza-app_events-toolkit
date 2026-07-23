@@ -27,9 +27,7 @@ function resolveRepository(options: IdempotencyModuleOptions): IdempotencyReposi
   return new SqliteIdempotencyRepository(dbPath);
 }
 
-function resolvePostgresRepository(
-  postgres?: IdempotencyModuleOptions['postgres'],
-): IdempotencyRepository {
+function resolvePostgresRepository(postgres?: IdempotencyModuleOptions['postgres']): IdempotencyRepository {
   if (!postgres?.entityManager) {
     throw new Error('IdempotencyModule with type "postgres" requires options.postgres.entityManager');
   }
@@ -39,10 +37,10 @@ function resolvePostgresRepository(
 function buildRepoConfigProvider(): Provider {
   return {
     provide: IDEMPOTENCY_REPO_CONFIG_TOKEN,
-    useFactory: (
-      repository: IdempotencyRepository,
-      serviceOpts: IdempotencyServiceOptions,
-    ) => ({ repository, options: serviceOpts }),
+    useFactory: (repository: IdempotencyRepository, serviceOpts: IdempotencyServiceOptions) => ({
+      repository,
+      options: serviceOpts,
+    }),
     inject: [IDEMPOTENCY_REPOSITORY_TOKEN, IDEMPOTENCY_SERVICE_OPTIONS_TOKEN],
   };
 }
@@ -142,15 +140,13 @@ export class IdempotencyModule {
   static forRootAsync(asyncOptions: IdempotencyModuleAsyncOptions): DynamicModule {
     const moduleOptionsProvider: Provider = {
       provide: IDEMPOTENCY_MODULE_OPTIONS_TOKEN,
-      useFactory: async (...args: unknown[]): Promise<IdempotencyModuleOptions> =>
-        asyncOptions.useFactory(...args),
+      useFactory: async (...args: unknown[]): Promise<IdempotencyModuleOptions> => asyncOptions.useFactory(...args),
       inject: asyncOptions.inject ?? [],
     };
 
     const repositoryProvider: Provider = {
       provide: IDEMPOTENCY_REPOSITORY_TOKEN,
-      useFactory: (moduleOptions: IdempotencyModuleOptions): IdempotencyRepository =>
-        resolveRepository(moduleOptions),
+      useFactory: (moduleOptions: IdempotencyModuleOptions): IdempotencyRepository => resolveRepository(moduleOptions),
       inject: [IDEMPOTENCY_MODULE_OPTIONS_TOKEN],
     };
 

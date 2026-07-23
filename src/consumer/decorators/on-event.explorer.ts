@@ -46,11 +46,7 @@ export class OnEventExplorer implements OnModuleInit {
 
   private getValidInstances(): object[] {
     const allWrappers = [...this.deps.discovery.getProviders(), ...this.deps.discovery.getControllers()];
-    return allWrappers.filter((w) => this.isValidWrapper(w)).map((w) => w.instance as object);
-  }
-
-  private isValidWrapper(wrapper: { instance?: unknown }): boolean {
-    return this.hasObjectInstance(wrapper);
+    return allWrappers.filter((w) => this.hasObjectInstance(w)).map((w) => w.instance as object);
   }
 
   private hasObjectInstance(wrapper: { instance?: unknown }): boolean {

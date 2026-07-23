@@ -30,7 +30,7 @@ export interface EventsToolkitOutboxOptions {
   /** Path to SQLite database file. Default: ':memory:'. */
   sqlitePath?: string;
   /** PostgreSQL entity manager. Required when type is 'postgres'. */
-  postgres?: { entityManager: EntityManagerLike; };
+  postgres?: { entityManager: EntityManagerLike };
   /** Background processor tuning. */
   serviceOptions?: OutboxServiceOptions;
 }

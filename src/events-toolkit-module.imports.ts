@@ -9,10 +9,7 @@ import { IdempotencyModuleOptions } from './idempotency/idempotency.types';
 import { DiscoveryModule } from './discovery/discovery.module';
 import { EVENTS_TOOLKIT_OPTIONS } from './events-toolkit-module.tokens';
 import { NATS_CONNECTION_TOKEN } from './request-reply/request-reply.types';
-import {
-  buildIdempotencyModuleOptions,
-  buildOutboxModuleOptions,
-} from './events-toolkit-module.providers';
+import { buildIdempotencyModuleOptions, buildOutboxModuleOptions } from './events-toolkit-module.providers';
 import type { EventsToolkitModuleOptions, EventsToolkitIdempotencyOptions } from './events-toolkit-options.interface';
 import type { EventsToolkitDiscoveryOptions } from './discovery/discovery-service-options.interface';
 
@@ -32,9 +29,7 @@ export function isIdempotencyEnabled(
  * is wired as a safe fallback because conditional module imports cannot be
  * decided at module-build time.
  */
-export function isIdempotencyDisabled(
-  idempotency?: EventsToolkitIdempotencyOptions,
-): boolean {
+export function isIdempotencyDisabled(idempotency?: EventsToolkitIdempotencyOptions): boolean {
   return idempotency === undefined || idempotency.enabled === false;
 }
 
@@ -84,22 +79,22 @@ export function buildIdempotencyAsyncImport(): DynamicModule {
   });
 }
 
+export function resolveCapabilities(options: EventsToolkitModuleOptions): string[] {
+  const capabilities: string[] = [];
+  if (isIdempotencyEnabled(options.idempotency)) capabilities.push('idempotency');
+  if (options.outbox) capabilities.push('outbox');
+  return [...capabilities, ...(options.discovery?.capabilities ?? [])];
+}
+
 export function buildDiscoveryAsyncImport(): DynamicModule {
   return DiscoveryModule.forRootAsync({
     useFactory: (...args: unknown[]) => {
       const opts = args[0] as EventsToolkitModuleOptions;
       return {
         ...opts.discovery,
-        capabilities: resolveAsyncCapabilities(opts),
+        capabilities: resolveCapabilities(opts),
       } satisfies EventsToolkitDiscoveryOptions;
     },
     inject: [EVENTS_TOOLKIT_OPTIONS],
   });
-}
-
-function resolveAsyncCapabilities(opts: EventsToolkitModuleOptions): string[] {
-  const capabilities: string[] = [];
-  if (isIdempotencyEnabled(opts.idempotency)) capabilities.push('idempotency');
-  if (opts.outbox) capabilities.push('outbox');
-  return [...capabilities, ...(opts.discovery?.capabilities ?? [])];
 }

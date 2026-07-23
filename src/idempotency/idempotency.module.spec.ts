@@ -29,9 +29,9 @@ import { SqliteIdempotencyRepository } from './sqlite-idempotency.repository';
 import { MemoryIdempotencyRepository } from './memory-idempotency.repository';
 
 function findRepositoryProvider(dynamicModule: DynamicModule) {
-  return dynamicModule.providers?.find(
-    (p) => 'provide' in p && p.provide === IDEMPOTENCY_REPOSITORY_TOKEN,
-  ) as { provide: string; useValue: IdempotencyRepository } | undefined;
+  return dynamicModule.providers?.find((p) => 'provide' in p && p.provide === IDEMPOTENCY_REPOSITORY_TOKEN) as
+    | { provide: string; useValue: IdempotencyRepository }
+    | undefined;
 }
 
 describe('IdempotencyModule', () => {

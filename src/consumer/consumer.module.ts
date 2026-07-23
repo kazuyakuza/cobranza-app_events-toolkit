@@ -11,6 +11,7 @@ import { OnRequestReplyExplorer } from './decorators/on-request-reply.explorer';
 import { RequestReplyConsumerService } from './request-reply-consumer.service';
 import {
   createDiscoveryPairProvider,
+  createConsumerDiscoveryPairProvider,
   createOnEventExplorerDepsProvider,
   createRequestReplyExplorerDepsProvider,
   createSyncJetStreamConsumerDepsProvider,
@@ -31,19 +32,21 @@ export const RESOLVED_CONNECTION_TOKEN = 'RESOLVED_CONNECTION' as unknown as Typ
 export const CONSUMER_SERVICES_PAIR = 'CONSUMER_SERVICES_PAIR' as unknown as Type<unknown>;
 export const JETSTREAM_CONSUMER_ASYNC_DEPS_TOKEN = 'JETSTREAM_CONSUMER_ASYNC_DEPS' as unknown as Type<unknown>;
 export const REQUEST_REPLY_CONSUMER_ASYNC_DEPS_TOKEN = 'REQUEST_REPLY_CONSUMER_ASYNC_DEPS' as unknown as Type<unknown>;
-
+export const CONSUMER_DISCOVERY_PAIR_TOKEN = 'CONSUMER_DISCOVERY_PAIR';
 /** Pair of DiscoveryService and Reflector for explorer-based handler registration. */
 export interface DiscoveryReflectorPair {
   discovery: DiscoveryService;
   reflector: Reflector;
 }
-
+/** Pair that extends DiscoveryReflectorPair with ConsumerService for explorer deps. */
+export interface ConsumerDiscoveryPair extends DiscoveryReflectorPair {
+  consumerService: ConsumerService;
+}
 /** Pair of ConsumerService and EventLoggerService for consumer subsystem injection. */
 export interface ConsumerServicesPair {
   consumerService: ConsumerService;
   logger: EventLoggerService;
 }
-
 /** Resolved NATS JetStream connection with optional custom DLQ subject builder. */
 export interface ResolvedConnection {
   jetStream: JetStreamClient;
@@ -119,6 +122,7 @@ export class ConsumerModule {
       imports: [DiscoveryModule],
       providers: [
         createDiscoveryPairProvider(),
+        createConsumerDiscoveryPairProvider(),
         createOnEventExplorerDepsProvider(),
         createSyncJetStreamConsumerDepsProvider({
           jetStream,
@@ -153,7 +157,6 @@ export class ConsumerModule {
       ],
     };
   }
-
   /**
    * Registers the ConsumerModule with asynchronously resolved options.
    *
@@ -170,6 +173,7 @@ export class ConsumerModule {
       providers: [
         createAsyncOptionsProvider(asyncOptions),
         createDiscoveryPairProvider(),
+        createConsumerDiscoveryPairProvider(),
         createOnEventExplorerDepsProvider(),
         createRequestReplyExplorerDepsProvider(),
         createJetStreamAsyncDepsProvider(),

@@ -14,7 +14,11 @@ export { MockManifestService } from './mock-manifest.service';
 export { MockDiscoveryEventPublisher } from './mock-discovery-event-publisher.service';
 export { MockDiscoveryService, MockDiscoveryServiceDeps, MockDiscoveryServiceConfig } from './mock-discovery.service';
 export { EventsToolkitTestModule } from './events-toolkit-test.module';
-export { EventsToolkitTestModuleOptions, DiscoveryTestOptions, IdempotencyTestOptions } from './events-toolkit-test-options.interface';
+export {
+  EventsToolkitTestModuleOptions,
+  DiscoveryTestOptions,
+  IdempotencyTestOptions,
+} from './events-toolkit-test-options.interface';
 export {
   expectEventPublished,
   expectNoEventsPublished,

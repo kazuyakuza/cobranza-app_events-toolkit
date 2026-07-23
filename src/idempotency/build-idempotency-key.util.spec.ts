@@ -44,9 +44,7 @@ describe('buildIdempotencyKey', () => {
   });
 
   it('handles correlation_id with dashes', () => {
-    const key = buildIdempotencyKey(
-      createEventEnvelope('evt_003', '550e8400-e29b-41d4-a716-446655440000'),
-    );
+    const key = buildIdempotencyKey(createEventEnvelope('evt_003', '550e8400-e29b-41d4-a716-446655440000'));
     expect(key).toBe('evt_003:550e8400-e29b-41d4-a716-446655440000');
   });
 });

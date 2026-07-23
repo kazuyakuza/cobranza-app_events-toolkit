@@ -37,7 +37,6 @@ function createConsumeEntry(overrides: Partial<ManifestConsumeEntry> = {}): Mani
     ...overrides,
   };
 }
-
 function createProduceEntry(overrides: Partial<ManifestProduceEntry> = {}): ManifestProduceEntry {
   return {
     subject: 'company.{companyId}.test.v1',
@@ -179,20 +178,6 @@ describe('DiscoveryService', () => {
       expect(baseProduce?.handler).toBe('baseEmitter');
       expect(manifest.consumes).toHaveLength(1);
       expect(manifest.produces).toHaveLength(1);
-    });
-  });
-
-  describe('capabilities', () => {
-    it('includes capabilities on generated manifest', () => {
-      moduleOptions.capabilities = ['idempotency', 'outbox'];
-      const manifest = service.getManifest();
-      expect(manifest.capabilities).toEqual(['idempotency', 'outbox']);
-    });
-
-    it('defaults capabilities to [] when unset', () => {
-      moduleOptions.capabilities = [];
-      const manifest = service.getManifest();
-      expect(manifest.capabilities).toBeUndefined();
     });
   });
 

@@ -65,6 +65,24 @@ export class IdempotentConsumer {
   }
 }
 
+export class FailingThenSucceedingConsumer {
+  invokeCount = 0;
+  shouldFail = true;
+
+  @OnEvent('billing.invoice.adjusted', {
+    version: '1',
+    description: 'Handles invoice adjustments idempotently',
+    payloadExample: { invoiceId: 'inv-1' },
+    idempotent: true,
+  })
+  handleAdjusted(): void {
+    this.invokeCount += 1;
+    if (this.shouldFail) {
+      throw new Error('first attempt fails');
+    }
+  }
+}
+
 export class GetterSetterConsumer {
   handlerInvoked = false;
 

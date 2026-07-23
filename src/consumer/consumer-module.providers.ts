@@ -12,6 +12,7 @@ import { RequestReplyConsumerService } from './request-reply-consumer.service';
 import {
   CONSUMER_MODULE_OPTIONS,
   DISCOVERY_REFLECTOR_PAIR,
+  CONSUMER_DISCOVERY_PAIR_TOKEN,
   RESOLVED_CONNECTION_TOKEN,
   CONSUMER_SERVICES_PAIR,
   JETSTREAM_CONSUMER_ASYNC_DEPS_TOKEN,
@@ -20,6 +21,7 @@ import {
   ConsumerModuleAsyncOptions,
   DiscoveryReflectorPair,
   ConsumerServicesPair,
+  ConsumerDiscoveryPair,
   ResolvedConnection,
   JetStreamAsyncDeps,
   RequestReplyAsyncDeps,
@@ -35,22 +37,27 @@ export function createDiscoveryPairProvider(): Provider {
     inject: [DiscoveryService, Reflector],
   };
 }
+/** Intermediate provider that merges DiscoveryReflectorPair with ConsumerService. */
+export function createConsumerDiscoveryPairProvider(): Provider {
+  return {
+    provide: CONSUMER_DISCOVERY_PAIR_TOKEN,
+    useFactory: (pair: DiscoveryReflectorPair, consumerService: ConsumerService) =>
+      ({ ...pair, consumerService }) satisfies ConsumerDiscoveryPair,
+    inject: [DISCOVERY_REFLECTOR_PAIR, ConsumerService],
+  };
+}
 
 /** Provider for @OnEvent() explorer dependencies. */
 export function createOnEventExplorerDepsProvider(): Provider {
   return {
     provide: ON_EVENT_EXPLORER_DEPS_TOKEN,
-    useFactory: (
-      pair: DiscoveryReflectorPair,
-      consumerService: ConsumerService,
-      idempotencyService?: IdempotencyService,
-    ) => ({
-      discovery: pair.discovery,
-      reflector: pair.reflector,
-      consumerService,
+    useFactory: (consumerDiscoveryPair: ConsumerDiscoveryPair, idempotencyService?: IdempotencyService) => ({
+      discovery: consumerDiscoveryPair.discovery,
+      reflector: consumerDiscoveryPair.reflector,
+      consumerService: consumerDiscoveryPair.consumerService,
       idempotencyService,
     }),
-    inject: [DISCOVERY_REFLECTOR_PAIR, ConsumerService, { token: IdempotencyService, optional: true }],
+    inject: [CONSUMER_DISCOVERY_PAIR_TOKEN, { token: IdempotencyService, optional: true }],
   };
 }
 

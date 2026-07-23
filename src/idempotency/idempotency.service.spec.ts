@@ -1,7 +1,7 @@
 import { IdempotencyService } from './idempotency.service';
 import { IdempotencyRepository } from './idempotency.types';
 import { EventLoggerService } from '../logging/event-logger.service';
-import { IDEMPOTENCY_SERVICE_DEPS_TOKEN } from './idempotency-service-deps.interface';
+
 import { EventEnvelope } from '../common/envelope/event-envelope.class';
 import { ActorType } from '../common/envelope/actor-type.enum';
 

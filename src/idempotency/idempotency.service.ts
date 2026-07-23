@@ -23,9 +23,7 @@ import { ExecuteIfNotProcessedParams } from './execute-if-not-processed-params.i
  */
 @Injectable()
 export class IdempotencyService {
-  constructor(
-    @Inject(IDEMPOTENCY_SERVICE_DEPS_TOKEN) private readonly deps: IdempotencyServiceDeps,
-  ) {}
+  constructor(@Inject(IDEMPOTENCY_SERVICE_DEPS_TOKEN) private readonly deps: IdempotencyServiceDeps) {}
 
   /**
    * Returns `true` when the event has already been processed
