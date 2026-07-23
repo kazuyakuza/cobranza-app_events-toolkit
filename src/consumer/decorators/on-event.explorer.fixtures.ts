@@ -51,6 +51,20 @@ export class CustomVersionConsumer {
   }
 }
 
+export class IdempotentConsumer {
+  invokeCount = 0;
+
+  @OnEvent('billing.invoice.adjusted', {
+    version: '1',
+    description: 'Handles invoice adjustments idempotently',
+    payloadExample: { invoiceId: 'inv-1' },
+    idempotent: true,
+  })
+  handleAdjusted(): void {
+    this.invokeCount += 1;
+  }
+}
+
 export class GetterSetterConsumer {
   handlerInvoked = false;
 

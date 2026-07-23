@@ -20,6 +20,10 @@ export interface OnEventMetadata {
   payloadExample: Record<string, unknown>;
   /** Event scope (tenant or global). Defaults to tenant for backward compatibility. */
   scope?: EventScope;
+  /** When true and IdempotencyModule is registered, the explorer wraps this handler
+   *  with a duplicate check so repeated delivery of the same event is skipped silently.
+   *  No-op when the idempotency module is not configured. */
+  idempotent?: boolean;
 }
 
 /** Options for the @OnEvent() method decorator (second argument, required). */
@@ -36,6 +40,10 @@ export interface OnEventOptions {
   payloadExample: Record<string, unknown>;
   /** Event scope (tenant or global). Defaults to tenant for backward compatibility. */
   scope?: EventScope;
+  /** When true and IdempotencyModule is registered, the explorer wraps this handler
+   *  with a duplicate check so repeated delivery of the same event is skipped silently.
+   *  No-op when the idempotency module is not configured. */
+  idempotent?: boolean;
 }
 
 /**

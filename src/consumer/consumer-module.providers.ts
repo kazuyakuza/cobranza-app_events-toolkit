@@ -2,6 +2,7 @@ import { Provider, Type } from '@nestjs/common';
 import { DiscoveryService, Reflector } from '@nestjs/core';
 import { JetStreamClient } from 'nats';
 import { EventLoggerService } from '../logging/event-logger.service';
+import { IdempotencyService } from '../idempotency/idempotency.service';
 import { ConsumerService } from './consumer.service';
 import { JETSTREAM_CONSUMER_DEPS_TOKEN } from './jetstream-consumer-deps.interface';
 import { ON_EVENT_EXPLORER_DEPS_TOKEN } from './decorators/on-event-explorer-deps.interface';
@@ -39,12 +40,17 @@ export function createDiscoveryPairProvider(): Provider {
 export function createOnEventExplorerDepsProvider(): Provider {
   return {
     provide: ON_EVENT_EXPLORER_DEPS_TOKEN,
-    useFactory: (pair: DiscoveryReflectorPair, consumerService: ConsumerService) => ({
+    useFactory: (
+      pair: DiscoveryReflectorPair,
+      consumerService: ConsumerService,
+      idempotencyService?: IdempotencyService,
+    ) => ({
       discovery: pair.discovery,
       reflector: pair.reflector,
       consumerService,
+      idempotencyService,
     }),
-    inject: [DISCOVERY_REFLECTOR_PAIR, ConsumerService],
+    inject: [DISCOVERY_REFLECTOR_PAIR, ConsumerService, { token: IdempotencyService, optional: true }],
   };
 }
 

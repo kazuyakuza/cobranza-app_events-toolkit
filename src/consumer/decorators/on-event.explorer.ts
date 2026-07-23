@@ -3,6 +3,7 @@ import { EventHandler } from '../consumer.service';
 import { ON_EVENT_METADATA, OnEventMetadata } from './on-event.decorator';
 import { ON_EVENT_EXPLORER_DEPS_TOKEN, OnEventExplorerDeps } from './on-event-explorer-deps.interface';
 import { EventScope } from '../../common/envelope/event-scope.enum';
+import type { IdempotencyService } from '../../idempotency/idempotency.service';
 
 /** Pairs a class instance with its prototype for method metadata scanning. */
 interface HandlerTarget {
@@ -75,7 +76,25 @@ export class OnEventExplorer implements OnModuleInit {
 
     const handler = methodRef.bind(target.instance) as EventHandler;
     const subject = this.buildWildcardSubject(metadata);
-    this.deps.consumerService.registerHandler(subject, handler);
+    const finalHandler = this.resolveHandler(handler, metadata);
+    this.deps.consumerService.registerHandler(subject, finalHandler);
+  }
+
+  /** Returns the handler to register, wrapping it with idempotency when the
+   *  decorator opted in and the idempotency service is available. */
+  private resolveHandler(handler: EventHandler, metadata: OnEventMetadata): EventHandler {
+    if (!metadata.idempotent) return handler;
+    if (!this.deps.idempotencyService) return handler;
+    return this.wrapWithIdempotency(handler, this.deps.idempotencyService);
+  }
+
+  /** Wraps a handler so duplicate events are skipped and processed events are marked. */
+  private wrapWithIdempotency(handler: EventHandler, service: IdempotencyService): EventHandler {
+    return async (event, context) => {
+      if (await service.isDuplicate(event)) return;
+      await handler(event, context);
+      await service.markAsProcessed(event);
+    };
   }
 
   private buildWildcardSubject(metadata: OnEventMetadata): string {

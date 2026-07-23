@@ -3,6 +3,9 @@ import { DiscoveryService, Reflector } from '@nestjs/core';
 import { ConsumerService } from '../consumer.service';
 import { OnEventExplorer } from './on-event.explorer';
 import { OnEventExplorerDeps } from './on-event-explorer-deps.interface';
+import { IdempotencyService } from '../../idempotency/idempotency.service';
+import { MemoryIdempotencyRepository } from '../../idempotency/memory-idempotency.repository';
+import { EventLoggerService } from '../../logging/event-logger.service';
 import { EventEnvelope } from '../../common/envelope/event-envelope.class';
 import { ActorType } from '../../common/envelope/actor-type.enum';
 import { EventContext } from '../../common/envelope/event-context.interface';
@@ -11,6 +14,7 @@ import {
   ConsumerWithoutDecorator,
   CustomVersionConsumer,
   GetterSetterConsumer,
+  IdempotentConsumer,
 } from './on-event.explorer.fixtures';
 
 function createDeps(discovery: DiscoveryService): OnEventExplorerDeps {
@@ -159,5 +163,155 @@ describe('OnEventExplorer', () => {
       expect(consumerService.handlerCount).toBe(1);
       expect(consumerService.getHandler('company.*.audit.ledger.snapshot.v1')).toBeDefined();
     });
+
+    describe('idempotent flag', () => {
+      it('wraps handler with idempotency when idempotent:true and service present', async () => {
+        const idempotencyService = createIdempotencyService();
+        const idempotentHandler = new IdempotentConsumer();
+        const localDeps: OnEventExplorerDeps = {
+          discovery: discovery as unknown as DiscoveryService,
+          reflector: new Reflector(),
+          consumerService: new ConsumerService(),
+          idempotencyService,
+        };
+        const idempotentExplorer = new OnEventExplorer(localDeps);
+
+        (discovery.getProviders as jest.Mock).mockReturnValue([{ instance: idempotentHandler }]);
+        (discovery.getControllers as jest.Mock).mockReturnValue([]);
+
+        idempotentExplorer.onModuleInit();
+
+        const handler = localDeps.consumerService.getHandler('company.*.billing.invoice.adjusted.v1');
+        expect(handler).toBeDefined();
+
+        const event = buildIdempotentEvent();
+        const context = buildEventContext();
+
+        await handler!(event, context);
+        expect(idempotentHandler.invokeCount).toBe(1);
+
+        await handler!(event, context);
+        expect(idempotentHandler.invokeCount).toBe(1);
+      });
+
+      it('does not wrap when idempotent:true but idempotencyService is undefined', async () => {
+        const idempotentHandler = new IdempotentConsumer();
+        const localDeps: OnEventExplorerDeps = {
+          discovery: discovery as unknown as DiscoveryService,
+          reflector: new Reflector(),
+          consumerService: new ConsumerService(),
+        };
+        const nonIdempotentExplorer = new OnEventExplorer(localDeps);
+
+        (discovery.getProviders as jest.Mock).mockReturnValue([{ instance: idempotentHandler }]);
+        (discovery.getControllers as jest.Mock).mockReturnValue([]);
+
+        nonIdempotentExplorer.onModuleInit();
+
+        const handler = localDeps.consumerService.getHandler('company.*.billing.invoice.adjusted.v1');
+        expect(handler).toBeDefined();
+
+        const event = buildIdempotentEvent();
+        const context = buildEventContext();
+
+        await handler!(event, context);
+        expect(idempotentHandler.invokeCount).toBe(1);
+
+        await handler!(event, context);
+        expect(idempotentHandler.invokeCount).toBe(2);
+      });
+
+      it('does not wrap when idempotent flag is absent on decorated handler', async () => {
+        const idempotencyService = createIdempotencyService();
+        const sampleHandlerLocal = new SampleConsumer();
+        const localDeps: OnEventExplorerDeps = {
+          discovery: discovery as unknown as DiscoveryService,
+          reflector: new Reflector(),
+          consumerService: new ConsumerService(),
+          idempotencyService,
+        };
+        const explorerWithoutFlag = new OnEventExplorer(localDeps);
+
+        (discovery.getProviders as jest.Mock).mockReturnValue([{ instance: sampleHandlerLocal }]);
+        (discovery.getControllers as jest.Mock).mockReturnValue([]);
+
+        explorerWithoutFlag.onModuleInit();
+
+        const handler = localDeps.consumerService.getHandler('company.*.payment.proof.uploaded.v1');
+        expect(handler).toBeDefined();
+
+        const event = new EventEnvelope({ id: 'evt_no_flag', type: 'payment.proof.uploaded' });
+        const context = buildEventContext();
+
+        await handler!(event, context);
+        expect(sampleHandlerLocal.handlerInvoked).toBe(true);
+
+        expect(await idempotencyService.isDuplicate(event)).toBe(false);
+      });
+
+      it('marks and skips duplicate after successful handler execution', async () => {
+        const idempotencyService = createIdempotencyService();
+        const idempotentHandler = new IdempotentConsumer();
+        const localDeps: OnEventExplorerDeps = {
+          discovery: discovery as unknown as DiscoveryService,
+          reflector: new Reflector(),
+          consumerService: new ConsumerService(),
+          idempotencyService,
+        };
+        const explorerWithIdempotency = new OnEventExplorer(localDeps);
+
+        (discovery.getProviders as jest.Mock).mockReturnValue([{ instance: idempotentHandler }]);
+        (discovery.getControllers as jest.Mock).mockReturnValue([]);
+
+        explorerWithIdempotency.onModuleInit();
+
+        const handler = localDeps.consumerService.getHandler('company.*.billing.invoice.adjusted.v1');
+        expect(handler).toBeDefined();
+
+        const event = buildIdempotentEvent();
+        const context = buildEventContext();
+        const event2 = new EventEnvelope({
+          id: 'evt_idempotent_2',
+          type: 'billing.invoice.adjusted',
+          correlation_id: 'corr_idempotent_2',
+        });
+
+        // First event runs and gets marked
+        await handler!(event, context);
+        expect(idempotentHandler.invokeCount).toBe(1);
+        expect(await idempotencyService.isDuplicate(event)).toBe(true);
+
+        // Second event (different key) also runs
+        await handler!(event2, context);
+        expect(idempotentHandler.invokeCount).toBe(2);
+        expect(await idempotencyService.isDuplicate(event2)).toBe(true);
+      });
+    });
   });
 });
+
+function createIdempotencyService(): IdempotencyService {
+  const repository = new MemoryIdempotencyRepository();
+  const logger = new EventLoggerService();
+  return new IdempotencyService({ repository, logger });
+}
+
+function buildIdempotentEvent(): EventEnvelope {
+  return new EventEnvelope({
+    id: 'evt_idempotent',
+    type: 'billing.invoice.adjusted',
+    correlation_id: 'corr_idempotent',
+  });
+}
+
+function buildEventContext(): EventContext {
+  return {
+    type: 'billing.invoice.adjusted',
+    version: '1.0.0',
+    producer: 'test-service',
+    companyId: '550e8400-e29b-41d4-a716-446655440000',
+    actorType: ActorType.CLIENT,
+    actorId: 'user-123',
+    correlationId: 'corr_idempotent',
+  };
+}
