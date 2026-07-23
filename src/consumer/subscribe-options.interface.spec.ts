@@ -80,6 +80,19 @@ describe('resolveConsumerSubscribeOpts', () => {
   });
 });
 
+describe('resolveConsumerSubscribeOpts — gateway-undefined equivalence', () => {
+  it('returns defaults matching merger delegation path', () => {
+    const resolved = resolveConsumerSubscribeOpts(undefined);
+    if (isConsumerOptsBuilder(resolved)) {
+      const builder = resolved as unknown as { getOpts: () => import('nats').ConsumerOpts };
+      expect(builder.getOpts().config.ack_policy).toBe(AckPolicy.Explicit);
+    } else {
+      const config = (resolved as Partial<import('nats').ConsumerOpts>).config;
+      expect(config?.ack_policy).toBe(AckPolicy.Explicit);
+    }
+  });
+});
+
 describe('isConsumerOptsBuilder', () => {
   it('returns true for consumerOpts() and createDefaultConsumerOpts()', () => {
     expect(isConsumerOptsBuilder(consumerOpts())).toBe(true);
