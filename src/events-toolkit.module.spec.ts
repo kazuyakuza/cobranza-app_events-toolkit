@@ -89,6 +89,30 @@ describe('EventsToolkitModule', () => {
       expect(outboxNames).toHaveLength(0);
     });
 
+    it('should include IdempotencyModule when idempotency is configured and enabled', async () => {
+      const module = await EventsToolkitModule.forRoot({
+        ...forRootOptions,
+        idempotency: { type: 'memory' },
+      });
+      const moduleNames = (module.imports ?? []).map(getModuleName);
+      expect(moduleNames).toContain('IdempotencyModule');
+    });
+
+    it('should not include IdempotencyModule when idempotency is not configured', async () => {
+      const module = await EventsToolkitModule.forRoot(forRootOptions);
+      const idempNames = (module.imports ?? []).map(getModuleName).filter((n) => n === 'IdempotencyModule');
+      expect(idempNames).toHaveLength(0);
+    });
+
+    it('should not include IdempotencyModule when idempotency.enabled is false', async () => {
+      const module = await EventsToolkitModule.forRoot({
+        ...forRootOptions,
+        idempotency: { type: 'memory', enabled: false },
+      });
+      const idempNames = (module.imports ?? []).map(getModuleName).filter((n) => n === 'IdempotencyModule');
+      expect(idempNames).toHaveLength(0);
+    });
+
     it('should provide EventLoggerService with default config', async () => {
       const module = await EventsToolkitModule.forRoot(forRootOptions);
       const loggerProvider = findProvider(module.providers as Provider[] | undefined, EventLoggerService);
