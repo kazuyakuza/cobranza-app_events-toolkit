@@ -41,5 +41,5 @@ export { REQUEST_REPLY_CONSUMER_DEPS_TOKEN, RequestReplyConsumerDeps } from './r
 export { RegisterHandlerOptions } from './register-handler-options.interface';
 export { MoveToDlqOptions } from './move-to-dlq-options.interface';
 export { StreamAutoCreator, StreamAutoCreatorDeps } from './stream-auto-creator';
-export { GatewayConsumerOptions } from './gateway-consumer-options.interface';
+export { ModuleConsumerOptions } from './module-consumer-options.interface';
 export { resolveSubscriptionConsumerOpts } from './consumer-opts-merger';

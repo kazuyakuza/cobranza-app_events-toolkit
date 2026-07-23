@@ -5,7 +5,7 @@
  * - gateway durableName is passed through on subscribe(subject)
  * - subscribe(subject, consumerOptsBuilder) passes builder through unchanged
  * - onModuleInit() auto-subscribe applies gateway durableName
- * - default (no gatewayConsumerOpts) produces ephemeral consumer default
+ * - default (no moduleConsumerOpts) produces ephemeral consumer default
  */
 import { Test } from '@nestjs/testing';
 import { consumerOpts } from 'nats';
@@ -19,9 +19,7 @@ describe('RequestReplyConsumerService — gateway consumer opts merge', () => {
   let jetStream: { subscribe: jest.Mock; publish: jest.Mock };
   let mockLogger: Record<string, jest.Mock>;
 
-  function buildService(
-    gatewayConsumerOpts: Record<string, unknown> | undefined,
-  ): Promise<RequestReplyConsumerService> {
+  function buildService(moduleConsumerOpts: Record<string, unknown> | undefined): Promise<RequestReplyConsumerService> {
     jetStream = { subscribe: jest.fn().mockResolvedValue((async function* () {})()), publish: jest.fn() };
     mockLogger = {
       logEventConsumed: jest.fn(),
@@ -39,7 +37,7 @@ describe('RequestReplyConsumerService — gateway consumer opts merge', () => {
             logger,
             dlqSubjectBuilder: defaultDlqSubjectBuilder,
             responseSubjectPattern: 'company.*.response.v1',
-            ...(gatewayConsumerOpts !== undefined ? { gatewayConsumerOpts } : {}),
+            ...(moduleConsumerOpts !== undefined ? { moduleConsumerOpts } : {}),
           }),
           inject: [EventLoggerService],
         },
@@ -51,7 +49,7 @@ describe('RequestReplyConsumerService — gateway consumer opts merge', () => {
     return module.then((m) => m.get(RequestReplyConsumerService));
   }
 
-  describe('with gatewayConsumerOpts { durableName: "rr-durable" }', () => {
+  describe('with moduleConsumerOpts { durableName: "rr-durable" }', () => {
     let service: RequestReplyConsumerService;
 
     beforeEach(async () => {
@@ -78,7 +76,7 @@ describe('RequestReplyConsumerService — gateway consumer opts merge', () => {
     });
   });
 
-  describe('without gatewayConsumerOpts (current default)', () => {
+  describe('without moduleConsumerOpts (current default)', () => {
     let service: RequestReplyConsumerService;
 
     beforeEach(async () => {

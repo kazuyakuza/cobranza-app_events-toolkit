@@ -16,7 +16,7 @@ import {
   ErrorHandlingOptions,
 } from './subscribe-options.interface';
 import { resolveSubscriptionConsumerOpts } from './consumer-opts-merger';
-import { GatewayConsumerOptions } from './gateway-consumer-options.interface';
+import { ModuleConsumerOptions } from './module-consumer-options.interface';
 import { MoveToDlqOptions } from './move-to-dlq-options.interface';
 import { EnvelopeValidationUtil } from './envelope-validation.util';
 
@@ -26,12 +26,12 @@ import { EnvelopeValidationUtil } from './envelope-validation.util';
  * Handles the full consume pipeline: JSON parsing, envelope validation,
  * handler dispatch, ACK/NACK, and DLQ routing on failure.
  *
- * Supports gateway-level consumer configuration via {@link GatewayConsumerOptions},
+ * Supports module-level consumer configuration via {@link ModuleConsumerOptions},
  * which is merged with per-subscription options by {@link resolveSubscriptionConsumerOpts}.
  * This enables durable consumers, delivery policies, and acknowledgment behavior
  * configured at the module level (via `EventsToolkitModule.forRoot()`).
  *
- * @see {@link GatewayConsumerOptions} for available gateway-level consumer settings.
+ * @see {@link ModuleConsumerOptions} for available module-level consumer settings.
  * @see {@link resolveSubscriptionConsumerOpts} for merge precedence rules.
  */
 @Injectable()
@@ -43,18 +43,18 @@ export class JetStreamConsumerService {
   private readonly dlqHandler: ConsumerDlqHandler;
   private readonly streamAutoCreator?: StreamAutoCreator;
   /**
-   * Gateway-level JetStream consumer options threaded from `EventsToolkitConsumerOptions`.
+   * Module-level JetStream consumer options threaded from `EventsToolkitConsumerOptions`.
    * Merged with per-subscription options during `subscribe()` via {@link resolveSubscriptionConsumerOpts}.
    * When `undefined`, only per-subscription options and built-in defaults apply.
    */
-  private readonly gatewayConsumerOpts?: GatewayConsumerOptions;
+  private readonly moduleConsumerOpts?: ModuleConsumerOptions;
 
   constructor(@Inject(JETSTREAM_CONSUMER_DEPS_TOKEN) deps: JetStreamConsumerDeps) {
     this.jetStream = deps.jetStream;
     this.consumerService = deps.consumerService;
     this.logger = deps.logger;
     this.dlqSubjectBuilder = deps.dlqSubjectBuilder ?? defaultDlqSubjectBuilder;
-    this.gatewayConsumerOpts = deps.gatewayConsumerOpts;
+    this.moduleConsumerOpts = deps.moduleConsumerOpts;
     this.dlqHandler = new ConsumerDlqHandler({
       jetStream: this.jetStream,
       logger: this.logger,
@@ -66,7 +66,7 @@ export class JetStreamConsumerService {
   async subscribe(options: SubscribeOptions): Promise<void> {
     this.consumerService.registerHandler(options.subject, options.handler);
     await ensureStreamExists(this.streamAutoCreator, options.subject);
-    const consumerOpts = resolveSubscriptionConsumerOpts(this.gatewayConsumerOpts, options.consumerOpts);
+    const consumerOpts = resolveSubscriptionConsumerOpts(this.moduleConsumerOpts, options.consumerOpts);
     const subscription = await this.jetStream.subscribe(options.subject, consumerOpts);
     this.processSubscription(subscription, options.subject).catch((error: unknown) =>
       this.logGeneralError(error, options.subject),

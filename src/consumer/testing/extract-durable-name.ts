@@ -1,7 +1,7 @@
 /**
  * Test-only helper for extracting `durable_name` from NATS consumer options.
  *
- * Used in unit tests to assert that gateway-level `durableName` and per-subscription
+ * Used in unit tests to assert that module-level `durableName` and per-subscription
  * consumer opts are correctly merged into the resolved `ConsumerOpts` passed to
  * `jetStream.subscribe()`. Not intended for production use.
  *

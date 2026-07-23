@@ -2,7 +2,7 @@ import { AckPolicy, DeliverPolicy, ReplayPolicy } from 'nats';
 import { ConsumerSubscribeOpts } from './subscribe-options.interface';
 
 /**
- * Gateway-level JetStream consumer configuration threaded from
+ * Module-level JetStream consumer configuration threaded from
  * {@link EventsToolkitConsumerOptions} through the consumer DI chain and merged
  * with per-subscription options via {@link resolveSubscriptionConsumerOpts}.
  *
@@ -22,7 +22,7 @@ import { ConsumerSubscribeOpts } from './subscribe-options.interface';
  * @see {@link https://docs.nats.io/using-nats/developer/receiving/durables NATS Durable Consumers}
  * @see {@link resolveSubscriptionConsumerOpts} for merge precedence rules.
  */
-export interface GatewayConsumerOptions {
+export interface ModuleConsumerOptions {
   /**
    * Full NATS-native consumer options. Accepts a `ConsumerOptsBuilder` (e.g.,
    * `consumerOpts().durable('x').deliverAll()`) or a plain `Partial<ConsumerOpts>`.

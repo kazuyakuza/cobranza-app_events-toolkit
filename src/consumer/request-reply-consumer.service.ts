@@ -8,7 +8,7 @@ import { RegisterHandlerOptions } from './register-handler-options.interface';
 import { RequestReplyConsumerDeps, REQUEST_REPLY_CONSUMER_DEPS_TOKEN } from './request-reply-consumer-deps.interface';
 import { ConsumerSubscribeOpts, defaultDlqSubjectBuilder } from './subscribe-options.interface';
 import { resolveSubscriptionConsumerOpts } from './consumer-opts-merger';
-import { GatewayConsumerOptions } from './gateway-consumer-options.interface';
+import { ModuleConsumerOptions } from './module-consumer-options.interface';
 import { RequestReplyMessageProcessor } from './request-reply-message-processor';
 import { StreamAutoCreator } from './stream-auto-creator';
 import { createStreamAutoCreator, ensureStreamExists } from './consumer-stream.utils';
@@ -21,12 +21,12 @@ import { createStreamAutoCreator, ensureStreamExists } from './consumer-stream.u
  * Message processing (parsing, validation, DLQ routing) is delegated to
  * {@link RequestReplyMessageProcessor}.
  *
- * Supports gateway-level consumer configuration via {@link GatewayConsumerOptions},
+ * Supports module-level consumer configuration via {@link ModuleConsumerOptions},
  * which is merged with per-subscription options by {@link resolveSubscriptionConsumerOpts}.
  * This enables durable consumers, delivery policies, and acknowledgment behavior
  * configured at the module level (via `EventsToolkitModule.forRoot()`).
  *
- * @see {@link GatewayConsumerOptions} for available gateway-level consumer settings.
+ * @see {@link ModuleConsumerOptions} for available module-level consumer settings.
  * @see {@link resolveSubscriptionConsumerOpts} for merge precedence rules.
  */
 @Injectable()
@@ -38,17 +38,17 @@ export class RequestReplyConsumerService implements OnModuleInit {
   private readonly processor: RequestReplyMessageProcessor;
   private readonly streamAutoCreator?: StreamAutoCreator;
   /**
-   * Gateway-level JetStream consumer options threaded from `EventsToolkitConsumerOptions`.
+   * Module-level JetStream consumer options threaded from `EventsToolkitConsumerOptions`.
    * Merged with per-subscription options during `subscribe()` via {@link resolveSubscriptionConsumerOpts}.
    * When `undefined`, only per-subscription options and built-in defaults apply.
    */
-  private readonly gatewayConsumerOpts?: GatewayConsumerOptions;
+  private readonly moduleConsumerOpts?: ModuleConsumerOptions;
 
   constructor(@Inject(REQUEST_REPLY_CONSUMER_DEPS_TOKEN) deps: RequestReplyConsumerDeps) {
     this.jetStream = deps.jetStream;
     this.logger = deps.logger;
     this.responseSubjectPattern = deps.responseSubjectPattern ?? 'company.*.response.v1';
-    this.gatewayConsumerOpts = deps.gatewayConsumerOpts;
+    this.moduleConsumerOpts = deps.moduleConsumerOpts;
     const dlqSubjectBuilder = deps.dlqSubjectBuilder ?? defaultDlqSubjectBuilder;
     this.processor = new RequestReplyMessageProcessor({
       jetStream: this.jetStream,
@@ -106,7 +106,7 @@ export class RequestReplyConsumerService implements OnModuleInit {
   /** Subscribes to a NATS subject pattern for response messages. */
   async subscribe(subject: string, consumerOpts?: ConsumerSubscribeOpts): Promise<void> {
     await ensureStreamExists(this.streamAutoCreator, subject);
-    const resolvedOpts = resolveSubscriptionConsumerOpts(this.gatewayConsumerOpts, consumerOpts);
+    const resolvedOpts = resolveSubscriptionConsumerOpts(this.moduleConsumerOpts, consumerOpts);
     const subscription = await this.jetStream.subscribe(subject, resolvedOpts);
     this.processSubscription(subscription, subject).catch((error: unknown) => this.logGeneralError(error, subject));
   }

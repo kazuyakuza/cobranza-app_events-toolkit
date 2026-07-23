@@ -1,11 +1,11 @@
 /**
  * Gateway-level consumer option merge tests for JetStreamConsumerService.
  *
- * Builds the service with gatewayConsumerOpts and verifies that:
+ * Builds the service with moduleConsumerOpts and verifies that:
  * - gateway durableName is passed through to jetStream.subscribe
  * - per-subscription opts override gateway
  * - per-subscription builder fully overrides
- * - default (no gatewayConsumerOpts) still produces an ephemeral consumer
+ * - default (no moduleConsumerOpts) still produces an ephemeral consumer
  */
 import { Test } from '@nestjs/testing';
 import { consumerOpts } from 'nats';
@@ -20,7 +20,7 @@ describe('JetStreamConsumerService — gateway consumer opts merge', () => {
   let jetStream: { subscribe: jest.Mock };
   let mockLogger: Record<string, jest.Mock>;
 
-  function buildService(gatewayConsumerOpts: Record<string, unknown> | undefined): Promise<JetStreamConsumerService> {
+  function buildService(moduleConsumerOpts: Record<string, unknown> | undefined): Promise<JetStreamConsumerService> {
     jetStream = { subscribe: jest.fn().mockResolvedValue((async function* () {})()), publish: jest.fn() };
     mockLogger = {
       logEventConsumed: jest.fn(),
@@ -38,7 +38,7 @@ describe('JetStreamConsumerService — gateway consumer opts merge', () => {
             consumerService: cs,
             logger,
             dlqSubjectBuilder: defaultDlqSubjectBuilder,
-            ...(gatewayConsumerOpts !== undefined ? { gatewayConsumerOpts } : {}),
+            ...(moduleConsumerOpts !== undefined ? { moduleConsumerOpts } : {}),
           }),
           inject: [ConsumerService, EventLoggerService],
         },
@@ -51,7 +51,7 @@ describe('JetStreamConsumerService — gateway consumer opts merge', () => {
     return module.then((m) => m.get(JetStreamConsumerService));
   }
 
-  describe('with gatewayConsumerOpts { durableName: "gateway-durable" }', () => {
+  describe('with moduleConsumerOpts { durableName: "gateway-durable" }', () => {
     let service: JetStreamConsumerService;
 
     beforeEach(async () => {
@@ -87,7 +87,7 @@ describe('JetStreamConsumerService — gateway consumer opts merge', () => {
     });
   });
 
-  describe('without gatewayConsumerOpts (current default)', () => {
+  describe('without moduleConsumerOpts (current default)', () => {
     let service: JetStreamConsumerService;
 
     beforeEach(async () => {

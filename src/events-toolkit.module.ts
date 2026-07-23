@@ -111,7 +111,7 @@ function buildSyncImports(options: EventsToolkitModuleOptions, resolved: Resolve
       dlqSubjectBuilder: options.consumer?.dlqSubjectBuilder,
       autoCreateStreams: options.consumer?.autoCreateStreams,
       streamConfig: options.consumer?.streamConfig,
-      gatewayConsumerOpts: options.consumer,
+      moduleConsumerOpts: options.consumer,
     };
     imports.push(ConsumerModule.forRoot(consumerOpts));
   }
@@ -158,7 +158,7 @@ function buildConsumerAsyncImport(): DynamicModule {
         dlqSubjectBuilder: opts.consumer?.dlqSubjectBuilder,
         autoCreateStreams: opts.consumer?.autoCreateStreams,
         streamConfig: opts.consumer?.streamConfig,
-        gatewayConsumerOpts: opts.consumer,
+        moduleConsumerOpts: opts.consumer,
       };
     },
     inject: [JETSTREAM_TOKEN, EVENTS_TOOLKIT_OPTIONS, NATS_CONNECTION_TOKEN],

@@ -339,10 +339,10 @@ consumer: {
 
 ### Per-Subscription Override
 
-Per-subscription `consumerOpts` passed to individual `@OnEvent()` handlers override gateway-level settings for that specific subscription. This allows different consumers to have different durability and delivery configurations:
+Per-subscription `consumerOpts` passed to individual `@OnEvent()` handlers override module-level settings for that specific subscription. This allows different consumers to have different durability and delivery configurations:
 
 ```typescript
-// Gateway-level: durable consumer for all subscriptions
+// Module-level: durable consumer for all subscriptions
 consumer: {
   durableName: 'default-processor',
 }

@@ -10,7 +10,7 @@
  */
 import { AckPolicy, consumerOpts, ConsumerOpts, DeliverPolicy, ReplayPolicy } from 'nats';
 import { resolveSubscriptionConsumerOpts } from './consumer-opts-merger';
-import { GatewayConsumerOptions } from './gateway-consumer-options.interface';
+import { ModuleConsumerOptions } from './module-consumer-options.interface';
 import { isConsumerOptsBuilder } from './subscribe-options.interface';
 
 type ConsumerOptsBuilderWithGetOpts = { getOpts(): ConsumerOpts };
@@ -41,7 +41,7 @@ describe('resolveSubscriptionConsumerOpts', () => {
   });
 
   describe('gateway durableName only', () => {
-    const gateway: GatewayConsumerOptions = { durableName: 'd1' };
+    const gateway: ModuleConsumerOptions = { durableName: 'd1' };
     const resolved = resolveSubscriptionConsumerOpts(gateway, undefined);
     const config = getConfig(resolved);
 
@@ -59,7 +59,7 @@ describe('resolveSubscriptionConsumerOpts', () => {
   });
 
   describe('gateway with durableName and deliverPolicy', () => {
-    const gateway: GatewayConsumerOptions = { durableName: 'd1', deliverPolicy: DeliverPolicy.New };
+    const gateway: ModuleConsumerOptions = { durableName: 'd1', deliverPolicy: DeliverPolicy.New };
     const resolved = resolveSubscriptionConsumerOpts(gateway, undefined);
     const config = getConfig(resolved);
 
@@ -73,7 +73,7 @@ describe('resolveSubscriptionConsumerOpts', () => {
   });
 
   describe('per-subscription overrides gateway durable name', () => {
-    const gateway: GatewayConsumerOptions = { durableName: 'd1' };
+    const gateway: ModuleConsumerOptions = { durableName: 'd1' };
     const resolved = resolveSubscriptionConsumerOpts(gateway, { config: { durable_name: 'per' } });
     const config = getConfig(resolved);
 
@@ -84,7 +84,7 @@ describe('resolveSubscriptionConsumerOpts', () => {
 
   describe('per-subscription ConsumerOptsBuilder fully overrides gateway', () => {
     it('returns the same builder reference; gateway is ignored', () => {
-      const gateway: GatewayConsumerOptions = { durableName: 'd1' };
+      const gateway: ModuleConsumerOptions = { durableName: 'd1' };
       const builder = consumerOpts().durable('builder-only').deliverTo('x').ackExplicit();
       const resolved = resolveSubscriptionConsumerOpts(gateway, builder);
       expect(resolved).toBe(builder);
@@ -92,7 +92,7 @@ describe('resolveSubscriptionConsumerOpts', () => {
   });
 
   describe('per-subscription ack_policy overrides gateway', () => {
-    const gateway: GatewayConsumerOptions = { ackPolicy: AckPolicy.None };
+    const gateway: ModuleConsumerOptions = { ackPolicy: AckPolicy.None };
     const resolved = resolveSubscriptionConsumerOpts(gateway, { config: { ack_policy: AckPolicy.All } });
     const config = getConfig(resolved);
 
@@ -102,7 +102,7 @@ describe('resolveSubscriptionConsumerOpts', () => {
   });
 
   describe('gateway consumerOpts (partial) with scalar override', () => {
-    const gateway: GatewayConsumerOptions = {
+    const gateway: ModuleConsumerOptions = {
       consumerOpts: { config: { durable_name: 'base', max_deliver: 5 } },
       durableName: 'scalar',
     };
@@ -119,7 +119,7 @@ describe('resolveSubscriptionConsumerOpts', () => {
   });
 
   describe('gateway with maxDeliver and replayPolicy scalars only', () => {
-    const gateway: GatewayConsumerOptions = { maxDeliver: 3, replayPolicy: ReplayPolicy.Original };
+    const gateway: ModuleConsumerOptions = { maxDeliver: 3, replayPolicy: ReplayPolicy.Original };
     const resolved = resolveSubscriptionConsumerOpts(gateway, undefined);
     const config = getConfig(resolved);
 
@@ -135,7 +135,7 @@ describe('resolveSubscriptionConsumerOpts', () => {
   describe('gateway builder consumerOpts', () => {
     it('extracts durable_name and ack_policy from gateway builder', () => {
       const builder = consumerOpts().durable('g').ackExplicit();
-      const gateway: GatewayConsumerOptions = { consumerOpts: builder };
+      const gateway: ModuleConsumerOptions = { consumerOpts: builder };
       const resolved = resolveSubscriptionConsumerOpts(gateway, undefined);
       const config = getConfig(resolved);
       expect(config.config?.durable_name).toBe('g');
@@ -145,7 +145,7 @@ describe('resolveSubscriptionConsumerOpts', () => {
 
   describe('scalar ackPolicy overrides gateway builder', () => {
     it('uses scalar ack_policy over builder ack_policy', () => {
-      const gateway: GatewayConsumerOptions = {
+      const gateway: ModuleConsumerOptions = {
         consumerOpts: consumerOpts().ackAll(),
         ackPolicy: AckPolicy.Explicit,
       };
