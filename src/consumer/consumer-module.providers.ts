@@ -4,9 +4,7 @@ import { JetStreamClient } from 'nats';
 import { EventLoggerService } from '../logging/event-logger.service';
 import { ConsumerService } from './consumer.service';
 import { JETSTREAM_CONSUMER_DEPS_TOKEN } from './jetstream-consumer-deps.interface';
-import { ON_REQUEST_REPLY_EXPLORER_DEPS_TOKEN } from './decorators/on-request-reply-explorer-deps.interface';
 import { REQUEST_REPLY_CONSUMER_DEPS_TOKEN } from './request-reply-consumer-deps.interface';
-import { RequestReplyConsumerService } from './request-reply-consumer.service';
 import {
   CONSUMER_MODULE_OPTIONS,
   DISCOVERY_REFLECTOR_PAIR,
@@ -16,7 +14,6 @@ import {
   REQUEST_REPLY_CONSUMER_ASYNC_DEPS_TOKEN,
   ConsumerModuleOptions,
   ConsumerModuleAsyncOptions,
-  DiscoveryReflectorPair,
   ConsumerServicesPair,
   ResolvedConnection,
   JetStreamAsyncDeps,
@@ -49,19 +46,6 @@ export function createSyncJetStreamConsumerDepsProvider(options: SyncJetStreamCo
       moduleConsumerOpts: options.moduleConsumerOpts,
     }),
     inject: [ConsumerService, EventLoggerService],
-  };
-}
-
-/** Provider for @OnRequestReply() explorer dependencies. */
-export function createRequestReplyExplorerDepsProvider(): Provider {
-  return {
-    provide: ON_REQUEST_REPLY_EXPLORER_DEPS_TOKEN,
-    useFactory: (pair: DiscoveryReflectorPair, rrConsumerService: RequestReplyConsumerService) => ({
-      discovery: pair.discovery,
-      reflector: pair.reflector,
-      requestReplyConsumerService: rrConsumerService,
-    }),
-    inject: [DISCOVERY_REFLECTOR_PAIR, RequestReplyConsumerService],
   };
 }
 

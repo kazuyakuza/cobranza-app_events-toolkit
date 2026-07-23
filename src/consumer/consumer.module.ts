@@ -11,7 +11,6 @@ import { OnRequestReplyExplorer } from './decorators/on-request-reply.explorer';
 import { RequestReplyConsumerService } from './request-reply-consumer.service';
 import {
   createDiscoveryPairProvider,
-  createRequestReplyExplorerDepsProvider,
   createSyncJetStreamConsumerDepsProvider,
   createSyncRequestReplyConsumerDepsProvider,
   createAsyncOptionsProvider,
@@ -27,6 +26,10 @@ import {
   createConsumerDiscoveryPairProvider,
   createOnEventExplorerDepsProvider,
 } from './on-event-explorer-deps.provider';
+import {
+  createRequestReplyDiscoveryPairProvider,
+  createRequestReplyExplorerDepsProvider,
+} from './on-request-reply-explorer-deps.provider';
 
 export const CONSUMER_MODULE_OPTIONS = 'CONSUMER_MODULE_OPTIONS';
 export const DISCOVERY_REFLECTOR_PAIR = 'DISCOVERY_REFLECTOR_PAIR' as unknown as Type<unknown>;
@@ -43,6 +46,11 @@ export interface DiscoveryReflectorPair {
 /** Pair that extends DiscoveryReflectorPair with ConsumerService for explorer deps. */
 export interface ConsumerDiscoveryPair extends DiscoveryReflectorPair {
   consumerService: ConsumerService;
+}
+export const REQUEST_REPLY_DISCOVERY_PAIR_TOKEN = 'REQUEST_REPLY_DISCOVERY_PAIR';
+/** Pair that extends DiscoveryReflectorPair with RequestReplyConsumerService for request-reply explorer deps. */
+export interface RequestReplyDiscoveryPair extends DiscoveryReflectorPair {
+  requestReplyConsumerService: RequestReplyConsumerService;
 }
 /** Pair of ConsumerService and EventLoggerService for consumer subsystem injection. */
 export interface ConsumerServicesPair {
@@ -134,6 +142,7 @@ export class ConsumerModule {
           streamConfig: options.streamConfig,
           moduleConsumerOpts: options.moduleConsumerOpts,
         }),
+        createRequestReplyDiscoveryPairProvider(),
         createRequestReplyExplorerDepsProvider(),
         createSyncRequestReplyConsumerDepsProvider({
           jetStream,
@@ -177,6 +186,7 @@ export class ConsumerModule {
         createDiscoveryPairProvider(),
         createConsumerDiscoveryPairProvider(),
         createOnEventExplorerDepsProvider(),
+        createRequestReplyDiscoveryPairProvider(),
         createRequestReplyExplorerDepsProvider(),
         createJetStreamAsyncDepsProvider(),
         createRequestReplyAsyncDepsProvider(),
