@@ -315,6 +315,25 @@ const responseSubject = buildResponseSubject(
 
 See [Event & Messaging Convention §2.1](event-messaging-convention.md#21-response-subject-naming-convention) for the full convention details.
 
+#### Automatic Idempotency for Response Handlers
+
+`@OnRequestReply` supports the `{ idempotent: true }` option (added in v0.15.1). When `IdempotencyModule` is registered via `EventsToolkitModule.forRoot()`, `OnRequestReplyExplorer` automatically wraps the response handler with a dedup guard at startup — identical to the `@OnEvent` behavior. Duplicate deliveries of the **same response event** (NATS redelivery of the reply on `reply_to`) are silently skipped using the key `${event.id}:${event.correlation_id}`.
+
+```typescript
+@OnRequestReply('credit.check.completed', {
+  description: 'Handles credit check completion responses (dedup)',
+  payloadExample: { clientId: 'uuid', score: 750, approved: true },
+  idempotent: true,
+})
+async handleCompleted(event: EventEnvelope<CreditCheckResultData>): Promise<void> {
+  await this.processResult(event.data); // skipped on redelivery
+}
+```
+
+When the `IdempotencyModule` is **not** registered, the `idempotent` flag is a silent no-op (the handler runs unwrapped). When a wrapped handler throws, the event is intentionally **not** marked processed, allowing redelivery retries.
+
+For backend configuration (SQLite / PostgreSQL / memory), key generation, TTL, and manual usage, see the [Idempotency guide](idempotency.md#automatic-usage-patterns).
+
 ---
 
 ## 4. Comparison: Sync vs Async
@@ -434,6 +453,7 @@ All request-reply handlers MUST be idempotent.
 
 - If the responder receives the same request twice, it should return the same response without re-processing.
 - Use the request's `correlation_id` to look up previously computed results.
+- For the **response handler** (the requester side, consuming replies via `@OnRequestReply`), set `{ idempotent: true }` to automatically skip duplicate response deliveries — see [Idempotency guide](idempotency.md#automatic-usage-patterns).
 
 ### Implementation pattern
 
@@ -638,6 +658,7 @@ await this.outboxService.sendRequestThroughOutbox(event, subject);
 | `payloadExample` | `Record<string, unknown>` | Yes | Example response payload for documentation |
 | `companyId` | `string` | No | Optional tenant filter for scoped handlers |
 | `tags` | `string[]` | No | Arbitrary tags for discovery manifest filtering |
+| `idempotent` | `boolean` | No | When `true` and `IdempotencyModule` is registered, `OnRequestReplyExplorer` wraps the handler with the dedup guard (skip duplicate → execute → mark). Silent no-op when the module is not registered. See [Idempotency guide](idempotency.md#automatic-usage-patterns). |
 
 > **Note:** Unlike `@EmitEvent` and `@OnEvent`, `@OnRequestReply` does **not** have a `version` field — it listens for responses on a specific subject rather than declaring an event schema version.
 

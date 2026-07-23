@@ -790,6 +790,28 @@ class MyConsumer {
 }
 ```
 
+The same flag works on `@OnRequestReply` response handlers (v0.15.1), automatically skipping duplicate response deliveries:
+
+```typescript
+import { OnRequestReply } from '@cobranza-apps/events-toolkit';
+import { EventEnvelope, EventContext } from '@cobranza-apps/events-toolkit';
+
+class MyResponseHandler {
+  @OnRequestReply('payment.proof.uploaded', {
+    companyId: '550e8400-e29b-41d4-a716-446655440000',
+    description: 'Handles payment proof upload responses',
+    payloadExample: { proofId: 'uuid' },
+    idempotent: true,
+  })
+  async handleResponse(
+    event: EventEnvelope<PaymentProofData>,
+    context: EventContext,
+  ): Promise<void> {
+    await this.process(event.data);
+  }
+}
+```
+
 ### Subject Builder
 
 The `SubjectBuilder` is the single entry point for subject generation:
@@ -897,7 +919,7 @@ When generating event-related code in microservices using this toolkit, follow t
 3. **Validation**: Always decorate event data classes with `class-validator` decorators.
 4. **Actor context**: Always populate `actor_type`. Provide `actor_id` for `client` and `company_user`; it is optional for `system`, `scheduler`, and `external_api` actor types.
 5. **Tenant isolation**: `company_id` is mandatory in tenant event envelopes (`EventEnvelope`). For tenant-less operations use `GlobalEventEnvelope` (no `company_id`) and `global.*` subjects — see [Global Events](docs/global-events.md).
-6. **Idempotency**: Consumers must be idempotent — use `id` + `correlation_id` for deduplication via `IdempotencyService` or `@OnEvent({ idempotent: true })`. See [Idempotency](docs/idempotency.md).
+6. **Idempotency**: Consumers must be idempotent — use `id` + `correlation_id` for deduplication via `IdempotencyService`, `@OnEvent({ idempotent: true })`, or `@OnRequestReply({ idempotent: true })`. See [Idempotency](docs/idempotency.md).
 7. **Past-tense actions**: Action names must use past tense (`created`, `uploaded`, `processed`).
 8. **Consumer errors**: Throw `EventConsumerException` for business errors that should route to DLQ.
 9. **References over objects**: Prefer IDs over full object graphs in event payloads.

@@ -240,7 +240,9 @@ class PaymentConsumer {
 
 ## Automatic Usage Patterns
 
-When `IdempotencyModule` is registered via `EventsToolkitModule.forRoot()` or standalone, the `@OnEvent` decorator accepts an `idempotent: true` flag. The `OnEventExplorer` automatically wraps the handler with `IdempotencyService` at startup.
+When `IdempotencyModule` is registered via `EventsToolkitModule.forRoot()` or standalone, both consumer decorators accept an `idempotent: true` flag. Their respective explorers (`OnEventExplorer` and `OnRequestReplyExplorer`) automatically wrap the handler with `IdempotencyService` at startup — skip duplicate → execute handler → mark processed (only on handler success).
+
+### `@OnEvent` — automatic deduplication of event deliveries
 
 ```typescript
 import { OnEvent } from '@cobranza-apps/events-toolkit';
@@ -260,14 +262,41 @@ class PaymentProofConsumer {
 }
 ```
 
+### `@OnRequestReply` — automatic deduplication of response deliveries
+
+The `@OnRequestReply` decorator mirrors `@OnEvent`: when `idempotent: true` is set, `OnRequestReplyExplorer` wraps the response handler identically. This guards against duplicate delivery of the **same response event** (NATS at-least-once redelivery of the reply published on `reply_to`), using the same composite key `${event.id}:${event.correlation_id}`.
+
+```typescript
+import { OnRequestReply } from '@cobranza-apps/events-toolkit';
+import { EventEnvelope, EventContext } from '@cobranza-apps/events-toolkit';
+
+class PaymentProofResponseHandler {
+  @OnRequestReply('payment.proof.uploaded', {
+    companyId: '550e8400-e29b-41d4-a716-446655440000',
+    description: 'Handles payment proof upload responses',
+    payloadExample: { proofId: 'uuid' },
+    idempotent: true,
+  })
+  async handleResponse(
+    event: EventEnvelope<PaymentProofData>,
+    context: EventContext,
+  ): Promise<void> {
+    // Skipped on redelivery automatically
+    await this.processProof(event.data);
+  }
+}
+```
+
+> **Note:** Unlike `@OnEvent`, `@OnRequestReply` does **not** take a `version` field (it listens for responses on a specific subject rather than declaring an event schema version). The `idempotent` flag is the only extra option added in v0.15.1.
+
 **No-op when module not registered:** If the `IdempotencyModule` is not configured (the `idempotency` field is omitted from `forRoot()`), the `idempotent: true` flag is silently ignored and the handler runs unwrapped.
 
 ### Manual vs Automatic Guidance
 
-| Pattern | When to use |
-|---------|-------------|
-| Manual (`IdempotencyService` direct) | Conditional dedup, custom key, multi-step transactions, per-branch TTL |
-| Automatic (`idempotent: true`) | Simple fire-and-forget handlers with default key + TTL |
+| Pattern | Decorators | When to use |
+|---------|------------|-------------|
+| Manual (`IdempotencyService` direct) | — (any consumer) | Conditional dedup, custom key, multi-step transactions, per-branch TTL |
+| Automatic (`idempotent: true`) | `@OnEvent`, `@OnRequestReply` | Simple fire-and-forget handlers with default key + TTL; response handlers that should skip duplicate reply deliveries |
 
 ## Key Generation Best Practices
 

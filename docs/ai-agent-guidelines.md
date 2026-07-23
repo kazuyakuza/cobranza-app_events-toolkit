@@ -34,7 +34,7 @@ For the full convention specification, see [`event-messaging-convention.md`](eve
 | Actions | Past tense only: `created`, `uploaded`, `processed`, `sent` |
 | Version | Major only: `v1`, `v2` |
 | Payloads | IDs over full objects; keep under 256KB |
-| Consumers | MUST be idempotent — see [Idempotency guide](idempotency.md) |
+| Consumers | MUST be idempotent (`@OnEvent`, `@OnRequestReply`) — see [Idempotency guide](idempotency.md) |
 | Actor context | `actor_type` always required; `actor_id` required for `client` and `company_user`, optional for `system`, `scheduler`, `external_api` |
 | Tenant isolation | `company_id` mandatory in tenant envelopes; omitted in global envelopes (`EventScope.GLOBAL`) |
 
@@ -240,6 +240,8 @@ class PaymentProofConsumer {
 
 > **Durable consumers:** Always set `durableName` in `EventsToolkitConsumerOptions` for production consumers. Without it, ephemeral consumers replay the entire stream history on every reconnect. See [Durable Consumers](nats-jetstream-configuration.md#durable-consumers) for details.
 
+> **Idempotency:** Consumers must be idempotent. For simple fire-and-forget handlers, set `idempotent: true` on `@OnEvent` or `@OnRequestReply`; otherwise inject `IdempotencyService` directly. See the [Idempotency guide](idempotency.md) for backend configuration, key generation, and `@OnRequestReply({ idempotent: true })` usage with response handlers.
+
 For business errors that should route to DLQ:
 
 ```typescript
@@ -284,6 +286,8 @@ class CreditCheckResponseHandler {
   }
 }
 ```
+
+> **Idempotency on response handlers:** Set `{ idempotent: true }` on `@OnRequestReply` (v0.15.1) to automatically skip duplicate response deliveries when `IdempotencyModule` is registered. Mirrors the `@OnEvent({ idempotent: true })` behavior. See the [Idempotency guide](idempotency.md#automatic-usage-patterns).
 
 ### 2. Send the request with `replyTo`
 
@@ -486,7 +490,7 @@ Before submitting event-related code, verify:
 | 1 | Manual subject concatenation | Use `SubjectBuilder.build()` or `SubjectBuilder.buildGlobal()` |
 | 2 | Present-tense verbs for actions | Use past tense: `uploaded`, not `upload` |
 | 3 | Forgetting actor context | Always include `actorType` in `EventContext`; include `actorId` for `client` and `company_user` (omit for `system`, `scheduler`, `external_api`) |
-| 4 | Non-idempotent consumers | Design handlers to safely process duplicate messages — use `IdempotencyService` or `@OnEvent({ idempotent: true })` as described in the [Idempotency guide](idempotency.md) |
+| 4 | Non-idempotent consumers | Design handlers to safely process duplicate messages — use `IdempotencyService`, `@OnEvent({ idempotent: true })`, or `@OnRequestReply({ idempotent: true })` as described in the [Idempotency guide](idempotency.md) |
 | 5 | Storing full objects instead of IDs | Keep payloads under 256KB; reference IDs |
 | 6 | Missing `@IsUUID` on ID fields | Decorate all UUID fields with `@IsUUID()` |
 | 7 | Events exceeding 256KB | Keep payloads lean — use IDs, not full entities |
@@ -507,7 +511,7 @@ Before submitting event-related code, verify:
 | ID | `generateEventId`, `generateUuidV7` |
 | Producer | `ProducerModule`, `ProducerService`, `@EmitEvent()` |
 | Consumer | `ConsumerModule`, `@OnEvent()`, `EventConsumerException` — set `durableName` in `EventsToolkitConsumerOptions` for production consumers to prevent history replay on reconnect |
-| Request-Reply | `RequestReplyService`, `@OnRequestReply()` |
+| Request-Reply | `RequestReplyService`, `@OnRequestReply()` — supports `{ idempotent: true }` (v0.15.1); see [Idempotency guide](idempotency.md) |
 | Outbox | `OutboxModule`, `OutboxService`, `OutboxModuleOptions`, `EntityManagerLike` |
 | Idempotency | `IdempotencyModule`, `IdempotencyService`, `IdempotencyRepository`, `buildIdempotencyKey` — configure via `EventsToolkitModule.forRoot({ idempotency: ... })` or `IdempotencyModule.forRoot()` |
 | Unified | `EventsToolkitModule`, `EventsToolkitModuleOptions` |

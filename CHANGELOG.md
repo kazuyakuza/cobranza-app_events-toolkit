@@ -5,6 +5,39 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.15.1] — 2026-07-23
+
+### Added
+
+- **`@OnRequestReply()` now supports `{ idempotent: true }`** for automatic deduplication of duplicate response deliveries, mirroring the `@OnEvent()` behavior from v0.15.0.
+  - When `IdempotencyModule` is registered via `EventsToolkitModule.forRoot()` / `IdempotencyModule.forRoot()`, `OnRequestReplyExplorer` wraps the response handler with the dedup guard at startup (skip duplicate → execute handler → mark processed).
+  - When the module is **not** registered, the `idempotent` flag is a **silent no-op** — the response handler runs unwrapped, no error.
+  - When a wrapped response handler throws, the event is intentionally **not** marked processed, allowing redelivery retries (identical to `@OnEvent` semantics).
+  - `OnRequestReplyMetadata` and `OnRequestReplyOptions` gained the optional `idempotent?: boolean` field; `OnRequestReplyExplorerDeps` gained an optional `idempotencyService?: IdempotencyService` injected via `@Optional()`.
+  - Dedup key uses the same `${event.id}:${event.correlation_id}` composite from `buildIdempotencyKey(event)`; works on both tenant (`EventEnvelope`) and global (`GlobalEventEnvelope`) response envelopes.
+
+### Documentation
+
+- `docs/idempotency.md` "Automatic Usage Patterns" now documents both `@OnEvent` and `@OnRequestReply`; the manual-vs-automatic guidance table lists both decorators.
+- `docs/request-reply-patterns.md` gains an "Automatic Idempotency for Response Handlers" subsection under §3, an `idempotent` row in the `@OnRequestReply(options)` table, and a Response-side bullet in §7 cross-linking the Idempotency guide.
+- `README.md` "Idempotency Pattern" usage section adds a `@OnRequestReply` example alongside the existing `@OnEvent` example; AI-agent rule #6 now references both decorators.
+- `docs/ai-agent-guidelines.md` consumer idempotency guidance, Common Mistakes row, and Public API Quick Reference updated to mention `@OnRequestReply({ idempotent: true })`.
+
+### Notes
+
+- **Backward compatible**: `idempotent` is optional on `@OnRequestReply`; existing handlers omitting it behave exactly as in v0.15.0. No migration is needed.
+- **Producer-side decorators (`@EmitEvent`) are not affected** — they emit events and do not consume them, so deduplication does not apply.
+- The flag's behavior for `@OnRequestReply` is identical to `@OnEvent`: skip duplicate silently, mark only on handler success, no-op when `IdempotencyModule` is absent.
+
+### Tests
+
+- `src/consumer/decorators/on-request-reply.explorer.idempotent.spec.ts` — automatic wrapping behavior:
+  - Wraps the handler with idempotency when `idempotent: true` and the service is present — first invocation runs, second is skipped.
+  - Does not wrap the handler when `idempotent: true` but the service is absent — handler runs on every invocation (silent no-op).
+  - Does not wrap the handler when `idempotent: false` — handler runs on every invocation.
+  - Marks the event as processed only when the handler succeeds — a throwing handler is not marked; a succeeding second invocation is marked.
+- `src/consumer/decorators/on-request-reply.explorer.fixtures.ts` — adds `IdempotentRequestReplyConsumer`, `FailingThenSucceedingRequestReplyConsumer`, and `ExplicitFalseRequestReplyConsumer` fixtures using `@OnRequestReply('billing.invoice.adjusted', { ..., idempotent: true | false })`.
+
 ## [0.15.0] — 2026-07-23
 
 ### Added
