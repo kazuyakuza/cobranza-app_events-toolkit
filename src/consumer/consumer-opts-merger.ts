@@ -41,11 +41,12 @@ function hasGatewayOrPerSubscription(
   if (!gateway) {
     return false;
   }
-  const hasScalar = gateway.durableName !== undefined
-    || gateway.deliverPolicy !== undefined
-    || gateway.ackPolicy !== undefined
-    || gateway.maxDeliver !== undefined
-    || gateway.replayPolicy !== undefined;
+  const hasScalar =
+    gateway.durableName !== undefined ||
+    gateway.deliverPolicy !== undefined ||
+    gateway.ackPolicy !== undefined ||
+    gateway.maxDeliver !== undefined ||
+    gateway.replayPolicy !== undefined;
   return hasScalar || gateway.consumerOpts !== undefined;
 }
 

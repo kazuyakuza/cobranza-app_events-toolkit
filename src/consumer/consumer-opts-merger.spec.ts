@@ -8,7 +8,7 @@
  * 4. Gateway consumerOpts (builder or partial)
  * 5. Built-in defaults (ack_policy Explicit, unique deliver_subject)
  */
-import { AckPolicy, consumerOpts, ConsumerOpts, DeliverPolicy, ReplayPolicy } from 'nats';
+import { AckPolicy, consumerOpts, DeliverPolicy, ReplayPolicy } from 'nats';
 import { resolveSubscriptionConsumerOpts } from './consumer-opts-merger';
 import { GatewayConsumerOptions } from './gateway-consumer-options.interface';
 import { isConsumerOptsBuilder } from './subscribe-options.interface';

@@ -27,9 +27,7 @@ describe('JetStreamConsumerService — gateway consumer opts merge', () => {
   let jetStream: { subscribe: jest.Mock };
   let mockLogger: Record<string, jest.Mock>;
 
-  function buildService(
-    gatewayConsumerOpts: Record<string, unknown> | undefined,
-  ): Promise<JetStreamConsumerService> {
+  function buildService(gatewayConsumerOpts: Record<string, unknown> | undefined): Promise<JetStreamConsumerService> {
     jetStream = { subscribe: jest.fn().mockResolvedValue((async function* () {})()), publish: jest.fn() };
     mockLogger = {
       logEventConsumed: jest.fn(),
