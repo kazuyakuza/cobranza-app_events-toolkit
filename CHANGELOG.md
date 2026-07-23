@@ -5,6 +5,47 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.14.0] — 2026-07-22
+
+### Added
+
+- **Consumer-level JetStream configuration on `EventsToolkitConsumerOptions`** — new gateway-level fields that thread through the consumer DI chain and are merged with per-subscription options by `resolveSubscriptionConsumerOpts`:
+  - **`consumerOpts?: Partial<ConsumerOpts> | ConsumerOptsBuilder`** — full NATS-native consumer options. Accepts a `ConsumerOptsBuilder` (e.g. `consumerOpts().durable('x').deliverAll()`) or a plain `Partial<ConsumerOpts>`. When omitted, built-in defaults apply (manual ack, explicit ack policy, ephemeral inbox `deliver_subject`).
+  - **`durableName?: string`** — durable consumer name. Enables server-side ack-position persistence and resume on reconnect instead of replaying the entire stream history. The same `durable_name` must be reused on every reconnect.
+  - **`deliverPolicy?: DeliverPolicy`** — controls where a new consumer starts reading. Omit when `durableName` is set to resume from the durable's stored state automatically.
+  - **`ackPolicy?: AckPolicy`** — acknowledgment policy. Default `AckPolicy.Explicit` when omitted (applied by `resolveConsumerSubscribeOpts`).
+  - **`maxDeliver?: number`** — maximum delivery attempts before redelivery stops.
+  - **`replayPolicy?: ReplayPolicy`** — `ReplayPolicy.Instant` (default) or `ReplayPolicy.Original`.
+- **`GatewayConsumerOptions` interface** (exported from `@cobranza-apps/events-toolkit`) — the shape of the gateway-level consumer configuration block, documented inline with NATS-flavored semantics and links to upstream consumer configuration docs.
+- **`resolveSubscriptionConsumerOpts(gateway, perSubscription)` helper** (exported from `@cobranza-apps/events-toolkit`) — merges gateway-level options with per-subscription options. Precedence (highest first):
+  1. Per-subscription `ConsumerOptsBuilder` → returned unchanged (full override).
+  2. Per-subscription `Partial<ConsumerOpts>` → spread over gateway config.
+  3. Gateway scalar fields (`durableName`, `deliverPolicy`, `ackPolicy`, `maxDeliver`, `replayPolicy`) → override matching `consumerOpts` config fields.
+  4. Gateway `consumerOpts` (builder extracted via `getOpts()`, or plain `Partial<ConsumerOpts>`).
+  5. Built-in defaults from `resolveConsumerSubscribeOpts` (`manualAck`, `ackExplicit`, unique `deliverTo(createInbox())`).
+- **Durable consumer resume behavior** — when `durableName` is set without an explicit `deliverPolicy`, NATS resumes from the durable's last acknowledged server-side position on reconnect. This prevents the duplicate event replay previously caused by ephemeral push consumers being destroyed on disconnect and recreated with `DeliverPolicy.All` on reconnect.
+
+### Changed
+
+- **`JetStreamConsumerService.subscribe()` and `RequestReplyConsumerService.subscribe()`** now accept gateway-level `GatewayConsumerOptions` (injected via their deps interfaces) and resolve the final subscribe options through `resolveSubscriptionConsumerOpts` instead of `resolveConsumerSubscribeOpts` directly.
+
+### Documentation
+
+- New "Durable Consumers" section in `docs/nats-jetstream-configuration.md` — mechanism, problem/resolve diagrams, `forRoot()` config, full-control `consumerOpts` example, convenience scalars, per-subscription override, and scenario recommendation table.
+- README quick-start section "Durable Consumers (Recommended for Production)" and consumer configuration table rows for the new fields.
+- `docs/ai-agent-guidelines.md` durable-consumer callout under "Consuming Events" and Public API Quick Reference Consumer row referencing `durableName`.
+
+### Notes
+
+- **Backward compatible**: all new fields are optional. When `durableName` and `consumerOpts` are omitted, behavior is unchanged from v0.13.0 — ephemeral push consumers with `manualAck` + `ackExplicit` + unique `deliver_subject` defaults (fixed in v0.11.4).
+- **Production recommendation**: always set `durableName` for production consumers to prevent history replay on restart. For service scaling, use unique durable names per instance.
+
+### Tests
+
+- `src/consumer/consumer-opts-merger.spec.ts` — merge precedence matrix (gateway-only, gateway + per-subscription plain, gateway + per-subscription builder full-override, scalars overriding `consumerOpts`, `maxDeliver`/`replayPolicy`, builder `getOpts()` extraction).
+- `src/consumer/jetstream-consumer.service.gateway-opts.spec.ts` — `JetStreamConsumerService` threads gateway options into `subscribe()`.
+- `src/consumer/request-reply-consumer.service.gateway-opts.spec.ts` — `RequestReplyConsumerService` threads gateway options into `subscribe()`.
+
 ## [0.13.0] — 2026-07-22
 
 ### Added
