@@ -5,6 +5,46 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.15.0] — 2026-07-23
+
+### Added
+
+- **Idempotency module** (`IdempotencyModule`) — consumer-side deduplication guard mirroring the Outbox module's repository pattern. Registers a global `IdempotencyRepository` provider backed by **SQLite**, **PostgreSQL**, or **in-memory** (tests only), plus an `IdempotencyService` with low-level and high-level APIs:
+  - **`IdempotencyService.isDuplicate(event)`** — returns `true` when the event key exists and has not expired.
+  - **`IdempotencyService.markAsProcessed(event, ttlSeconds?)`** — records the event as processed; repeated calls with the same key are idempotent (no throw/overwrite).
+  - **`IdempotencyService.executeIfNotProcessed<T>({ event, handler, ttlSeconds? })`** — atomic check-execute-mark convenience wrapper. If the handler throws, the event is intentionally **not** marked as processed, allowing redelivery retries.
+  - **`buildIdempotencyKey(event)`** — exported utility building the composite key `${event.id}:${event.correlation_id}` (works on both `EventEnvelope` and `GlobalEventEnvelope`).
+- **Three repository implementations** — `SqliteIdempotencyRepository` (`INSERT OR IGNORE`, WAL journaling), `PostgresIdempotencyRepository` (`ON CONFLICT (key) DO NOTHING`, reuses the `EntityManagerLike` contract shared with the Outbox), and `MemoryIdempotencyRepository` (in-memory `Map`, tests only).
+- **`IdempotencyRepository` interface** — `isProcessed(key)`, `markAsProcessed(key, ttlSeconds?)`, `clearExpired()`; `IdempotencyModuleOptions` / `IdempotencyModuleAsyncOptions` for sync/async registration. `IdempotencyModule.forRoot` and `forRootAsync` exported for standalone use.
+- **Toolkit-level configuration** — `EventsToolkitIdempotencyOptions` on `EventsToolkitModule.forRoot()` / `forRootAsync`: `{ enabled? (default true), type: 'sqlite'|'postgres'|'memory', sqlitePath?, postgres?: { entityManager }, serviceOptions?: { defaultTtlSeconds? } }`. Omitting `idempotency` skips wiring; `enabled: false` keeps config present but inactive.
+- **Automatic handler wrapping** — `@OnEvent('...', { ..., idempotent: true })` option. When `IdempotencyModule` is registered, `OnEventExplorer` wraps the handler with the dedup guard at startup (skip duplicate → execute → mark). When the module is **not** registered, the `idempotent` flag is a **silent no-op** (handler runs unwrapped). When a wrapped handler throws, the event is not marked (retried on redelivery).
+- **Discovery capability** — `'idempotency'` is added to the `capabilities` array of the service manifest (`ServiceManifestDto.capabilities`) when the module is enabled, via `resolveCapabilities()`.
+- **TTL support** — `IdempotencyServiceOptions.defaultTtlSeconds` applies a default TTL; per-call `ttlSeconds` override on `markAsProcessed` / `executeIfNotProcessed`. Omitted TTL means keys never expire. `IdempotencyRepository.clearExpired()` available for periodic maintenance.
+- **Testing support** — `MockIdempotencyService` (in-memory `Map` mirroring the real API plus `processedKeys`, `count`, `clear()`) exported from `@cobranza-apps/events-toolkit/testing`. `EventsToolkitTestModule.forRoot()` registers and aliases it as `IdempotencyService` by default; disable with `forRoot({ idempotency: { enabled: false } })`.
+
+### Documentation
+
+- New guide: `docs/idempotency.md` — backend selection, configuration via `EventsToolkitModule.forRoot()` / `IdempotencyModule.forRoot`, manual vs automatic usage patterns, key generation best practices, TTL behavior, interaction with the Outbox, and `MockIdempotencyService` testing. Cross-linked from README, outbox-configuration, ai-agent-guidelines, and testing-utilities docs.
+- README updated: new "Idempotency Pattern" usage section, onboarding flow step added (now 12 steps), "What it provides" bullet, configuration-options row, environment-variable row (`IDEMPOTENCY_DB_PATH`), related-documentation link, and AI-agent rule #6 enhanced with a doc pointer.
+- `docs/testing-utilities.md` updated with a `MockIdempotencyService` subsection and `idempotency` test-option documentation.
+- `docs/ai-agent-guidelines.md` consumer idempotency guidance links to the new doc.
+
+### Notes
+
+- **Backward compatible**: idempotency is opt-in. Omitting the `idempotency` field changes no behavior from v0.14.0; the `idempotent` decorator flag without the module is a no-op.
+- **Memory backend is for tests only** — never use `'memory'` in production; state is lost on restart.
+- **Complementary to durable consumers** — durable consumers prevent stream-history replay on restart; idempotency prevents re-execution of already-processed events. Both are recommended for production handlers with non-idempotent side effects.
+
+### Tests
+
+- `src/idempotency/idempotency.service.spec.ts` — service dedup/mark/executeIfNotProcessed behavior and TTL resolution.
+- `src/idempotency/idempotency.module.spec.ts` — sync/async module wiring and repository resolution per backend.
+- `src/idempotency/build-idempotency-key.util.spec.ts` — composite key `${id}:${correlation_id}`.
+- `src/idempotency/sqlite-idempotency.repository.spec.ts` / `postgres-idempotency.repository.spec.ts` / `memory-idempotency.repository.spec.ts` — repository contracts.
+- `src/consumer/decorators/on-event.explorer.idempotent.spec.ts` — automatic wrapping (wrap when service present + flag true, no-op when service absent, no-op when flag absent, retry-on-throw behavior).
+- `src/testing/mock-idempotency.service.spec.ts` and `src/testing/events-toolkit-test.module.spec.ts` — mock API and test-module registration/aliasing.
+- `src/events-toolkit.module.spec.ts` and `src/events-toolkit.capabilities.spec.ts` — toolkit wiring and capability resolution.
+
 ## [0.14.0] — 2026-07-22
 
 ### Added

@@ -39,7 +39,7 @@ NATS + JetStream event handling library for the Cobranza App microservices platf
 5. Consume: decorate a handler with `@OnEvent('domain.entity.action', { version, description, payloadExample })`.
 6. Run: `npm run start`.
 
-See the [Onboarding Flow](#onboarding-flow) section for the full 11-step path (architecture → deploy).
+See the [Onboarding Flow](#onboarding-flow) section for the full 12-step path (architecture → deploy).
 
 ## Onboarding Flow
 
@@ -50,10 +50,11 @@ See the [Onboarding Flow](#onboarding-flow) section for the full 11-step path (a
 5. **Consume an event** — `@OnEvent()` · DLQ routing → [Consumer](#consumer-subscribing-to-events) · [Error Handling & DLQ](#error-handling--dlq)
 6. **Request-reply** — `request()` / `sendRequest()` + `@OnRequestReply()` → [Request-Reply Pattern](#request-reply-pattern)
 7. **Outbox** — `OutboxService.saveToOutbox()` · `sendAsyncRequestThroughOutbox()` → [Outbox Pattern](#outbox-pattern)
-8. **Service discovery** — manifests · `GET /discovery/manifest` · platform events → [Discovery](#discovery)
-9. **Schema generation** — auto JSON Schema from DTOs · `payloadSchemaRef` → [Event Discovery & Service Registry](docs/event-discovery-and-service-registry.md)
-10. **Testing** — `EventsToolkitTestModule` · mock services · assertion helpers → [Testing Utilities](#testing-utilities)
-11. **Deployment** — JetStream stream config · env vars · health checks → [Deployment](#deployment) *(new section)*
+8. **Idempotency** — `IdempotencyService` · `@OnEvent({ idempotent: true })` · SQLite/PostgreSQL backends → [Idempotency](#idempotency-pattern)
+9. **Service discovery** — manifests · `GET /discovery/manifest` · platform events → [Discovery](#discovery)
+10. **Schema generation** — auto JSON Schema from DTOs · `payloadSchemaRef` → [Event Discovery & Service Registry](docs/event-discovery-and-service-registry.md)
+11. **Testing** — `EventsToolkitTestModule` · mock services · assertion helpers → [Testing Utilities](#testing-utilities)
+12. **Deployment** — JetStream stream config · env vars · health checks → [Deployment](#deployment) *(new section)*
 
 ---
 
@@ -69,6 +70,7 @@ See the [Onboarding Flow](#onboarding-flow) section for the full 11-step path (a
 - **Consumer Module**: `@OnEvent()` decorator with automatic validation, error handling, and DLQ routing
 - **Request-Reply**: `RequestReplyService` for sync (`request()`) and async (`sendRequest()` + `@OnRequestReply`) request-reply patterns
 - **Outbox Module**: Persistent outbox with SQLite or PostgreSQL backends, background processor for transactional safety
+- **Idempotency Module**: Deduplication guard with SQLite, PostgreSQL, or in-memory backends; `IdempotencyService` (`isDuplicate`, `markAsProcessed`, `executeIfNotProcessed`) and automatic `@OnEvent({ idempotent: true })` handler wrapping
 - **Event Logger**: Winston-based structured logging with trace and correlation IDs
 - **Discovery Module**: `DiscoveryModule`, `DiscoveryService`, `@EmitEvent/@OnEvent/@OnRequestReply` manifest annotation, schema auto-generation from class-validator DTOs, service registration via `platform.service.register.v1` events, periodic heartbeats, and HTTP endpoints for manifest/schema retrieval
 
@@ -268,6 +270,7 @@ export class AppModule {}
 |--------|------|----------|-------------|
 | `nats` | `EventsToolkitNatsOptions` | Yes | NATS connection settings — provide either `servers` (creates new connection) or `connection` (reuses existing). |
 | `outbox` | `EventsToolkitOutboxOptions` | No | Outbox persistence config (`sqlite` or `postgres`). Omit to disable the outbox subsystem. |
+| `idempotency` | `EventsToolkitIdempotencyOptions` | No | Idempotency config (`sqlite`, `postgres`, or `memory`). Omit to disable the idempotency subsystem. |
 | `logging` | `EventsToolkitLoggingOptions` | No | Winston logger config (`level`, `transports`). Defaults to `info` + Console transport. |
 | `consumer` | `EventsToolkitConsumerOptions` | No | Consumer subsystem config: `enable`, `dlqSubjectBuilder`, `autoCreateStreams`, `streamConfig`, `durableName`, `consumerOpts`, `deliverPolicy`, `ackPolicy`, `maxDeliver`, `replayPolicy`. Set `enable: false` to skip consumer registration. |
 | `discovery` | `EventsToolkitDiscoveryOptions` | No | Service discovery config (manifest, heartbeat, schema publishing). Set `enabled: false` to skip. |
@@ -732,6 +735,61 @@ class DebtService {
 
 See [Request-Reply Patterns](docs/request-reply-patterns.md) for full async pattern documentation and [Outbox Configuration](docs/outbox-configuration.md) for request-reply outbox guidance.
 
+### Idempotency Pattern
+
+For consumer-side deduplication, the Idempotency module records processed event keys so redelivery is skipped. It supports the same backends as the Outbox module (SQLite, PostgreSQL, memory for tests) and is configured via `EventsToolkitModule.forRoot()`.
+
+For detailed configuration, key generation, and manual vs automatic usage, see [`docs/idempotency.md`](docs/idempotency.md).
+
+```typescript
+import { EventsToolkitModule } from '@cobranza-apps/events-toolkit';
+
+EventsToolkitModule.forRoot({
+  nats: { servers: ['nats://localhost:4222'] },
+  idempotency: {
+    type: 'sqlite',
+    sqlitePath: '/data/idempotency.sqlite',
+    serviceOptions: { defaultTtlSeconds: 86400 },
+  },
+})
+```
+
+**Manual usage:**
+
+```typescript
+import { IdempotencyService } from '@cobranza-apps/events-toolkit';
+import { AnyEventEnvelope } from '@cobranza-apps/events-toolkit';
+
+class MyConsumer {
+  constructor(private readonly idempotency: IdempotencyService) {}
+
+  async handle(event: AnyEventEnvelope<MyData>): Promise<void> {
+    if (await this.idempotency.isDuplicate(event)) return;
+    await this.process(event.data);
+    await this.idempotency.markAsProcessed(event);
+  }
+}
+```
+
+**Automatic usage (recommended for simple handlers):**
+
+```typescript
+import { OnEvent } from '@cobranza-apps/events-toolkit';
+import { AnyEventEnvelope } from '@cobranza-apps/events-toolkit';
+
+class MyConsumer {
+  @OnEvent('payment.proof.uploaded', {
+    version: '1',
+    description: 'Handles payment proof uploads',
+    payloadExample: { paymentAttemptId: 'uuid', amount: 100 },
+    idempotent: true,
+  })
+  async onProofUploaded(event: AnyEventEnvelope<PaymentProofUploadedData>): Promise<void> {
+    await this.process(event.data);
+  }
+}
+```
+
 ### Subject Builder
 
 The `SubjectBuilder` is the single entry point for subject generation:
@@ -839,7 +897,7 @@ When generating event-related code in microservices using this toolkit, follow t
 3. **Validation**: Always decorate event data classes with `class-validator` decorators.
 4. **Actor context**: Always populate `actor_type`. Provide `actor_id` for `client` and `company_user`; it is optional for `system`, `scheduler`, and `external_api` actor types.
 5. **Tenant isolation**: `company_id` is mandatory in tenant event envelopes (`EventEnvelope`). For tenant-less operations use `GlobalEventEnvelope` (no `company_id`) and `global.*` subjects — see [Global Events](docs/global-events.md).
-6. **Idempotency**: Consumers must be idempotent — use `id` + `correlation_id` for deduplication.
+6. **Idempotency**: Consumers must be idempotent — use `id` + `correlation_id` for deduplication via `IdempotencyService` or `@OnEvent({ idempotent: true })`. See [Idempotency](docs/idempotency.md).
 7. **Past-tense actions**: Action names must use past tense (`created`, `uploaded`, `processed`).
 8. **Consumer errors**: Throw `EventConsumerException` for business errors that should route to DLQ.
 9. **References over objects**: Prefer IDs over full object graphs in event payloads.
@@ -934,12 +992,13 @@ For the full guide — server requirements, stream auto-creation, manual setup, 
 | `SERVICE_NAME` | Microservice name for discovery | `payment-service` |
 | `SERVICE_VERSION` | Microservice version for discovery | `1.0.0` |
 | `OUTBOX_DB_PATH` | SQLite file path (SQLite outbox only) | `/data/outbox.sqlite` |
+| `IDEMPOTENCY_DB_PATH` | SQLite file path (SQLite idempotency only) | `/data/idempotency.sqlite` |
 
 ### Health Checks
 
 - **Liveness probe**: `GET /discovery/manifest` — returns the service manifest JSON. A 200 response indicates the service is healthy and the discovery subsystem is active.
 - **Heartbeat**: Set `heartbeatIntervalMinutes` in discovery options to enable periodic platform heartbeat events (`platform.service.heartbeat.v1`). Default: 5 minutes.
-- **SQLite persistence**: When using the SQLite outbox backend in Docker, mount a persistent volume at the `OUTBOX_DB_PATH` directory to survive container restarts. See [Outbox Configuration](docs/outbox-configuration.md).
+- **SQLite persistence**: When using the SQLite outbox backend in Docker, mount a persistent volume at the `OUTBOX_DB_PATH` directory to survive container restarts. See [Outbox Configuration](docs/outbox-configuration.md). When using the SQLite idempotency backend, mount the same persistent volume (or path under it) — see [Idempotency](docs/idempotency.md).
 
 ---
 
@@ -947,6 +1006,7 @@ For the full guide — server requirements, stream auto-creation, manual setup, 
 
 - [Changelog](CHANGELOG.md) — Notable release changes and upgrade notes
 - [Event & Messaging Convention](docs/event-messaging-convention.md) — Full event standard specification
+- [Idempotency](docs/idempotency.md) — SQLite/PostgreSQL/memory backends, manual vs automatic usage, key generation, TTL, and MockIdempotencyService testing
 - [Outbox Configuration](docs/outbox-configuration.md) — SQLite vs Postgres setup, service options, and migration guide
 - [Outbox Usage Guidelines](docs/outbox-usage-guidelines.md) — Decision trees for outbox backend, transactional vs normal, and request-reply patterns
 - [Transactional Outbox Usage](docs/outbox-transactional-usage.md) — TypeORM transaction examples and saveInTransaction guide
