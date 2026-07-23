@@ -85,6 +85,10 @@ export class GetterSetterConsumer {
   plainMethod(): void {}
 }
 
+/**
+ * Fixture: handler decorated with `idempotent: true`.
+ * Used to verify that the explorer wraps the handler with the idempotency service.
+ */
 export class IdempotentRequestReplyConsumer {
   invokeCount = 0;
 
@@ -99,6 +103,10 @@ export class IdempotentRequestReplyConsumer {
   }
 }
 
+/**
+ * Fixture: handler that throws on the first invocation and succeeds afterwards.
+ * Used to verify that idempotency marks events only after a successful execution.
+ */
 export class FailingThenSucceedingRequestReplyConsumer {
   invokeCount = 0;
   shouldFail = true;
@@ -117,6 +125,10 @@ export class FailingThenSucceedingRequestReplyConsumer {
   }
 }
 
+/**
+ * Fixture: handler decorated with `idempotent: false`.
+ * Used to verify that the explorer does NOT wrap the handler with idempotency.
+ */
 export class ExplicitFalseRequestReplyConsumer {
   invokeCount = 0;
 
