@@ -30,8 +30,17 @@ const DELETE_EXPIRED_SQL = `
 /**
  * SQLite-backed {@link IdempotencyRepository} using `better-sqlite3`.
  *
- * Creates the idempotency_keys table on construction and enables WAL
+ * Creates the `idempotency_keys` table on construction and enables WAL
  * journaling. Uses `INSERT OR IGNORE` for idempotent inserts.
+ *
+ * @see {@link SqliteOutboxRepository} for the analogous outbox implementation.
+ *
+ * @example
+ * ```ts
+ * const repo = new SqliteIdempotencyRepository('./data/idempotency.db');
+ * await repo.markAsProcessed('evt-1:corr-1', 3600);
+ * const dup = await repo.isProcessed('evt-1:corr-1'); // true
+ * ```
  */
 export class SqliteIdempotencyRepository implements IdempotencyRepository {
   private readonly database: Database.Database;

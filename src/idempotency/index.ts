@@ -1,6 +1,13 @@
 /**
  * @packageDocumentation
+ *
  * Public API for the idempotency module — idempotent event processing support.
+ *
+ * Provides {@link IdempotencyModule} for NestJS registration, {@link IdempotencyService}
+ * for deduplication checks, and repository implementations for SQLite, PostgreSQL,
+ * and in-memory (testing) backends.
+ *
+ * @see {@link module:outbox} for the analogous outbox module.
  */
 export { IdempotencyModule } from './idempotency.module';
 export {

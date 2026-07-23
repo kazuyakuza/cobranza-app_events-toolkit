@@ -56,7 +56,18 @@ export function buildOutboxModuleOptions(outbox: EventsToolkitOutboxOptions): Ou
   return { type: 'sqlite', sqlite: { dbPath: outbox.sqlitePath ?? ':memory:' }, serviceOptions: outbox.serviceOptions };
 }
 
-/** Builds IdempotencyModule options from the toolkit-level idempotency config. */
+/**
+ * Builds {@link IdempotencyModuleOptions} from the toolkit-level idempotency config.
+ *
+ * Translates the user-facing {@link EventsToolkitIdempotencyOptions} into the
+ * shape expected by {@link IdempotencyModule.forRoot}, mapping `sqlitePath`
+ * to `sqlite.dbPath` and passing through `postgres` and `serviceOptions`.
+ *
+ * @param idempotency - Toolkit-level idempotency configuration.
+ * @returns Module-level options ready for `IdempotencyModule.forRoot()`.
+ *
+ * @see {@link buildOutboxModuleOptions} for the analogous outbox mapper.
+ */
 export function buildIdempotencyModuleOptions(
   idempotency: EventsToolkitIdempotencyOptions,
 ): IdempotencyModuleOptions {

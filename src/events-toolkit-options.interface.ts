@@ -35,7 +35,17 @@ export interface EventsToolkitOutboxOptions {
   serviceOptions?: OutboxServiceOptions;
 }
 
-/** Idempotency persistence configuration. */
+/**
+ * Idempotency persistence configuration.
+ *
+ * Controls the backend type, connection settings, and optional service-level
+ * tuning for the idempotency subsystem. When `enabled` is `false` (or the
+ * entire `idempotency` field is omitted), the {@link IdempotencyModule} is
+ * not wired into the toolkit.
+ *
+ * @see {@link EventsToolkitOutboxOptions} for the analogous outbox configuration.
+ * @see {@link IdempotencyModuleOptions} for the resolved module-level shape.
+ */
 export interface EventsToolkitIdempotencyOptions {
   /** Enable idempotency. Default: true. When false, skip wiring IdempotencyModule. */
   enabled?: boolean;

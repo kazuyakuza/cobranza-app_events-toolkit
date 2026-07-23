@@ -6,10 +6,16 @@ interface MemoryEntry {
 }
 
 /**
- * In-memory {@link IdempotencyRepository} intended for testing only.
+ * In-memory {@link IdempotencyRepository} intended for **testing only**.
  *
  * Backed by a plain `Map`. Overwrites on repeated `markAsProcessed` calls
  * (no conflict-error semantics). Expired entries are treated as not processed.
+ *
+ * **Not suitable for production** — data is lost on process restart and there
+ * is no cross-process coordination.
+ *
+ * @see {@link SqliteIdempotencyRepository} for a file-based alternative.
+ * @see {@link PostgresIdempotencyRepository} for a production-grade alternative.
  */
 export class MemoryIdempotencyRepository implements IdempotencyRepository {
   private readonly store = new Map<string, MemoryEntry>();

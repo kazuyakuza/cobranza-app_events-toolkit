@@ -34,10 +34,23 @@ const DELETE_EXPIRED_SQL = `
  *
  * Defers table creation until the first query and caches the result to avoid
  * repeated DDL execution. Uses `ON CONFLICT (key) DO NOTHING` for idempotent inserts.
+ *
+ * @see {@link PostgresOutboxRepository} for the analogous outbox implementation.
+ *
+ * @example
+ * ```ts
+ * const repo = new PostgresIdempotencyRepository(dataSource.manager);
+ * await repo.markAsProcessed('evt-1:corr-1', 3600);
+ * ```
  */
 export class PostgresIdempotencyRepository implements IdempotencyRepository {
   private tableEnsured = false;
 
+  /**
+   * @param entityManager - TypeORM-compatible query executor.
+   *
+   * @see {@link EntityManagerLike} for the minimal contract.
+   */
   constructor(private readonly entityManager: EntityManagerLike) {}
 
   /** @inheritdoc */

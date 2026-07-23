@@ -54,13 +54,36 @@ function buildDepsProvider(): Provider {
 /**
  * NestJS dynamic module providing idempotency support.
  *
- * Registers a global IdempotencyRepository provider backed by SQLite,
- * PostgreSQL, or an in-memory store, alongside an IdempotencyService
+ * Registers a global {@link IdempotencyRepository} provider backed by SQLite,
+ * PostgreSQL, or an in-memory store, alongside an {@link IdempotencyService}
  * for deduplication checks and convenience wrappers.
  *
- * @example Synchronous registration
+ * @see {@link OutboxModule} for the analogous outbox module.
+ *
+ * @example Synchronous registration (SQLite)
  * ```ts
  * IdempotencyModule.forRoot({ type: 'sqlite', sqlite: { dbPath: './keys.db' } })
+ * ```
+ *
+ * @example Synchronous registration (PostgreSQL)
+ * ```ts
+ * IdempotencyModule.forRoot({
+ *   type: 'postgres',
+ *   postgres: { entityManager: dataSource.manager },
+ *   serviceOptions: { defaultTtlSeconds: 86400 },
+ * })
+ * ```
+ *
+ * @example Asynchronous registration
+ * ```ts
+ * IdempotencyModule.forRootAsync({
+ *   imports: [ConfigModule],
+ *   useFactory: (config: ConfigService) => ({
+ *     type: 'sqlite',
+ *     sqlite: { dbPath: config.get('IDEMPOTENCY_DB_PATH') },
+ *   }),
+ *   inject: [ConfigService],
+ * })
  * ```
  */
 @Module({})
@@ -69,6 +92,9 @@ export class IdempotencyModule {
    * Registers the idempotency module with static configuration.
    *
    * @param options - Backend type, connection settings, and optional service config.
+   * @returns A global `DynamicModule` exporting {@link IdempotencyService} and
+   *   the {@link IDEMPOTENCY_REPOSITORY_TOKEN} provider.
+   * @throws {Error} When `type` is `'postgres'` but `options.postgres.entityManager` is missing.
    */
   static forRoot(options: IdempotencyModuleOptions): DynamicModule {
     const repository = resolveRepository(options);
@@ -94,10 +120,12 @@ export class IdempotencyModule {
   /**
    * Registers the idempotency module with asynchronous configuration.
    *
-   * Supports useFactory with dependency injection, allowing options
+   * Supports `useFactory` with dependency injection, allowing options
    * to be resolved from config services or other providers at runtime.
    *
    * @param asyncOptions - Factory-based configuration with optional module imports.
+   * @returns A global `DynamicModule` exporting {@link IdempotencyService} and
+   *   the {@link IDEMPOTENCY_REPOSITORY_TOKEN} provider.
    */
   static forRootAsync(asyncOptions: IdempotencyModuleAsyncOptions): DynamicModule {
     const moduleOptionsProvider: Provider = {
