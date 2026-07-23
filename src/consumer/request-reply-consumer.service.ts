@@ -11,6 +11,7 @@ import { resolveSubscriptionConsumerOpts } from './consumer-opts-merger';
 import { GatewayConsumerOptions } from './gateway-consumer-options.interface';
 import { RequestReplyMessageProcessor } from './request-reply-message-processor';
 import { StreamAutoCreator } from './stream-auto-creator';
+import { createStreamAutoCreator, ensureStreamExists } from './consumer-stream.utils';
 
 /**
  * Registry and dispatch service for async request-reply response handlers.
@@ -42,10 +43,7 @@ export class RequestReplyConsumerService implements OnModuleInit {
       dlqSubjectBuilder,
       dispatch: (options: DispatchOptions) => this.dispatch(options),
     });
-    this.streamAutoCreator =
-      deps.autoCreateStreams && deps.connection
-        ? new StreamAutoCreator({ connection: deps.connection, streamConfig: deps.streamConfig, logger: deps.logger })
-        : undefined;
+    this.streamAutoCreator = createStreamAutoCreator(deps);
   }
 
   /** Auto-subscribes to the response subject pattern on module init. */
@@ -94,7 +92,7 @@ export class RequestReplyConsumerService implements OnModuleInit {
 
   /** Subscribes to a NATS subject pattern for response messages. */
   async subscribe(subject: string, consumerOpts?: ConsumerSubscribeOpts): Promise<void> {
-    await this.ensureStreamIfNeeded(subject);
+    await ensureStreamExists(this.streamAutoCreator, subject);
     const resolvedOpts = resolveSubscriptionConsumerOpts(this.gatewayConsumerOpts, consumerOpts);
     const subscription = await this.jetStream.subscribe(subject, resolvedOpts);
     this.processSubscription(subscription, subject).catch((error: unknown) => this.logGeneralError(error, subject));
@@ -107,12 +105,6 @@ export class RequestReplyConsumerService implements OnModuleInit {
 
   private buildHandlerKey(eventType: string, companyId?: string): string {
     return companyId ? `${eventType}:${companyId}` : eventType;
-  }
-
-  private async ensureStreamIfNeeded(subject: string): Promise<void> {
-    if (this.streamAutoCreator) {
-      await this.streamAutoCreator.ensureStreamExists(subject);
-    }
   }
 
   private logGeneralError(error: unknown, subject: string): void {

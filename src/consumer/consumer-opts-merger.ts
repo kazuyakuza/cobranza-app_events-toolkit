@@ -1,11 +1,12 @@
 import type { ConsumerConfig, ConsumerOpts } from 'nats';
 import {
   ConsumerSubscribeOpts,
-  createDefaultConsumerOpts,
   isConsumerOptsBuilder,
   resolveConsumerSubscribeOpts,
 } from './subscribe-options.interface';
 import { GatewayConsumerOptions } from './gateway-consumer-options.interface';
+
+type ConsumerOptsBuilderWithGetOpts = { getOpts(): ConsumerOpts };
 
 /**
  * Merges gateway-level consumer options with per-subscription options.
@@ -24,30 +25,8 @@ export function resolveSubscriptionConsumerOpts(
   if (isConsumerOptsBuilder(perSubscription)) {
     return perSubscription;
   }
-  if (!hasGatewayOrPerSubscription(gateway, perSubscription)) {
-    return createDefaultConsumerOpts();
-  }
   const merged = buildMergedConsumerConfig(gateway, perSubscription);
   return resolveConsumerSubscribeOpts(merged);
-}
-
-function hasGatewayOrPerSubscription(
-  gateway: GatewayConsumerOptions | undefined,
-  perSubscription: ConsumerSubscribeOpts | undefined,
-): boolean {
-  if (perSubscription !== undefined) {
-    return true;
-  }
-  if (!gateway) {
-    return false;
-  }
-  const hasScalar =
-    gateway.durableName !== undefined ||
-    gateway.deliverPolicy !== undefined ||
-    gateway.ackPolicy !== undefined ||
-    gateway.maxDeliver !== undefined ||
-    gateway.replayPolicy !== undefined;
-  return hasScalar || gateway.consumerOpts !== undefined;
 }
 
 function buildMergedConsumerConfig(
@@ -69,27 +48,20 @@ function extractBaseConsumerOpts(opts: ConsumerSubscribeOpts | undefined): Parti
     return {};
   }
   if (isConsumerOptsBuilder(opts)) {
-    return (opts as unknown as { getOpts: () => ConsumerOpts }).getOpts();
+    return (opts as unknown as ConsumerOptsBuilderWithGetOpts).getOpts();
   }
   return opts;
 }
 
 function gatewayScalarsToConfig(gateway: GatewayConsumerOptions | undefined): Partial<ConsumerConfig> {
-  const config: Partial<ConsumerConfig> = {};
-  if (gateway?.durableName) {
-    config.durable_name = gateway.durableName;
+  if (!gateway) {
+    return {};
   }
-  if (gateway?.deliverPolicy !== undefined) {
-    config.deliver_policy = gateway.deliverPolicy;
-  }
-  if (gateway?.ackPolicy !== undefined) {
-    config.ack_policy = gateway.ackPolicy;
-  }
-  if (gateway?.maxDeliver !== undefined) {
-    config.max_deliver = gateway.maxDeliver;
-  }
-  if (gateway?.replayPolicy !== undefined) {
-    config.replay_policy = gateway.replayPolicy;
-  }
-  return config;
+  return {
+    ...(gateway.durableName && { durable_name: gateway.durableName }),
+    ...(gateway.deliverPolicy !== undefined && { deliver_policy: gateway.deliverPolicy }),
+    ...(gateway.ackPolicy !== undefined && { ack_policy: gateway.ackPolicy }),
+    ...(gateway.maxDeliver !== undefined && { max_deliver: gateway.maxDeliver }),
+    ...(gateway.replayPolicy !== undefined && { replay_policy: gateway.replayPolicy }),
+  };
 }

@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { JetStreamClient, JsMsg } from 'nats';
 import { StreamAutoCreator } from './stream-auto-creator';
+import { createStreamAutoCreator, ensureStreamExists } from './consumer-stream.utils';
 import { AnyEventEnvelope } from '../common/envelope/envelope-types';
 import { EventConsumerException } from '../common/errors/event-consumer.exception';
 import { EventLoggerService, EventLogContext } from '../logging/event-logger.service';
@@ -46,15 +47,12 @@ export class JetStreamConsumerService {
       logger: this.logger,
       dlqSubjectBuilder: this.dlqSubjectBuilder,
     });
-    this.streamAutoCreator =
-      deps.autoCreateStreams && deps.connection
-        ? new StreamAutoCreator({ connection: deps.connection, streamConfig: deps.streamConfig, logger: deps.logger })
-        : undefined;
+    this.streamAutoCreator = createStreamAutoCreator(deps);
   }
 
   async subscribe(options: SubscribeOptions): Promise<void> {
     this.consumerService.registerHandler(options.subject, options.handler);
-    await this.ensureStreamIfNeeded(options.subject);
+    await ensureStreamExists(this.streamAutoCreator, options.subject);
     const consumerOpts = resolveSubscriptionConsumerOpts(this.gatewayConsumerOpts, options.consumerOpts);
     const subscription = await this.jetStream.subscribe(options.subject, consumerOpts);
     this.processSubscription(subscription, options.subject).catch((error: unknown) =>
@@ -72,12 +70,6 @@ export class JetStreamConsumerService {
    */
   async moveToDlq(options: MoveToDlqOptions): Promise<void> {
     return this.dlqHandler.moveToDlq(options);
-  }
-
-  private async ensureStreamIfNeeded(subject: string): Promise<void> {
-    if (this.streamAutoCreator) {
-      await this.streamAutoCreator.ensureStreamExists(subject);
-    }
   }
 
   private async processSubscription(subscription: AsyncIterable<JsMsg>, subject: string): Promise<void> {

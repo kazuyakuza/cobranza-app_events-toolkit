@@ -14,14 +14,7 @@ import { ConsumerService } from './consumer.service';
 import { EventLoggerService } from '../logging/event-logger.service';
 import { JETSTREAM_CONSUMER_DEPS_TOKEN } from './jetstream-consumer-deps.interface';
 import { defaultDlqSubjectBuilder } from './subscribe-options.interface';
-
-function extractDurableName(optsArg: unknown): string | undefined {
-  const getOptsFn = (optsArg as { getOpts?: () => { config: Record<string, unknown> } }).getOpts;
-  if (typeof getOptsFn === 'function') {
-    return getOptsFn.call(optsArg).config.durable_name as string | undefined;
-  }
-  return (optsArg as { config?: Record<string, unknown> }).config?.durable_name as string | undefined;
-}
+import { extractDurableName } from './testing/extract-durable-name';
 
 describe('JetStreamConsumerService — gateway consumer opts merge', () => {
   let jetStream: { subscribe: jest.Mock };

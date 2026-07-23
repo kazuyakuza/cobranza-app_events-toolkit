@@ -170,9 +170,8 @@ describe('RequestReplyConsumerService', () => {
       expect(jetStream.subscribe).toHaveBeenCalledTimes(1);
       const [subjectArg, optsArg] = jetStream.subscribe.mock.calls[0];
       expect(subjectArg).toBe('company.*.response.v1');
-      expect(typeof (optsArg as ConsumerOptsBuilder).getOpts).toBe('function');
-      const resolved = (optsArg as ConsumerOptsBuilder).getOpts();
-      expect(resolved.config.ack_policy).toBe(AckPolicy.Explicit);
+      const resolved = optsArg as Partial<import('nats').ConsumerOpts>;
+      expect(resolved.config?.ack_policy).toBe(AckPolicy.Explicit);
     });
   });
 });

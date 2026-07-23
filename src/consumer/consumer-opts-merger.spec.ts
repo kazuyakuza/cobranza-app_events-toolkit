@@ -8,14 +8,16 @@
  * 4. Gateway consumerOpts (builder or partial)
  * 5. Built-in defaults (ack_policy Explicit, unique deliver_subject)
  */
-import { AckPolicy, consumerOpts, DeliverPolicy, ReplayPolicy } from 'nats';
+import { AckPolicy, consumerOpts, ConsumerOpts, DeliverPolicy, ReplayPolicy } from 'nats';
 import { resolveSubscriptionConsumerOpts } from './consumer-opts-merger';
 import { GatewayConsumerOptions } from './gateway-consumer-options.interface';
 import { isConsumerOptsBuilder } from './subscribe-options.interface';
 
-function getConfig(resolved: ReturnType<typeof resolveSubscriptionConsumerOpts>): Partial<import('nats').ConsumerOpts> {
+type ConsumerOptsBuilderWithGetOpts = { getOpts(): ConsumerOpts };
+
+function getConfig(resolved: ReturnType<typeof resolveSubscriptionConsumerOpts>): Partial<ConsumerOpts> {
   if (isConsumerOptsBuilder(resolved)) {
-    return (resolved as unknown as { getOpts: () => import('nats').ConsumerOpts }).getOpts();
+    return (resolved as unknown as ConsumerOptsBuilderWithGetOpts).getOpts();
   }
   return resolved;
 }
@@ -49,6 +51,10 @@ describe('resolveSubscriptionConsumerOpts', () => {
 
     it('still defaults ack_policy to Explicit', () => {
       expect(config.config?.ack_policy).toBe(AckPolicy.Explicit);
+    });
+
+    it('does not set deliver_policy so NATS uses the durable stored state', () => {
+      expect(config.config?.deliver_policy).toBeUndefined();
     });
   });
 
@@ -137,20 +143,15 @@ describe('resolveSubscriptionConsumerOpts', () => {
     });
   });
 
-  describe('gateway undefined, per-subscription undefined → defaults', () => {
-    const resolved = resolveSubscriptionConsumerOpts(undefined, undefined);
-    const config = getConfig(resolved);
-
-    it('ack_policy defaults to Explicit', () => {
+  describe('scalar ackPolicy overrides gateway builder', () => {
+    it('uses scalar ack_policy over builder ack_policy', () => {
+      const gateway: GatewayConsumerOptions = {
+        consumerOpts: consumerOpts().ackAll(),
+        ackPolicy: AckPolicy.Explicit,
+      };
+      const resolved = resolveSubscriptionConsumerOpts(gateway, undefined);
+      const config = getConfig(resolved);
       expect(config.config?.ack_policy).toBe(AckPolicy.Explicit);
-    });
-
-    it('deliver_subject is set', () => {
-      expect(config.config?.deliver_subject).toBeTruthy();
-    });
-
-    it('mack is true', () => {
-      expect(config.mack).toBe(true);
     });
   });
 });

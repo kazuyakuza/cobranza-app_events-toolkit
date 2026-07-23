@@ -4,6 +4,7 @@
  * Verifies that:
  * - gateway durableName is passed through on subscribe(subject)
  * - subscribe(subject, consumerOptsBuilder) passes builder through unchanged
+ * - onModuleInit() auto-subscribe applies gateway durableName
  * - default (no gatewayConsumerOpts) produces ephemeral consumer default
  */
 import { Test } from '@nestjs/testing';
@@ -12,14 +13,7 @@ import { RequestReplyConsumerService } from './request-reply-consumer.service';
 import { REQUEST_REPLY_CONSUMER_DEPS_TOKEN } from './request-reply-consumer-deps.interface';
 import { defaultDlqSubjectBuilder } from './subscribe-options.interface';
 import { EventLoggerService } from '../logging/event-logger.service';
-
-function extractDurableName(optsArg: unknown): string | undefined {
-  const getOptsFn = (optsArg as { getOpts?: () => { config: Record<string, unknown> } }).getOpts;
-  if (typeof getOptsFn === 'function') {
-    return getOptsFn.call(optsArg).config.durable_name as string | undefined;
-  }
-  return (optsArg as { config?: Record<string, unknown> }).config?.durable_name as string | undefined;
-}
+import { extractDurableName } from './testing/extract-durable-name';
 
 describe('RequestReplyConsumerService — gateway consumer opts merge', () => {
   let jetStream: { subscribe: jest.Mock; publish: jest.Mock };
@@ -74,6 +68,13 @@ describe('RequestReplyConsumerService — gateway consumer opts merge', () => {
       const builder = consumerOpts().durable('builder-durable').deliverTo('x').ackExplicit();
       await service.subscribe('company.*.custom.v1', builder);
       expect(jetStream.subscribe).toHaveBeenCalledWith('company.*.custom.v1', builder);
+    });
+
+    it('applies gateway durable_name when onModuleInit auto-subscribes', async () => {
+      service.onModuleInit();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const [, optsArg] = jetStream.subscribe.mock.calls[0] as [string, unknown];
+      expect(extractDurableName(optsArg)).toBe('rr-durable');
     });
   });
 

@@ -277,9 +277,8 @@ describe('JetStreamConsumerService', () => {
       expect(jetStream.subscribe).toHaveBeenCalledTimes(1);
       const [subjectArg, optsArg] = jetStream.subscribe.mock.calls[0];
       expect(subjectArg).toBe(testSubject);
-      expect(typeof (optsArg as ConsumerOptsBuilder).getOpts).toBe('function');
-      const resolved = (optsArg as ConsumerOptsBuilder).getOpts();
-      expect(resolved.config.ack_policy).toBe(AckPolicy.Explicit);
+      const resolved = optsArg as Partial<import('nats').ConsumerOpts>;
+      expect(resolved.config?.ack_policy).toBe(AckPolicy.Explicit);
       expect(resolved.mack).toBe(true);
     });
 
