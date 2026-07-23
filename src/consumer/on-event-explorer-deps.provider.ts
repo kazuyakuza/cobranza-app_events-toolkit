@@ -1,0 +1,39 @@
+import { Provider } from '@nestjs/common';
+import { IdempotencyService } from '../idempotency/idempotency.service';
+import { ConsumerService } from './consumer.service';
+import { ON_EVENT_EXPLORER_DEPS_TOKEN } from './decorators/on-event-explorer-deps.interface';
+import {
+  CONSUMER_DISCOVERY_PAIR_TOKEN,
+  DISCOVERY_REFLECTOR_PAIR,
+  ConsumerDiscoveryPair,
+  DiscoveryReflectorPair,
+} from './consumer.module';
+
+/**
+ * Intermediate provider that merges DiscoveryReflectorPair with ConsumerService
+ * into a single ConsumerDiscoveryPair token.
+ */
+export function createConsumerDiscoveryPairProvider(): Provider {
+  return {
+    provide: CONSUMER_DISCOVERY_PAIR_TOKEN,
+    useFactory: (pair: DiscoveryReflectorPair, consumerService: ConsumerService) =>
+      ({ ...pair, consumerService }) satisfies ConsumerDiscoveryPair,
+    inject: [DISCOVERY_REFLECTOR_PAIR, ConsumerService],
+  };
+}
+
+/**
+ * Provider for @OnEvent() explorer dependencies.
+ */
+export function createOnEventExplorerDepsProvider(): Provider {
+  return {
+    provide: ON_EVENT_EXPLORER_DEPS_TOKEN,
+    useFactory: (consumerDiscoveryPair: ConsumerDiscoveryPair, idempotencyService?: IdempotencyService) => ({
+      discovery: consumerDiscoveryPair.discovery,
+      reflector: consumerDiscoveryPair.reflector,
+      consumerService: consumerDiscoveryPair.consumerService,
+      idempotencyService,
+    }),
+    inject: [CONSUMER_DISCOVERY_PAIR_TOKEN, { token: IdempotencyService, optional: true }],
+  };
+}

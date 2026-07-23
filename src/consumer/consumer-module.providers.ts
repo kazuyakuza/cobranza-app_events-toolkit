@@ -2,17 +2,14 @@ import { Provider, Type } from '@nestjs/common';
 import { DiscoveryService, Reflector } from '@nestjs/core';
 import { JetStreamClient } from 'nats';
 import { EventLoggerService } from '../logging/event-logger.service';
-import { IdempotencyService } from '../idempotency/idempotency.service';
 import { ConsumerService } from './consumer.service';
 import { JETSTREAM_CONSUMER_DEPS_TOKEN } from './jetstream-consumer-deps.interface';
-import { ON_EVENT_EXPLORER_DEPS_TOKEN } from './decorators/on-event-explorer-deps.interface';
 import { ON_REQUEST_REPLY_EXPLORER_DEPS_TOKEN } from './decorators/on-request-reply-explorer-deps.interface';
 import { REQUEST_REPLY_CONSUMER_DEPS_TOKEN } from './request-reply-consumer-deps.interface';
 import { RequestReplyConsumerService } from './request-reply-consumer.service';
 import {
   CONSUMER_MODULE_OPTIONS,
   DISCOVERY_REFLECTOR_PAIR,
-  CONSUMER_DISCOVERY_PAIR_TOKEN,
   RESOLVED_CONNECTION_TOKEN,
   CONSUMER_SERVICES_PAIR,
   JETSTREAM_CONSUMER_ASYNC_DEPS_TOKEN,
@@ -21,7 +18,6 @@ import {
   ConsumerModuleAsyncOptions,
   DiscoveryReflectorPair,
   ConsumerServicesPair,
-  ConsumerDiscoveryPair,
   ResolvedConnection,
   JetStreamAsyncDeps,
   RequestReplyAsyncDeps,
@@ -35,47 +31,6 @@ export function createDiscoveryPairProvider(): Provider {
     provide: DISCOVERY_REFLECTOR_PAIR,
     useFactory: (discovery: DiscoveryService, reflector: Reflector) => ({ discovery, reflector }),
     inject: [DiscoveryService, Reflector],
-  };
-}
-/**
- * Intermediate provider that merges {@link DiscoveryReflectorPair} with {@link ConsumerService}
- * into a single {@link ConsumerDiscoveryPair} token.
- *
- * This provider is consumed by {@link createOnEventExplorerDepsProvider} and
- * {@link createRequestReplyExplorerDepsProvider} to build explorer-specific dependency objects.
- *
- * @see {@link CONSUMER_DISCOVERY_PAIR_TOKEN} for the injection token.
- */
-export function createConsumerDiscoveryPairProvider(): Provider {
-  return {
-    provide: CONSUMER_DISCOVERY_PAIR_TOKEN,
-    useFactory: (pair: DiscoveryReflectorPair, consumerService: ConsumerService) =>
-      ({ ...pair, consumerService }) satisfies ConsumerDiscoveryPair,
-    inject: [DISCOVERY_REFLECTOR_PAIR, ConsumerService],
-  };
-}
-
-/**
- * Provider for `@OnEvent()` explorer dependencies.
- *
- * Builds an {@link OnEventExplorerDeps} object from the {@link ConsumerDiscoveryPair}
- * and an optional {@link IdempotencyService}. The idempotency service is injected as
- * `optional: true`, so the explorer gracefully skips idempotent wrapping when
- * `IdempotencyModule` is not registered.
- *
- * @see {@link OnEventExplorerDeps} for the dependency shape.
- * @see {@link IdempotencyService} for the idempotency service used in handler wrapping.
- */
-export function createOnEventExplorerDepsProvider(): Provider {
-  return {
-    provide: ON_EVENT_EXPLORER_DEPS_TOKEN,
-    useFactory: (consumerDiscoveryPair: ConsumerDiscoveryPair, idempotencyService?: IdempotencyService) => ({
-      discovery: consumerDiscoveryPair.discovery,
-      reflector: consumerDiscoveryPair.reflector,
-      consumerService: consumerDiscoveryPair.consumerService,
-      idempotencyService,
-    }),
-    inject: [CONSUMER_DISCOVERY_PAIR_TOKEN, { token: IdempotencyService, optional: true }],
   };
 }
 

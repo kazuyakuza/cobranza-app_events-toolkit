@@ -11,8 +11,6 @@ import { OnRequestReplyExplorer } from './decorators/on-request-reply.explorer';
 import { RequestReplyConsumerService } from './request-reply-consumer.service';
 import {
   createDiscoveryPairProvider,
-  createConsumerDiscoveryPairProvider,
-  createOnEventExplorerDepsProvider,
   createRequestReplyExplorerDepsProvider,
   createSyncJetStreamConsumerDepsProvider,
   createSyncRequestReplyConsumerDepsProvider,
@@ -25,6 +23,7 @@ import {
   createRequestReplyAsyncDepsProvider,
   resolveJetStreamFromOptions,
 } from './consumer-module.providers';
+import { createConsumerDiscoveryPairProvider, createOnEventExplorerDepsProvider } from './on-event-explorer-deps.provider';
 
 export const CONSUMER_MODULE_OPTIONS = 'CONSUMER_MODULE_OPTIONS';
 export const DISCOVERY_REFLECTOR_PAIR = 'DISCOVERY_REFLECTOR_PAIR' as unknown as Type<unknown>;
