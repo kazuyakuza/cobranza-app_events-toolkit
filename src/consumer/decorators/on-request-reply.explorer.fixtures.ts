@@ -84,3 +84,33 @@ export class GetterSetterConsumer {
 
   plainMethod(): void {}
 }
+
+export class IdempotentRequestReplyConsumer {
+  invokeCount = 0;
+
+  @OnRequestReply('billing.invoice.adjusted', {
+    description: 'Handles invoice adjustment responses idempotently',
+    payloadExample: { invoiceId: 'inv-1' },
+    idempotent: true,
+  })
+  handleAdjusted(): void {
+    this.invokeCount += 1;
+  }
+}
+
+export class FailingThenSucceedingRequestReplyConsumer {
+  invokeCount = 0;
+  shouldFail = true;
+
+  @OnRequestReply('billing.invoice.adjusted', {
+    description: 'Handles invoice adjustment responses idempotently',
+    payloadExample: { invoiceId: 'inv-1' },
+    idempotent: true,
+  })
+  handleAdjusted(): void {
+    this.invokeCount += 1;
+    if (this.shouldFail) {
+      throw new Error('first attempt fails');
+    }
+  }
+}
