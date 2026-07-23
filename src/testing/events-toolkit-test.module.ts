@@ -2,6 +2,7 @@ import { DynamicModule, Provider, Type } from '@nestjs/common';
 import { ProducerService } from '../producer/producer.service';
 import { ConsumerService } from '../consumer/consumer.service';
 import { OutboxService } from '../outbox/outbox.service';
+import { IdempotencyService } from '../idempotency/idempotency.service';
 import { RequestReplyService } from '../request-reply/request-reply.service';
 import { EventLoggerService } from '../logging/event-logger.service';
 import { ManifestService } from '../discovery/manifest.service';
@@ -12,6 +13,7 @@ import { MockProducerService } from './mock-producer.service';
 import { MockConsumerService } from './mock-consumer.service';
 import { MockEventLoggerService } from './mock-event-logger.service';
 import { MockOutboxService } from './mock-outbox.service';
+import { MockIdempotencyService } from './mock-idempotency.service';
 import { MockRequestReplyService } from './mock-request-reply.service';
 import { MockManifestService } from './mock-manifest.service';
 import { MockDiscoveryService, MockDiscoveryServiceDeps } from './mock-discovery.service';
@@ -47,11 +49,12 @@ export class EventsToolkitTestModule {
    */
   static forRoot(options?: EventsToolkitTestModuleOptions): DynamicModule {
     const discoveryEnabled = options?.discovery?.enabled !== false;
+    const idempotencyEnabled = options?.idempotency?.enabled !== false;
     return {
       module: EventsToolkitTestModule,
       global: true,
       providers: this.buildProviders(discoveryEnabled, options),
-      exports: this.buildExports(discoveryEnabled),
+      exports: this.buildExports(discoveryEnabled, idempotencyEnabled),
     };
   }
 
@@ -68,10 +71,20 @@ export class EventsToolkitTestModule {
       MockRequestReplyService,
       { provide: RequestReplyService, useExisting: MockRequestReplyService },
     ];
+    if (options?.idempotency?.enabled !== false) {
+      providers.push(...this.buildIdempotencyProviders());
+    }
     if (discoveryEnabled) {
       providers.push(...this.buildDiscoveryProviders(options));
     }
     return providers;
+  }
+
+  private static buildIdempotencyProviders(): Provider[] {
+    return [
+      MockIdempotencyService,
+      { provide: IdempotencyService, useExisting: MockIdempotencyService },
+    ];
   }
 
   private static buildDiscoveryProviders(options?: EventsToolkitTestModuleOptions): Provider[] {
@@ -100,7 +113,7 @@ export class EventsToolkitTestModule {
     };
   }
 
-  private static buildExports(discoveryEnabled: boolean): Type<unknown>[] {
+  private static buildExports(discoveryEnabled: boolean, idempotencyEnabled: boolean): Type<unknown>[] {
     const exports: Type<unknown>[] = [
       MockProducerService,
       ProducerService,
@@ -113,6 +126,9 @@ export class EventsToolkitTestModule {
       MockRequestReplyService,
       RequestReplyService,
     ];
+    if (idempotencyEnabled) {
+      exports.push(MockIdempotencyService, IdempotencyService);
+    }
     if (discoveryEnabled) {
       exports.push(MockManifestService, ManifestService);
       exports.push(MockDiscoveryService, DiscoveryService);

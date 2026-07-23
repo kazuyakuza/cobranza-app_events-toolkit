@@ -3,6 +3,7 @@ import { ProducerService } from '../producer/producer.service';
 import { ConsumerService } from '../consumer/consumer.service';
 import { EventLoggerService } from '../logging/event-logger.service';
 import { OutboxService } from '../outbox/outbox.service';
+import { IdempotencyService } from '../idempotency/idempotency.service';
 import { RequestReplyService } from '../request-reply/request-reply.service';
 import { ManifestService } from '../discovery/manifest.service';
 import { DiscoveryService } from '../discovery/discovery.service';
@@ -12,6 +13,7 @@ import { MockProducerService } from './mock-producer.service';
 import { MockConsumerService } from './mock-consumer.service';
 import { MockEventLoggerService } from './mock-event-logger.service';
 import { MockOutboxService } from './mock-outbox.service';
+import { MockIdempotencyService } from './mock-idempotency.service';
 import { MockRequestReplyService } from './mock-request-reply.service';
 import { MockManifestService } from './mock-manifest.service';
 import { MockDiscoveryService } from './mock-discovery.service';
@@ -143,6 +145,28 @@ describe('EventsToolkitTestModule', () => {
       }).compile();
 
       expect(() => module.get(DiscoveryEventPublisher)).toThrow();
+    });
+  });
+
+  describe('idempotency mocks', () => {
+    it('provides MockIdempotencyService and aliases IdempotencyService to it', async () => {
+      const module = await Test.createTestingModule({
+        imports: [EventsToolkitTestModule.forRoot()],
+      }).compile();
+
+      const mockService = module.get(MockIdempotencyService);
+      const idempotencyService = module.get(IdempotencyService);
+      expect(mockService).toBeInstanceOf(MockIdempotencyService);
+      expect(idempotencyService).toBe(mockService);
+    });
+
+    it('omits idempotency mocks when idempotency.enabled=false', async () => {
+      const module = await Test.createTestingModule({
+        imports: [EventsToolkitTestModule.forRoot({ idempotency: { enabled: false } })],
+      }).compile();
+
+      expect(() => module.get(IdempotencyService)).toThrow();
+      expect(() => module.get(MockIdempotencyService)).toThrow();
     });
   });
 });
