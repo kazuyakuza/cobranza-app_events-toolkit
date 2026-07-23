@@ -10,7 +10,7 @@
 - producer/ - ProducerModule, ProducerService, EmitEvent decorator, EmitEventInterceptor (barrel: index.ts)
 - producer/decorators/ - @EmitEvent() decorator and EmitEventInterceptor
 - producer/decorators/__tests__/ - Shared test helpers for EmitEvent tests
-- consumer/ - ConsumerService, JetStreamConsumerService, RequestReplyConsumerService, RequestReplyMessageProcessor, EnvelopeValidationUtil, provider factories, and decorators (barrel: index.ts)
+- consumer/ - ConsumerService, JetStreamConsumerService, RequestReplyConsumerService, RequestReplyMessageProcessor, EnvelopeValidationUtil, GatewayConsumerOptions, consumer-opts-merger, provider factories, and decorators (barrel: index.ts)
 - consumer/decorators/ - @OnEvent() and @OnRequestReply() decorators, explorers
 - request-reply/ - RequestReplyService and type definitions (barrel: index.ts)
 - outbox/ - OutboxModule, OutboxService, SqliteOutboxRepository, PostgresOutboxRepository, transaction context types, async request contexts (barrel: index.ts)
