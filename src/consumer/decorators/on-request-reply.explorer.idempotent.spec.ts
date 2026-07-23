@@ -12,6 +12,7 @@ import { EventContext } from '../../common/envelope/event-context.interface';
 import {
   IdempotentRequestReplyConsumer,
   FailingThenSucceedingRequestReplyConsumer,
+  ExplicitFalseRequestReplyConsumer,
   SampleConsumer,
 } from './on-request-reply.explorer.fixtures';
 
@@ -71,7 +72,7 @@ describe('OnRequestReplyExplorer', () => {
         const idempotentHandler = new IdempotentRequestReplyConsumer();
         const { requestReplyConsumerService } = createIdempotentExplorer(idempotentHandler, idempotencyService);
 
-        const handler = requestReplyConsumerService.getHandler('billing.invoice.adjusted');
+        const handler = requestReplyConsumerService.getHandler('billing.invoice.adjusted', 'tenant-3');
         expect(handler).toBeDefined();
 
         const event = buildIdempotentEvent();
@@ -88,7 +89,7 @@ describe('OnRequestReplyExplorer', () => {
         const idempotentHandler = new IdempotentRequestReplyConsumer();
         const { requestReplyConsumerService } = createIdempotentExplorer(idempotentHandler);
 
-        const handler = requestReplyConsumerService.getHandler('billing.invoice.adjusted');
+        const handler = requestReplyConsumerService.getHandler('billing.invoice.adjusted', 'tenant-3');
         expect(handler).toBeDefined();
 
         const event = buildIdempotentEvent();
@@ -118,12 +119,31 @@ describe('OnRequestReplyExplorer', () => {
         expect(await idempotencyService.isDuplicate(event)).toBe(false);
       });
 
+      it('does not wrap when idempotent flag is explicitly false', async () => {
+        const idempotencyService = createIdempotencyService();
+        const handlerLocal = new ExplicitFalseRequestReplyConsumer();
+        const { requestReplyConsumerService } = createIdempotentExplorer(handlerLocal, idempotencyService);
+
+        const handler = requestReplyConsumerService.getHandler('billing.invoice.adjusted', 'tenant-3');
+        expect(handler).toBeDefined();
+
+        const event = new EventEnvelope({ id: 'evt_false', type: 'billing.invoice.adjusted' });
+        const context = buildEventContext();
+
+        await handler!(event, context);
+        expect(handlerLocal.invokeCount).toBe(1);
+
+        await handler!(event, context);
+        expect(handlerLocal.invokeCount).toBe(2);
+        expect(await idempotencyService.isDuplicate(event)).toBe(false);
+      });
+
       it('marks and skips duplicate after successful handler execution', async () => {
         const idempotencyService = createIdempotencyService();
         const idempotentHandler = new IdempotentRequestReplyConsumer();
         const { requestReplyConsumerService } = createIdempotentExplorer(idempotentHandler, idempotencyService);
 
-        const handler = requestReplyConsumerService.getHandler('billing.invoice.adjusted');
+        const handler = requestReplyConsumerService.getHandler('billing.invoice.adjusted', 'tenant-3');
         expect(handler).toBeDefined();
 
         const event = buildIdempotentEvent();
@@ -148,7 +168,7 @@ describe('OnRequestReplyExplorer', () => {
         const idempotentHandler = new FailingThenSucceedingRequestReplyConsumer();
         const { requestReplyConsumerService } = createIdempotentExplorer(idempotentHandler, idempotencyService);
 
-        const handler = requestReplyConsumerService.getHandler('billing.invoice.adjusted');
+        const handler = requestReplyConsumerService.getHandler('billing.invoice.adjusted', 'tenant-3');
         expect(handler).toBeDefined();
 
         const event = buildIdempotentEvent();

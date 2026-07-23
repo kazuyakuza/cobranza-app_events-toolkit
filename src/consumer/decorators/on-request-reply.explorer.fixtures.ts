@@ -89,6 +89,7 @@ export class IdempotentRequestReplyConsumer {
   invokeCount = 0;
 
   @OnRequestReply('billing.invoice.adjusted', {
+    companyId: 'tenant-3',
     description: 'Handles invoice adjustment responses idempotently',
     payloadExample: { invoiceId: 'inv-1' },
     idempotent: true,
@@ -103,6 +104,7 @@ export class FailingThenSucceedingRequestReplyConsumer {
   shouldFail = true;
 
   @OnRequestReply('billing.invoice.adjusted', {
+    companyId: 'tenant-3',
     description: 'Handles invoice adjustment responses idempotently',
     payloadExample: { invoiceId: 'inv-1' },
     idempotent: true,
@@ -112,5 +114,19 @@ export class FailingThenSucceedingRequestReplyConsumer {
     if (this.shouldFail) {
       throw new Error('first attempt fails');
     }
+  }
+}
+
+export class ExplicitFalseRequestReplyConsumer {
+  invokeCount = 0;
+
+  @OnRequestReply('billing.invoice.adjusted', {
+    companyId: 'tenant-3',
+    description: 'Handles invoice adjustment responses with idempotent:false',
+    payloadExample: { invoiceId: 'inv-1' },
+    idempotent: false,
+  })
+  handleAdjusted(): void {
+    this.invokeCount += 1;
   }
 }
