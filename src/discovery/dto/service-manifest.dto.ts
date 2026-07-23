@@ -15,4 +15,7 @@ export interface ServiceManifestDto {
   consumes: ManifestConsumeEntry[];
   /** Events this service produces/emits. */
   produces: ManifestProduceEntry[];
+  /** Toolkit-level capabilities advertised by this service (e.g. 'idempotency', 'outbox').
+   *  Populated by EventsToolkitModule based on which subsystems are enabled. */
+  capabilities?: string[];
 }

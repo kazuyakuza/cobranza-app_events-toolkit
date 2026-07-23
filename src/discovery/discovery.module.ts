@@ -27,6 +27,8 @@ export interface DiscoveryModuleOptions {
   schemaDir: string;
   /** Force schema regeneration on startup. */
   forceRegenerateSchemas: boolean;
+  /** Capabilities advertised in the service manifest. */
+  capabilities: string[];
 }
 
 const DEFAULT_DISCOVERY_OPTIONS = {
@@ -36,6 +38,7 @@ const DEFAULT_DISCOVERY_OPTIONS = {
   includeFullManifestInHeartbeat: false as const,
   schemaDir: '.events-toolkit/schemas',
   forceRegenerateSchemas: false as const,
+  capabilities: [] as string[],
 };
 
 const MANIFEST_DEPS_FACTORY = {
@@ -54,6 +57,7 @@ function resolveDiscoveryOptions(userOptions: EventsToolkitDiscoveryOptions): Di
     service: resolveServiceInfo(userOptions.service),
     schemaDir: userOptions.schemaDir ?? DEFAULT_DISCOVERY_OPTIONS.schemaDir,
     forceRegenerateSchemas: userOptions.forceRegenerateSchemas ?? DEFAULT_DISCOVERY_OPTIONS.forceRegenerateSchemas,
+    capabilities: userOptions.capabilities ?? DEFAULT_DISCOVERY_OPTIONS.capabilities,
   };
 }
 

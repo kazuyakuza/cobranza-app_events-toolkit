@@ -14,6 +14,7 @@ import {
   buildOutboxModuleOptions,
 } from './events-toolkit-module.providers';
 import type { EventsToolkitModuleOptions, EventsToolkitIdempotencyOptions } from './events-toolkit-options.interface';
+import type { EventsToolkitDiscoveryOptions } from './discovery/discovery-service-options.interface';
 
 /**
  * Returns true when the idempotency config is present and not explicitly disabled.
@@ -87,8 +88,18 @@ export function buildDiscoveryAsyncImport(): DynamicModule {
   return DiscoveryModule.forRootAsync({
     useFactory: (...args: unknown[]) => {
       const opts = args[0] as EventsToolkitModuleOptions;
-      return opts.discovery ?? {};
+      return {
+        ...opts.discovery,
+        capabilities: resolveAsyncCapabilities(opts),
+      } satisfies EventsToolkitDiscoveryOptions;
     },
     inject: [EVENTS_TOOLKIT_OPTIONS],
   });
+}
+
+function resolveAsyncCapabilities(opts: EventsToolkitModuleOptions): string[] {
+  const capabilities: string[] = [];
+  if (isIdempotencyEnabled(opts.idempotency)) capabilities.push('idempotency');
+  if (opts.outbox) capabilities.push('outbox');
+  return [...capabilities, ...(opts.discovery?.capabilities ?? [])];
 }

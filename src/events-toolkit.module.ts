@@ -34,6 +34,7 @@ import {
   isIdempotencyEnabled,
 } from './events-toolkit-module.imports';
 import { EventsToolkitModuleOptions, EventsToolkitModuleAsyncOptions } from './events-toolkit-options.interface';
+import type { EventsToolkitDiscoveryOptions } from './discovery/discovery-service-options.interface';
 
 type ModuleImport = Type<unknown> | DynamicModule | Promise<DynamicModule> | ForwardReference<unknown>;
 
@@ -110,6 +111,20 @@ function buildSyncProviders(options: EventsToolkitModuleOptions, resolved: Resol
   ];
 }
 
+function buildDiscoveryOptions(options: EventsToolkitModuleOptions): EventsToolkitDiscoveryOptions {
+  return {
+    ...options.discovery,
+    capabilities: resolveCapabilities(options),
+  };
+}
+
+function resolveCapabilities(options: EventsToolkitModuleOptions): string[] {
+  const capabilities: string[] = [];
+  if (isIdempotencyEnabled(options.idempotency)) capabilities.push('idempotency');
+  if (options.outbox) capabilities.push('outbox');
+  return [...capabilities, ...(options.discovery?.capabilities ?? [])];
+}
+
 function buildSyncImports(options: EventsToolkitModuleOptions, resolved: ResolvedNats): ModuleImport[] {
   const imports: ModuleImport[] = [ProducerModule.forRoot({ jetStream: resolved.jetStream })];
   if (options.consumer?.enable !== false) {
@@ -130,7 +145,7 @@ function buildSyncImports(options: EventsToolkitModuleOptions, resolved: Resolve
     imports.push(IdempotencyModule.forRoot(buildIdempotencyModuleOptions(options.idempotency)));
   }
   if (options.discovery?.enabled !== false) {
-    imports.push(DiscoveryModule.forRoot(options.discovery ?? {}));
+    imports.push(DiscoveryModule.forRoot(buildDiscoveryOptions(options)));
   }
   return imports;
 }

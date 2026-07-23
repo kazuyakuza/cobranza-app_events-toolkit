@@ -111,6 +111,10 @@ export class DiscoveryService implements OnModuleInit, OnApplicationBootstrap, O
     }
     const baseManifest = this.manifestService.generateManifest(this.resolvedOptions.service);
     this.cachedManifest = this.merger.merge(baseManifest, this.contributors);
+    const capabilities = this.resolvedOptions.capabilities ?? [];
+    if (capabilities.length > 0) {
+      this.cachedManifest.capabilities = capabilities;
+    }
     return this.cachedManifest;
   }
 

@@ -19,6 +19,7 @@ function createMockOptions(overrides: Partial<DiscoveryModuleOptions> = {}): Dis
     service: { name: 'test-service', version: '1.0.0' },
     schemaDir: '.events-toolkit/schemas',
     forceRegenerateSchemas: false,
+    capabilities: [] as string[],
     ...overrides,
   };
 }
@@ -178,6 +179,20 @@ describe('DiscoveryService', () => {
       expect(baseProduce?.handler).toBe('baseEmitter');
       expect(manifest.consumes).toHaveLength(1);
       expect(manifest.produces).toHaveLength(1);
+    });
+  });
+
+  describe('capabilities', () => {
+    it('includes capabilities on generated manifest', () => {
+      moduleOptions.capabilities = ['idempotency', 'outbox'];
+      const manifest = service.getManifest();
+      expect(manifest.capabilities).toEqual(['idempotency', 'outbox']);
+    });
+
+    it('defaults capabilities to [] when unset', () => {
+      moduleOptions.capabilities = [];
+      const manifest = service.getManifest();
+      expect(manifest.capabilities).toBeUndefined();
     });
   });
 
