@@ -17,6 +17,15 @@ export interface OnRequestReplyMetadata {
   payloadSchemaRef?: string;
   /** Example payload object for documentation in discovery manifests. Required. */
   payloadExample: Record<string, unknown>;
+  /**
+   * When `true` and `IdempotencyModule` is registered, the explorer wraps this handler
+   * with a duplicate check so repeated delivery of the same event is skipped silently.
+   * No-op when the idempotency module is not configured.
+   *
+   * @see {@link IdempotencyService} for the underlying deduplication service.
+   * @see {@link OnRequestReplyExplorer} for the wrapping logic.
+   */
+  idempotent?: boolean;
 }
 
 /** Options for the @OnRequestReply() method decorator (second argument, required). */
@@ -35,6 +44,28 @@ export interface OnRequestReplyOptions {
   payloadSchemaRef?: string;
   /** Example payload object for documentation in discovery manifests. Required. */
   payloadExample: Record<string, unknown>;
+  /**
+   * When `true` and `IdempotencyModule` is registered, the explorer wraps this handler
+   * with a duplicate check so repeated delivery of the same event is skipped silently.
+   * No-op when the idempotency module is not configured.
+   *
+   * @see {@link IdempotencyService} for the underlying deduplication service.
+   * @see {@link OnRequestReplyExplorer} for the wrapping logic.
+   *
+   * @example
+   * ```ts
+   * @OnRequestReply('payment.proof.uploaded', {
+   *   companyId: '550e8400-e29b-41d4-a716-446655440000',
+   *   description: 'Handles upload responses',
+   *   payloadExample: { proofId: 'uuid' },
+   *   idempotent: true,
+   * })
+   * async handleResponse(event: EventEnvelope<PaymentProofData>) {
+   *   // handle response
+   * }
+   * ```
+   */
+  idempotent?: boolean;
 }
 
 /**
